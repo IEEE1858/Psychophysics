@@ -4,3 +4,6 @@
 [submodule "wand"]
 	path = wand
 	url = https://github.com/emcconville/wand.git
+[submodule "PiDNG"]
+	path = PiDNG
+	url = https://github.com/wgprojects/PiDNG.git
