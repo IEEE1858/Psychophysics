@@ -1,0 +1,6 @@
+[submodule "hdr-imaging"]
+	path = hdr-imaging
+	url = https://github.com/deepankarc/hdr-imaging.git
+[submodule "wand"]
+	path = wand
+	url = https://github.com/emcconville/wand.git
