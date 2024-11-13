@@ -27,4 +27,5 @@ Wand is a ctypes-based simple ImageMagick binding for Python that provides an ar
 install python 3.10 (newer versions may also work)
 
 install dependencies
-pip install https://github.com/wgprojects/PiDNG.git process_raw opencv-python Wand 
+pip install https://github.com/wgprojects/PiDNG.git 
+pip install process_raw opencv-python Wand 
