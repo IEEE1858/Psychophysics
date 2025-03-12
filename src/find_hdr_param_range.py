@@ -3,10 +3,11 @@ import numpy as np
 from process_raw import DngFile
 from wand.image import Image
 import os, glob, sys
-import hdr_imaging.load_images
-import hdr_imaging.hdr_debevec
-import hdr_imaging.compute_irradiance
-from hdr_imaging.tonemap import reinhard_tonemap, plot_and_save, local_tonemap
+hdr_imaging
+import "hdr-imaging".load_images
+import hdr-imaging.hdr_debevec
+import hdr-imaging.compute_irradiance
+from hdr-imaging.tonemap import reinhard_tonemap, plot_and_save, local_tonemap
 import matplotlib.pyplot as mp_plt
 
 
