@@ -67,13 +67,6 @@ const imageMap = {
   ],
 };
 
-
-const remainingEvaluated = {};
-
-Object.entries(imageMap).forEach(([ref, evals]) => {
-  remainingEvaluated[ref] = [...evals];
-});
-
 // Route to fetch images
 app.get("/image", (req, res) => {
   const references = Object.keys(imageMap);
