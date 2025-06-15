@@ -169,5 +169,5 @@ app.listen(PORT, () => {
 });
 
 
-// psql -h demo-postgres.cy9wkqygejc4.us-east-1.rds.amazonaws.com -U postgres -d image_ratings
+// psql -h database-2.cy9wkqygejc4.us-east-1.rds.amazonaws.com -U postgres -d testname
 // pass: Coganglen1909
