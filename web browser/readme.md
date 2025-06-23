@@ -21,9 +21,11 @@ React Version:
 
 To install dependencies and start the frontend:
 
+    ```
     cd "web browser/client"
     npm install
     npm start
+    ```
 
 This will run the React development server on:
     http://localhost:3000
@@ -40,8 +42,10 @@ Node Version:
 
 To start the backend server:
 
+    ```
     cd "web browser/server"
     node server.js
+    ```
 
 Ensure the PostgreSQL database is accessible before starting.
 
@@ -50,19 +54,37 @@ Static Files (Images)
 ------------------------------------------------------------
 
 Directory:
-    web browser/images/images-for-web-browser/
+    images/images-for-web-browser/
 
 
 ------------------------------------------------------------
 PostgreSQL Database Info
 ------------------------------------------------------------
 
-Host:       database-2.cy9wkqygejc4.us-east-1.rds.amazonaws.com
-Port:       5432
-User:       postgres
-Database:   testname
+## Setting Up Database Connection Parameters
 
-please ask me to get the password
+To configure your database connection, you need to set environment variables in your shell configuration file (`.bashrc` for Bash users). This ensures your backend server can securely access the database without hardcoding credentials.
+
+### Steps to Configure
+
+1. Open your `.bashrc` file in a text editor. For example:
+nano ~/.bashrc
+
+Add the following lines at the end of the file, replacing the placeholder values with your actual database credentials:
+
+``
+export DB_HOST=localhost
+export DB_PORT=5432
+export DB_NAME=your_database_name
+export DB_USER=your_database_user
+export DB_PASSWORD=your_secure_password
+``
+
+Save the file and exit the editor. Please ask me to get the database information
+
+2. Reload your .bashrc to apply the changes:
+
+source ~/.bashrc
 
 ------------------------------------------------------------
 System Requirements
@@ -79,4 +101,4 @@ Development Notes
 - Environment variables (e.g., database credentials) should be stored in a `.env` file and not committed to version control.
 - The frontend is bootstrapped using Create React App.
 - The backend uses Express.js to handle API routes and static file serving.
-- All images used in the experiment should be placed in the appropriate `images-for-web-browser/images/` folder.
+- All images used in the experiment should be placed in the appropriate `images/images-for-web-browser` folder.
