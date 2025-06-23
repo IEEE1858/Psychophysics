@@ -27,43 +27,43 @@ pool.connect()
   .catch(err => console.error("❌ Error connecting to database:", err));
 
 // Serve static files
-app.use("/images", express.static(path.join(__dirname, "../images")));
+app.use("/images/images-for-web-browser", express.static(path.join("../../images/images-for-web-browser")));
 
 const imageMap = {
-  "images/a0304-dgw_137.dng.jpg": [
-    "images/a0304-dgw_137.dng.jpg_sharpen_20.jpg",
-    "images/a0304-dgw_137.dng.jpg_sharpen_40.jpg",
-    "images/a0304-dgw_137.dng.jpg_sharpen_60.jpg",
-    "images/a0304-dgw_137.dng.jpg_sharpen_80.jpg",
-    "images/a0304-dgw_137.dng.jpg_sharpen_100.jpg",
+  "images/images-for-web-browser/a0304-dgw_137.dng.jpg": [
+    "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_20.jpg",
+    "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_40.jpg",
+    "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_60.jpg",
+    "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_80.jpg",
+    "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_100.jpg",
   ],
-  "images/a0020-jmac_MG_6225.dng.jpg": [
-    "images/a0020-jmac_MG_6225.dng.jpg_sharpen_20.jpg",
-    "images/a0020-jmac_MG_6225.dng.jpg_sharpen_40.jpg",
-    "images/a0020-jmac_MG_6225.dng.jpg_sharpen_60.jpg",
-    "images/a0020-jmac_MG_6225.dng.jpg_sharpen_80.jpg",
-    "images/a0020-jmac_MG_6225.dng.jpg_sharpen_100.jpg",
+  "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg": [
+    "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_20.jpg",
+    "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_40.jpg",
+    "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_60.jpg",
+    "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_80.jpg",
+    "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_100.jpg",
   ],
-  "images/a0410-jmac_DSC2754.dng.jpg": [
-    "images/a0410-jmac_DSC2754.dng.jpg_sharpen_20.jpg",
-    "images/a0410-jmac_DSC2754.dng.jpg_sharpen_40.jpg",
-    "images/a0410-jmac_DSC2754.dng.jpg_sharpen_60.jpg",
-    "images/a0410-jmac_DSC2754.dng.jpg_sharpen_80.jpg",
-    "images/a0410-jmac_DSC2754.dng.jpg_sharpen_100.jpg",
+  "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg": [
+    "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_20.jpg",
+    "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_40.jpg",
+    "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_60.jpg",
+    "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_80.jpg",
+    "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_100.jpg",
   ],
-  "images/a0568-_MG_1090.dng.jpg": [
-    "images/a0568-_MG_1090.dng.jpg_sharpen_20.jpg",
-    "images/a0568-_MG_1090.dng.jpg_sharpen_40.jpg",
-    "images/a0568-_MG_1090.dng.jpg_sharpen_60.jpg",
-    "images/a0568-_MG_1090.dng.jpg_sharpen_80.jpg",
-    "images/a0568-_MG_1090.dng.jpg_sharpen_100.jpg",
+  "images/images-for-web-browser/a0568-_MG_1090.dng.jpg": [
+    "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_20.jpg",
+    "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_40.jpg",
+    "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_60.jpg",
+    "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_80.jpg",
+    "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_100.jpg",
   ],
-  "images/a1781-LS051026_day_10_LL003.dng.jpg": [
-    "images/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_20.jpg",
-    "images/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_40.jpg",
-    "images/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_60.jpg",
-    "images/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_80.jpg",
-    "images/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_100.jpg",
+  "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg": [
+    "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_20.jpg",
+    "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_40.jpg",
+    "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_60.jpg",
+    "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_80.jpg",
+    "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_100.jpg",
   ],
 };
 
@@ -84,45 +84,50 @@ app.get("/image", (req, res) => {
 app.post("/submit-rating", async (req, res) => {
   const { imageUrl, ratings, demographics } = req.body;
 
-  // Extract sharpeningLevel from imageUrl
   const sharpeningLevelMatch = imageUrl.match(/sharpen_(\d+)/);
   const sharpeningLevel = sharpeningLevelMatch ? parseInt(sharpeningLevelMatch[1], 10) : null;
 
-  // Validate input
   if (
     !imageUrl ||
-    !ratings ||
-    ratings.realism == null ||
-    ratings.quality == null ||
-    sharpeningLevel == null ||
-    !demographics ||
-    !demographics.age ||
-    !demographics.gender ||
-    !demographics.email
+    !ratings || ratings.realism == null || ratings.quality == null ||
+    !demographics || !demographics.age || !demographics.gender || !demographics.email ||
+    sharpeningLevel == null
   ) {
-    return res.status(400).json({ error: "Missing required fields including demographics" });
+    return res.status(400).json({ error: "Missing required fields" });
   }
 
-  try {
-    const query = `
-      INSERT INTO ratings (
-        image_url, realism, quality, sharpening_level, age, gender, email
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `;
-    await pool.query(query, [
-      imageUrl,
-      ratings.realism,
-      ratings.quality,
-      sharpeningLevel,
-      demographics.age,
-      demographics.gender,
-      demographics.email,
-    ]);
+  const client = await pool.connect();
 
-    res.status(200).json({ message: "Final rating submitted successfully." });
+  try {
+    await client.query("BEGIN");
+
+    // Insert or get existing user
+    const userResult = await client.query(
+      `INSERT INTO users (email, gender, age)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (email) DO UPDATE SET gender = EXCLUDED.gender, age = EXCLUDED.age
+       RETURNING id`,
+      [demographics.email, demographics.gender, demographics.age]
+    );
+
+    const userId = userResult.rows[0].id;
+
+    // Insert rating
+    await client.query(
+      `INSERT INTO image_ratings (user_id, image_url, sharpening_level, realism, quality)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [userId, imageUrl, sharpeningLevel, ratings.realism, ratings.quality]
+    );
+
+    await client.query("COMMIT");
+    res.status(200).json({ message: "Rating submitted successfully." });
+
   } catch (error) {
-    console.error("❌ Error saving rating:", error);
-    res.status(500).json({ error: "Database error" });
+    await client.query("ROLLBACK");
+    console.error("❌ Transaction error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    client.release();
   }
 });
 
@@ -132,7 +137,7 @@ app.get("/image-ratings", async (req, res) => {
     // Query to get ratings data from the database
     const result = await pool.query(
       `SELECT image_url, sharpening_level, quality, realism 
-       FROM ratings`
+       FROM image_ratings`
     );
 
     // Structure the response data
