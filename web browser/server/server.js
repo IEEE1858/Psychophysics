@@ -173,6 +173,3 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
 
-
-// psql -h database-2.cy9wkqygejc4.us-east-1.rds.amazonaws.com -U postgres -d testname
-// pass: Coganglen1909
