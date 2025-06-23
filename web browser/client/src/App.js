@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const App = () => {
@@ -6,22 +6,51 @@ const App = () => {
   const [evaluatedImage, setEvaluatedImage] = useState("");
   const [ratings, setRatings] = useState({ realism: 0, quality: 0 });
 
-  const [demographics, setDemographics] = useState({
-    age: "",
-    gender: "",
-    email: "",
-  });
+  const [demographics, setDemographics] = useState({ age: "", gender: "", email: "" });
   const [demographicsSubmitted, setDemographicsSubmitted] = useState(false);
 
-  const fetchImages = async () => {
-    try {
-      const response = await axios.get("http://localhost:5000/image");
-      setReferenceImage(response.data.reference);
-      setEvaluatedImage(response.data.evaluated);
-      setRatings({ realism: 0, quality: 0 });
-    } catch (error) {
-      console.error("Error fetching images:", error);
+  const [ratedImages, setRatedImages] = useState(new Set());
+  const [allImagesMap, setAllImagesMap] = useState({});
+  const [remainingCount, setRemainingCount] = useState(0);
+  const [totalImages, setTotalImages] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
+
+  useEffect(() => {
+    // Load all image pairs from backend imageMap logic
+    const fetchAllImages = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/image-map");
+        setAllImagesMap(res.data);
+
+        const totalEvaluated = Object.values(res.data).flat().length;
+        setTotalImages(totalEvaluated);
+        setRemainingCount(totalEvaluated);
+      } catch (err) {
+        console.error("Error fetching image map:", err);
+      }
+    };
+
+    fetchAllImages();
+  }, []);
+
+  const fetchNextImage = () => {
+    // Flatten all image pairs
+    const entries = Object.entries(allImagesMap).flatMap(([ref, evals]) =>
+      evals.map((ev) => ({ reference: ref, evaluated: ev }))
+    );
+
+    const unrated = entries.filter((img) => !ratedImages.has(img.evaluated));
+
+    if (unrated.length === 0) {
+      setIsFinished(true);
+      return;
     }
+
+    const next = unrated[Math.floor(Math.random() * unrated.length)];
+    setReferenceImage(next.reference);
+    setEvaluatedImage(next.evaluated);
+    setRatings({ realism: 0, quality: 0 });
+    setRemainingCount(unrated.length - 1);
   };
 
   const handleDemographicsChange = (e) => {
@@ -36,7 +65,7 @@ const App = () => {
       return;
     }
     setDemographicsSubmitted(true);
-    fetchImages(); // Start loading images after demographics are submitted
+    fetchNextImage();
   };
 
   const handleRatingChange = (question, score) => {
@@ -45,7 +74,7 @@ const App = () => {
 
   const submitFinalRating = async () => {
     if (ratings.realism === 0 || ratings.quality === 0) {
-      alert("Please provide both realism and quality ratings before submitting.");
+      alert("Please rate both realism and quality.");
       return;
     }
 
@@ -56,13 +85,13 @@ const App = () => {
         demographics,
       };
 
-      const response = await axios.post("http://localhost:5000/submit-rating", payload);
-      console.log("Server response:", response.data);
-      alert("Your ratings have been submitted!");
-      fetchImages();
+      await axios.post("http://localhost:5000/submit-rating", payload);
+
+      setRatedImages((prev) => new Set(prev).add(evaluatedImage));
+      fetchNextImage();
     } catch (error) {
-      console.error("Error submitting ratings:", error);
-      alert("There was an error submitting your ratings. Please try again.");
+      console.error("Error submitting rating:", error);
+      alert("Error submitting. Please try again.");
     }
   };
 
@@ -109,19 +138,23 @@ const App = () => {
     );
   }
 
-  // Main UI after demographics are submitted
+  if (isFinished) {
+    return (
+      <div style={{ textAlign: "center", marginTop: "100px" }}>
+        <h2>🎉 Thank You!</h2>
+        <p>You have completed all image ratings.</p>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ textAlign: "center", marginTop: "10px", padding: "20px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: "20px",
-          alignItems: "flex-start",
-        }}
-      >
-        {/* Reference Image */}
-        <div style={{ textAlign: "center", flex: 1 }}>
+    <div style={{ textAlign: "center", padding: "20px" }}>
+      <h3>Progress: {totalImages - remainingCount} / {totalImages}</h3>
+      <progress value={totalImages - remainingCount} max={totalImages} style={{ width: "80%" }}></progress>
+
+      <div style={{ display: "flex", justifyContent: "center", gap: "30px", marginTop: "30px" }}>
+          {/* Reference Image */}
+          <div style={{ textAlign: "center", flex: 1 }}>
           <p style={{ fontWeight: "bold", marginBottom: "10px" }}>Reference Image</p>
           <img
             src={referenceImage || "https://via.placeholder.com/400"}

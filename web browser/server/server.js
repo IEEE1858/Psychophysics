@@ -19,7 +19,7 @@ const pool = new Pool({
   database: process.env.DB_NAME,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT || 5432,
-  ssl: { rejectUnauthorized: false }, 
+  ssl: { rejectUnauthorized: false },
 });
 
 pool.connect()
@@ -32,42 +32,47 @@ app.use("/images/images-for-web-browser", express.static(path.join("../../images
 const imageMap = {
   "images/images-for-web-browser/a0304-dgw_137.dng.jpg": [
     "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_20.jpg",
-    "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_40.jpg",
+    // "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_40.jpg",
     "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_60.jpg",
-    "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_80.jpg",
+    // "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_80.jpg",
     "images/images-for-web-browser/a0304-dgw_137.dng.jpg_sharpen_100.jpg",
   ],
   "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg": [
     "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_20.jpg",
-    "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_40.jpg",
+    // "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_40.jpg",
     "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_60.jpg",
-    "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_80.jpg",
+    // "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_80.jpg",
     "images/images-for-web-browser/a0020-jmac_MG_6225.dng.jpg_sharpen_100.jpg",
   ],
   "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg": [
     "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_20.jpg",
-    "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_40.jpg",
+    // "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_40.jpg",
     "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_60.jpg",
-    "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_80.jpg",
+    // "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_80.jpg",
     "images/images-for-web-browser/a0410-jmac_DSC2754.dng.jpg_sharpen_100.jpg",
   ],
   "images/images-for-web-browser/a0568-_MG_1090.dng.jpg": [
     "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_20.jpg",
-    "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_40.jpg",
+    // "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_40.jpg",
     "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_60.jpg",
-    "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_80.jpg",
+    // "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_80.jpg",
     "images/images-for-web-browser/a0568-_MG_1090.dng.jpg_sharpen_100.jpg",
   ],
   "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg": [
     "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_20.jpg",
-    "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_40.jpg",
+    // "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_40.jpg",
     "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_60.jpg",
-    "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_80.jpg",
+    // "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_80.jpg",
     "images/images-for-web-browser/a1781-LS051026_day_10_LL003.dng.jpg_sharpen_100.jpg",
   ],
 };
 
-// Route to fetch images
+// New: Route to expose the full imageMap to the frontend
+app.get("/image-map", (req, res) => {
+  res.json(imageMap);
+});
+
+// Route to fetch a random image pair 
 app.get("/image", (req, res) => {
   const references = Object.keys(imageMap);
   const randomReference = references[Math.floor(Math.random() * references.length)];
@@ -159,10 +164,7 @@ app.get("/image-ratings", async (req, res) => {
       });
     });
 
-    // Convert object to array format
-    const responseData = Object.values(imageRatings);
-
-    res.json(responseData);
+    res.json(Object.values(imageRatings));
   } catch (error) {
     console.error("❌ Error fetching image ratings:", error);
     res.status(500).json({ error: "Database error" });
