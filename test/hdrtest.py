@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from process_raw import DngFile
+import os
 
 def reinhard_extended_hdr(image_path, intensity=0.0, light_adapt=1.0, color_adapt=0.0):
     """
@@ -56,7 +57,7 @@ def reinhard_extended_hdr(image_path, intensity=0.0, light_adapt=1.0, color_adap
     return ldr
 
 # Example usage
-image_path = 'images\\HDR\\DNG\\a1662-jn_2007_05_06__346.dng'  # Replace with your HDR image path
+image_path = os.path.join('images','HDR','JPG','a1662-jn_2007_05_06__346.jpg')  # Replace with your HDR image path
 
 try:
 

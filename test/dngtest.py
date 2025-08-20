@@ -1,6 +1,7 @@
 import rawpy
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 def display_dng_image(file_path):
     """Reads a DNG file and displays it using matplotlib."""
@@ -32,5 +33,7 @@ def display_dng_image(file_path):
         print(f"Error: {e}")
 
 # Replace with the path to your DNG file
-dng_file_path = 'images\\HDR\\DNG\\a1662-jn_2007_05_06__346.dng' 
+
+dng_file_path = os.path.join('images', 'HDR', 'DNG', 'a1662-jn_2007_05_06__346.dng')
+
 display_dng_image(dng_file_path)
