@@ -148,11 +148,11 @@ class DNGCLAHEProcessor:
                 # Extract gamma value from metadata
                 optimal_gamma = self._extract_gamma_from_dng(raw)
                 
-                # Use rawpy's built-in postprocessing for simplicity
+                # Use rawpy's built-in postprocessing with 16-bit output for better precision
                 rgb_image = raw.postprocess(
                     use_camera_wb=True,    # Use camera white balance
                     output_color=rawpy.ColorSpace.sRGB,  # sRGB color space
-                    output_bps=8,          # 8-bit output
+                    output_bps=16,         # 16-bit output for better precision
                     no_auto_bright=True,   # Disable auto brightness
                     bright=1.0             # Normal brightness
                 )
@@ -169,31 +169,31 @@ class DNGCLAHEProcessor:
         Apply gamma correction for tone mapping.
         
         Args:
-            image: Input RGB image (0-255)
+            image: Input RGB image (0-65535, 16-bit)
             gamma: Gamma value for correction
             
         Returns:
-            Gamma corrected RGB image (0-255)
+            Gamma corrected RGB image (0-65535, 16-bit)
         """
         try:
-            # Normalize to 0-1 range
-            image_norm = image.astype(np.float32) / 255.0
+            # Normalize to 0-1 range (16-bit input)
+            image_norm = image.astype(np.float32) / 65535.0
             
             # Apply gamma correction
             logger.info(f"Applying gamma correction: {gamma}")
             gamma_corrected = np.power(image_norm, gamma)
             
-            # Convert back to 0-255 range
-            result = np.clip(gamma_corrected * 255.0, 0, 255).astype(np.uint8)
+            # Convert back to 0-65535 range (16-bit)
+            result = np.clip(gamma_corrected * 65535.0, 0, 65535).astype(np.uint16)
             
             return result
             
         except Exception as e:
             logger.warning(f"Error applying gamma correction: {str(e)}")
             # Fallback to simple gamma correction
-            image_norm = image.astype(np.float32) / 255.0
+            image_norm = image.astype(np.float32) / 65535.0
             gamma_corrected = np.power(image_norm, self.gamma_correction)
-            return np.clip(gamma_corrected * 255.0, 0, 255).astype(np.uint8)
+            return np.clip(gamma_corrected * 65535.0, 0, 65535).astype(np.uint16)
     
     def _apply_clahe_to_image(self, image: np.ndarray, clip_limit: float, 
                              tile_grid_size: tuple = (8, 8)) -> np.ndarray:
@@ -201,12 +201,12 @@ class DNGCLAHEProcessor:
         Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) to an image.
         
         Args:
-            image: Input RGB image
+            image: Input RGB image (0-65535, 16-bit)
             clip_limit: CLAHE clip limit (0.0 means no CLAHE)
             tile_grid_size: Size of the tile grid for CLAHE
             
         Returns:
-            CLAHE processed image
+            CLAHE processed image (0-65535, 16-bit)
         """
         try:
             if clip_limit == 0.0:
@@ -214,24 +214,36 @@ class DNGCLAHEProcessor:
                 logger.info("No CLAHE processing (clip_limit = 0.0)")
                 return image.copy()
             
-            # Convert RGB to LAB color space for better CLAHE results
-            lab_image = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+            # Convert 16-bit to LAB using proper 16-bit workflow
+            # First normalize to 0-1 range for accurate color space conversion
+            image_norm = image.astype(np.float32) / 65535.0
             
-            # Split into L, A, B channels
-            l_channel, a_channel, b_channel = cv2.split(lab_image)
+            # Convert to LAB color space (0-1 range)
+            lab_image = cv2.cvtColor(image_norm, cv2.COLOR_RGB2LAB)
             
-            # Apply CLAHE only to the L (lightness) channel
+            # Scale L channel to 0-255 for CLAHE (OpenCV requirement)
+            l_channel = lab_image[:, :, 0] * 255.0 / 100.0  # L is 0-100 in LAB
+            l_channel_8bit = np.clip(l_channel, 0, 255).astype(np.uint8)
+            
+            # Apply CLAHE to L channel
             clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=tile_grid_size)
-            enhanced_l = clahe.apply(l_channel)
+            enhanced_l_8bit = clahe.apply(l_channel_8bit)
             
-            # Merge channels back
-            enhanced_lab = cv2.merge([enhanced_l, a_channel, b_channel])
+            # Convert enhanced L back to 0-100 range
+            enhanced_l = enhanced_l_8bit.astype(np.float32) * 100.0 / 255.0
             
-            # Convert back to RGB
-            enhanced_rgb = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2RGB)
+            # Reconstruct LAB image with enhanced L channel
+            enhanced_lab = lab_image.copy()
+            enhanced_lab[:, :, 0] = enhanced_l
+            
+            # Convert back to RGB (0-1 range)
+            enhanced_rgb_norm = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2RGB)
+            
+            # Convert back to 16-bit (0-65535)
+            enhanced_rgb_16bit = np.clip(enhanced_rgb_norm * 65535.0, 0, 65535).astype(np.uint16)
             
             logger.info(f"Applied CLAHE with clip limit: {clip_limit}")
-            return enhanced_rgb
+            return enhanced_rgb_16bit
             
         except Exception as e:
             logger.error(f"Error applying CLAHE: {str(e)}")
@@ -242,12 +254,19 @@ class DNGCLAHEProcessor:
         Save the processed image as JPG.
         
         Args:
-            image: RGB image array
+            image: RGB image array (0-65535, 16-bit)
             output_path: Path to save the image
         """
         try:
+            # Log bit depth information
+            logger.debug(f"Saving image: shape={image.shape}, dtype={image.dtype}, "
+                        f"min={image.min()}, max={image.max()}")
+            
+            # Convert 16-bit to 8-bit for JPEG output
+            image_8bit = (image / 256).astype(np.uint8)
+            
             # Convert RGB to BGR for cv2
-            image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            image_bgr = cv2.cvtColor(image_8bit, cv2.COLOR_RGB2BGR)
             
             # Save as JPG with high quality
             success = cv2.imwrite(str(output_path), image_bgr, 
@@ -260,6 +279,29 @@ class DNGCLAHEProcessor:
                 
         except Exception as e:
             logger.error(f"Error saving image {output_path}: {str(e)}")
+    
+    def _save_image_as_tiff_16bit(self, image: np.ndarray, output_path: Path):
+        """
+        Save the processed image as 16-bit TIFF (preserves full bit depth).
+        
+        Args:
+            image: RGB image array (0-65535, 16-bit)
+            output_path: Path to save the image
+        """
+        try:
+            # Convert RGB to BGR for cv2
+            image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            
+            # Save as 16-bit TIFF
+            success = cv2.imwrite(str(output_path), image_bgr)
+            
+            if success:
+                logger.info(f"Saved 16-bit TIFF: {output_path}")
+            else:
+                logger.error(f"Failed to save 16-bit TIFF: {output_path}")
+                
+        except Exception as e:
+            logger.error(f"Error saving 16-bit TIFF {output_path}: {str(e)}")
     
     def process_single_dng(self, dng_path: Path):
         """
@@ -358,7 +400,7 @@ def main():
     
     # Configuration
     input_directory = "images/HDR/DNG"  # Directory containing DNG files
-    output_directory = "processed_images/CLAHE"  # Output directory
+    output_directory = "processed_images/CLAHE_16bit"  # Output directory for 16-bit processing
     
     # Delete output directory if it exists
     if Path(output_directory).exists():
