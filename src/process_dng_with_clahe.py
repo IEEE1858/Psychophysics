@@ -5,7 +5,16 @@ This script processes DNG files by:
 1. Loading DNG files and converting to RGB
 2. Extracting gamma correction value from DNG metadata
 3. Applying simple gamma correction for tone mapping
-4. Processing with different CLAHE strengths
+4.             # Resize image to smaller size (max 800px) for smaller file sizes
+            height, width = image_8bit.shape[:2]
+            
+            # Calculate new size maintaining aspect ratio, max dimension = 800
+            if height > width:
+                new_height = min(800, height)
+                new_width = int(width * new_height / height)
+            else:
+                new_width = min(800, width)
+                new_height = int(height * new_width / width) with different CLAHE strengths
 5. Saving all outputs in organized folders
 
 Author: GitHub Copilot
@@ -48,15 +57,20 @@ class DNGCLAHEProcessor:
         self.input_dir = Path(input_dir)
         self.output_dir = Path(output_dir)
         
-        # Create main output directory
+        # Create main output directory and subdirectories
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.output_dir_full = self.output_dir / "full_resolution_png"
+        self.output_dir_small = self.output_dir / "small_jpeg"
+        self.output_dir_full.mkdir(parents=True, exist_ok=True)
+        self.output_dir_small.mkdir(parents=True, exist_ok=True)
         
         # Processing parameters
         self.gamma_correction = 0.45  # Default gamma correction
         self.clahe_tile_grid_size = (8, 8)  # CLAHE tile grid size
         
-        # CLAHE clip limits to test (more sampling at low levels for fine control, extended range up to 10)
-        self.clahe_clip_limits = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0]
+                # CLAHE clip limits to test (includes 0.0 for no CLAHE)
+        # Reduced range 0-3.0 with good sampling
+        self.clahe_clip_limits = [0.0, 0.2, 0.4, 0.7, 1.0, 1.5, 2.0, 3.0]
         
         # Track processing results
         self.processed_files = 0
@@ -64,7 +78,8 @@ class DNGCLAHEProcessor:
         
         logger.info(f"Initialized DNG CLAHE Processor")
         logger.info(f"Input directory: {self.input_dir}")
-        logger.info(f"Output directory: {self.output_dir}")
+        logger.info(f"Output directory (full PNG): {self.output_dir_full}")
+        logger.info(f"Output directory (small JPEG): {self.output_dir_small}")
         logger.info(f"CLAHE clip limits: {self.clahe_clip_limits}")
     
     def _create_image_output_directory(self, image_name: str):
@@ -249,9 +264,9 @@ class DNGCLAHEProcessor:
             logger.error(f"Error applying CLAHE: {str(e)}")
             return image  # Return original image on error
     
-    def _save_image_as_jpg(self, image: np.ndarray, output_path: Path):
+    def _save_image_as_png_full(self, image: np.ndarray, output_path: Path):
         """
-        Save the processed image as JPG.
+        Save the processed image as full resolution PNG (lossless).
         
         Args:
             image: RGB image array (0-65535, 16-bit)
@@ -259,26 +274,73 @@ class DNGCLAHEProcessor:
         """
         try:
             # Log bit depth information
-            logger.debug(f"Saving image: shape={image.shape}, dtype={image.dtype}, "
+            logger.debug(f"Saving full PNG: shape={image.shape}, dtype={image.dtype}, "
                         f"min={image.min()}, max={image.max()}")
             
-            # Convert 16-bit to 8-bit for JPEG output
+            # Convert 16-bit to 8-bit for PNG output
             image_8bit = (image / 256).astype(np.uint8)
             
             # Convert RGB to BGR for cv2
             image_bgr = cv2.cvtColor(image_8bit, cv2.COLOR_RGB2BGR)
             
-            # Save as JPG with high quality
+            # Save as PNG with lossless compression
             success = cv2.imwrite(str(output_path), image_bgr, 
-                                [cv2.IMWRITE_JPEG_QUALITY, 95])
+                                 [cv2.IMWRITE_PNG_COMPRESSION, 6])  # Good compression level
             
             if success:
-                logger.info(f"Saved image: {output_path}")
+                logger.info(f"Saved full resolution PNG: {output_path}")
             else:
-                logger.error(f"Failed to save image: {output_path}")
+                logger.error(f"Failed to save PNG: {output_path}")
                 
         except Exception as e:
-            logger.error(f"Error saving image {output_path}: {str(e)}")
+            logger.error(f"Error saving PNG {output_path}: {str(e)}")
+
+    def _save_image_as_jpg_small(self, image: np.ndarray, output_path: Path):
+        """
+        Save the processed image as small JPEG (reduced quality and size).
+        
+        Args:
+            image: RGB image array (0-65535, 16-bit)
+            output_path: Path to save the image
+        """
+        try:
+            # Log bit depth information
+            logger.debug(f"Saving small JPEG: shape={image.shape}, dtype={image.dtype}, "
+                        f"min={image.min()}, max={image.max()}")
+            
+            # Convert 16-bit to 8-bit for JPEG output
+            image_8bit = (image / 256).astype(np.uint8)
+            
+            # Resize image to smaller size (max 1000px) for compressed version
+            height, width = image_8bit.shape[:2]
+            
+            # Calculate new size maintaining aspect ratio, max dimension = 1000
+            if height > width:
+                new_height = min(1000, height)
+                new_width = int((width * new_height) / height)
+            else:
+                new_width = min(1000, width)
+                new_height = int((height * new_width) / width)
+            
+            # Resize image
+            if new_width != width or new_height != height:
+                image_8bit = cv2.resize(image_8bit, (new_width, new_height), interpolation=cv2.INTER_AREA)
+                logger.debug(f"Resized image from {width}x{height} to {new_width}x{new_height}")
+            
+            # Convert RGB to BGR for cv2
+            image_bgr = cv2.cvtColor(image_8bit, cv2.COLOR_RGB2BGR)
+            
+            # Save as JPEG with reduced quality for smaller file size
+            success = cv2.imwrite(str(output_path), image_bgr, 
+                                 [cv2.IMWRITE_JPEG_QUALITY, 70])  # 70% quality for balance
+            
+            if success:
+                logger.info(f"Saved small JPEG: {output_path}")
+            else:
+                logger.error(f"Failed to save JPEG: {output_path}")
+                
+        except Exception as e:
+            logger.error(f"Error saving JPEG {output_path}: {str(e)}")
     
     def _save_image_as_tiff_16bit(self, image: np.ndarray, output_path: Path):
         """
@@ -315,7 +377,6 @@ class DNGCLAHEProcessor:
             
             # Create output directory for this image
             image_name = dng_path.stem  # Get filename without extension
-            image_output_dir = self._create_image_output_directory(image_name)
             
             # Load the DNG image and get optimal gamma
             rgb_image, optimal_gamma = self._load_dng_image(dng_path)
@@ -337,13 +398,16 @@ class DNGCLAHEProcessor:
                     self.clahe_tile_grid_size
                 )
                 
-                # Create output filename with clip limit
-                output_filename = f"{image_name}_clahe_{clip_limit:.1f}.jpg"
+                # Create output filenames with clip limit
+                png_filename = f"{image_name}_clahe_{clip_limit:.1f}.png"
+                jpg_filename = f"{image_name}_clahe_{clip_limit:.1f}.jpg"
                 
-                output_path = image_output_dir / output_filename
+                png_path = self.output_dir_full / png_filename
+                jpg_path = self.output_dir_small / jpg_filename
                 
-                # Save the processed image
-                self._save_image_as_jpg(clahe_processed, output_path)
+                # Save both versions
+                self._save_image_as_png_full(clahe_processed, png_path)
+                self._save_image_as_jpg_small(clahe_processed, jpg_path)
             
             self.processed_files += 1
             logger.info(f"Successfully processed: {dng_path.name} with {len(self.clahe_clip_limits)} CLAHE variations")
@@ -390,7 +454,7 @@ class DNGCLAHEProcessor:
             'failed_files': self.failed_files,
             'total_files': self.processed_files + self.failed_files,
             'clahe_variations': len(self.clahe_clip_limits),
-            'total_images_created': self.processed_files * len(self.clahe_clip_limits)
+            'total_images_created': self.processed_files * len(self.clahe_clip_limits) * 2  # Both PNG and JPEG
         }
 
 
@@ -400,7 +464,7 @@ def main():
     
     # Configuration
     input_directory = "images/HDR/DNG"  # Directory containing DNG files
-    output_directory = "processed_images/CLAHE_16bit"  # Output directory for 16-bit processing
+    output_directory = "processed_images/CLAHE_dual_output"  # Output with both PNG and JPEG versions
     
     # Delete output directory if it exists
     if Path(output_directory).exists():
