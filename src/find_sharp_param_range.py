@@ -3,7 +3,6 @@ import numpy as np
 from process_raw import DngFile
 from wand.image import Image
 import os
-#temp
 range_min = 5 #range  = 10 --> 1 pix
 range_max = 300
 range_step = 5
@@ -33,3 +32,4 @@ for sharp_image_file in sharp_image_files:
                 # Save the image
 
                 sharpen.save(filename =output_path+'_sharpen_' + str(sigma) + '.jpg')
+
