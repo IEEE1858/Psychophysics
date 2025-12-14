@@ -10,18 +10,18 @@ range_step = 5
 
 sharpness_dng_path = r'../images/Sharpness/'
 sharpness_processed_root = r'../processed_images/'
-hdr_image_files = (r'a0020-jmac_MG_6225',r'a1781-LS051026_day_10_LL003',r'a0410-jmac_DSC2754',r'a0568-_MG_1090')
+sharp_image_files = (r'a0020-jmac_MG_6225',r'a1781-LS051026_day_10_LL003',r'a0410-jmac_DSC2754',r'a0568-_MG_1090')
 
-for hdr_image_file in hdr_image_files:
-    sharpness_processed_images = sharpness_processed_root + hdr_image_file + '/'
+for sharp_image_file in sharp_image_files:
+    sharpness_processed_images = sharpness_processed_root + sharp_image_file + '/'
     isExist = os.path.exists(sharpness_processed_images)
     if not isExist:
         os.mkdir(sharpness_processed_images)
-    dng = DngFile.read(sharpness_dng_path + hdr_image_file + '.dng')
+    dng = DngFile.read(sharpness_dng_path + sharp_image_file + '.dng')
     raw = dng.raw  # np.uint16
     raw_8bit = np.uint8(raw >> (dng.bit-8))
     rgb1 = dng.postprocess()  # demosaicing by rawpy
-    output_path=sharpness_processed_images+ hdr_image_file +".jpg"
+    output_path=sharpness_processed_images+ sharp_image_file +".jpg"
     cv2.imwrite(output_path, rgb1[:, :, ::-1])
 
     #process with wand
