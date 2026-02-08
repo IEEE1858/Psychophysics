@@ -1,12 +1,23 @@
-import React, { useState, useEffect } from "react";
+// App.jsx
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+
+const API_BASE = "http://localhost:5000";
+
+// Two zoom levels like FastStone
+const ZOOMED_SCALE = 2.25; // change to 2, 2.5, 3, etc.
 
 const App = () => {
   const [referenceImage, setReferenceImage] = useState("");
   const [evaluatedImage, setEvaluatedImage] = useState("");
   const [ratings, setRatings] = useState({ realism: 0, quality: 0 });
 
-  const [demographics, setDemographics] = useState({ age: "", gender: "", email: "" });
+  const [demographics, setDemographics] = useState({
+    age: "",
+    gender: "",
+    email: "",
+  });
   const [demographicsSubmitted, setDemographicsSubmitted] = useState(false);
 
   const [ratedImages, setRatedImages] = useState(new Set());
@@ -15,11 +26,17 @@ const App = () => {
   const [totalImages, setTotalImages] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
 
+  // Flatten all pairs (memoized)
+  const allPairs = useMemo(() => {
+    return Object.entries(allImagesMap).flatMap(([ref, evals]) =>
+      (evals || []).map((ev) => ({ reference: ref, evaluated: ev }))
+    );
+  }, [allImagesMap]);
+
   useEffect(() => {
-    // Load all image pairs from backend imageMap logic
     const fetchAllImages = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/image-map");
+        const res = await axios.get(`${API_BASE}/image-map`);
         setAllImagesMap(res.data);
 
         const totalEvaluated = Object.values(res.data).flat().length;
@@ -34,12 +51,7 @@ const App = () => {
   }, []);
 
   const fetchNextImage = () => {
-    // Flatten all image pairs
-    const entries = Object.entries(allImagesMap).flatMap(([ref, evals]) =>
-      evals.map((ev) => ({ reference: ref, evaluated: ev }))
-    );
-
-    const unrated = entries.filter((img) => !ratedImages.has(img.evaluated));
+    const unrated = allPairs.filter((img) => !ratedImages.has(img.evaluated));
 
     if (unrated.length === 0) {
       setIsFinished(true);
@@ -85,12 +97,21 @@ const App = () => {
         demographics,
       };
 
-      await axios.post("http://localhost:5000/submit-rating", payload);
+      await axios.post(`${API_BASE}/submit-rating`, payload);
 
-      setRatedImages((prev) => new Set(prev).add(evaluatedImage));
+      setRatedImages((prev) => {
+        const next = new Set(prev);
+        next.add(evaluatedImage);
+        return next;
+      });
+
       fetchNextImage();
     } catch (error) {
-      console.error("Error submitting rating:", error);
+      console.error(
+        "Error submitting rating:",
+        error.response?.status,
+        error.response?.data || error.message
+      );
       alert("Error submitting. Please try again.");
     }
   };
@@ -98,8 +119,16 @@ const App = () => {
   // Show demographics form if not submitted
   if (!demographicsSubmitted) {
     return (
-      <div style={{ maxWidth: "500px", margin: "50px auto", padding: "20px", textAlign: "center" }}>
+      <div
+        style={{
+          maxWidth: "500px",
+          margin: "50px auto",
+          padding: "20px",
+          textAlign: "center",
+        }}
+      >
         <h2>User Demographics</h2>
+
         <div style={{ marginBottom: "15px" }}>
           <label>Age: </label>
           <input
@@ -112,7 +141,12 @@ const App = () => {
         </div>
         <div style={{ marginBottom: "15px" }}>
           <label>Gender: </label>
-          <select name="gender" value={demographics.gender} onChange={handleDemographicsChange} style={{ width: "100%", padding: "8px" }}>
+          <select
+            name="gender"
+            value={demographics.gender}
+            onChange={handleDemographicsChange}
+            style={{ width: "100%", padding: "8px" }}
+          >
             <option value="">Select</option>
             <option value="Female">Female</option>
             <option value="Male">Male</option>
@@ -130,8 +164,20 @@ const App = () => {
             style={{ width: "100%", padding: "8px" }}
             placeholder="you@example.com"
           />
-      </div>
-        <button onClick={submitDemographics} style={{ padding: "12px 20px", fontSize: "16px", cursor: "pointer", backgroundColor: "#007BFF", color: "white", border: "none", borderRadius: "5px" }}>
+        </div>
+
+        <button
+          onClick={submitDemographics}
+          style={{
+            padding: "12px 20px",
+            fontSize: "16px",
+            cursor: "pointer",
+            backgroundColor: "#007BFF",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+          }}
+        >
           Continue
         </button>
       </div>
@@ -147,103 +193,270 @@ const App = () => {
     );
   }
 
+  const completed = totalImages - remainingCount;
+
   return (
-    <div style={{ textAlign: "center", padding: "20px" }}>
-      <h3>Progress: {totalImages - remainingCount} / {totalImages}</h3>
-      <progress value={totalImages - remainingCount} max={totalImages} style={{ width: "80%" }}></progress>
+    <div style={{ textAlign: "center", padding: "8px 12px" }}>
+      {/* ✅ Compact progress row: label left, bar middle, count right */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          maxWidth: 1700,
+          margin: "6px auto 6px",
+        }}
+      >
+        <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>Progress</div>
 
-      <div style={{ display: "flex", justifyContent: "center", gap: "30px", marginTop: "30px" }}>
-          {/* Reference Image */}
-          <div style={{ textAlign: "center", flex: 1 }}>
-          <p style={{ fontWeight: "bold", marginBottom: "10px" }}>Reference Image</p>
-          <img
-            src={referenceImage || "https://via.placeholder.com/400"}
-            alt="Reference"
-            style={{ width: "100%", maxWidth: "1300px", height: "auto" }}
-          />
+        <progress
+          value={completed}
+          max={totalImages}
+          style={{ width: "100%", height: 12 }}
+        />
+
+        <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
+          {completed}/{totalImages}
         </div>
+      </div>
 
-        {/* Evaluated Image and Ratings */}
-        <div style={{ textAlign: "center", flex: 1 }}>
-          <p style={{ fontWeight: "bold", marginBottom: "10px" }}>Evaluated Image</p>
-          <img
-            src={evaluatedImage || "https://via.placeholder.com/400"}
-            alt="Evaluated"
-            style={{ width: "100%", maxWidth: "1300px", height: "auto" }}
-          />
+      {/* Shared zoom/pan wrapper for BOTH images */}
+      <TransformWrapper
+        initialScale={1}
+        minScale={0.5} // ✅ allow smaller than 100%
+        maxScale={6}
+        centerOnInit
+        wheel={{ step: 0.15 }}
+        panning={{ velocityDisabled: true }}
+        doubleClick={{ mode: "toggle" }}
+      >
+        {({ resetTransform, setTransform, state }) => {
+          const safe = state ?? { positionX: 0, positionY: 0, scale: 1 };
 
-          {/* Ratings Section */}
-          <div style={{ marginTop: "30px" }}>
-            <p style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "-10px" }}>
-              Rate the evaluated image (1 = Worst, 5 = Best)
-            </p>
+          const zoomStep = 0.25;
+          const minScale = 0.5;
+          const maxScale = 6;
 
-            <div style={{ display: "flex", justifyContent: "center", gap: "50px", marginTop: "20px" }}>
-              {/* Realism Rating */}
-              <div style={{ textAlign: "center" }}>
-                <p style={{ marginBottom: "10px" }}>How realistic does the evaluated image appear?</p>
-                <div style={{ display: "flex", justifyContent: "center", gap: "5px" }}>
-                  {[1, 2, 3, 4, 5].map((score) => (
-                    <button
-                      key={`realism-${score}`}
-                      onClick={() => handleRatingChange("realism", score)}
-                      style={{
-                        padding: "10px",
-                        fontSize: "14px",
-                        backgroundColor: ratings.realism === score ? "#4caf50" : "#f0f0f0",
-                        cursor: "pointer",
-                        borderRadius: "5px",
-                      }}
-                    >
-                      {score}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          const applyScale = (nextScale) => {
+            const clamped = Math.max(minScale, Math.min(maxScale, nextScale));
+            setTransform(safe.positionX, safe.positionY, clamped, 120);
+          };
 
-              {/* Quality Rating */}
-              <div style={{ textAlign: "center" }}>
-                <p style={{ marginBottom: "10px" }}>How high is the quality of the evaluated image?</p>
-                <div style={{ display: "flex", justifyContent: "center", gap: "5px" }}>
-                  {[1, 2, 3, 4, 5].map((score) => (
-                    <button
-                      key={`quality-${score}`}
-                      onClick={() => handleRatingChange("quality", score)}
-                      style={{
-                        padding: "10px",
-                        fontSize: "14px",
-                        backgroundColor: ratings.quality === score ? "#4caf50" : "#f0f0f0",
-                        cursor: "pointer",
-                        borderRadius: "5px",
-                      }}
-                    >
-                      {score}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <div style={{ marginTop: "20px", display: "flex", justifyContent: "center" }}>
-              <button
-                onClick={submitFinalRating}
+          return (
+            <>
+              {/* ✅ tighter controls row */}
+              <div
                 style={{
-                  padding: "15px 30px",
-                  fontSize: "18px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  backgroundColor: "#007BFF",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
+                  marginTop: 6,
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 8,
+                  flexWrap: "wrap",
                 }}
               >
-                Submit
-              </button>
+                <button
+                  onClick={() => resetTransform(150)}
+                  style={{ padding: "6px 10px", cursor: "pointer" }}
+                >
+                  100%
+                </button>
+
+                <button
+                  onClick={() => applyScale(ZOOMED_SCALE)}
+                  style={{ padding: "6px 10px", cursor: "pointer" }}
+                >
+                  Zoom
+                </button>
+
+                <button
+                  onClick={() => applyScale((safe.scale ?? 1) + zoomStep)}
+                  style={{ padding: "6px 10px", cursor: "pointer" }}
+                >
+                  +
+                </button>
+
+                <button
+                  onClick={() => applyScale((safe.scale ?? 1) - zoomStep)}
+                  style={{ padding: "6px 10px", cursor: "pointer" }}
+                >
+                  -
+                </button>
+              </div>
+
+              {/* Zoomable area */}
+              <div
+                style={{
+                  marginTop: 10,
+                  border: "1px solid #ddd",
+                  borderRadius: 10,
+                  overflow: "hidden",
+                  width: "95vw",
+                  maxWidth: 1700,
+                  height: "68vh",
+                  marginLeft: "auto",
+                  marginRight: "auto",
+                  background: "#fafafa",
+                }}
+              >
+                <TransformComponent
+                  wrapperStyle={{ width: "100%", height: "100%" }}
+                  contentStyle={{ width: "100%", height: "100%" }}
+                >
+                  <div style={{ display: "flex", width: "100%", height: "100%" }}>
+                    {/* Left */}
+                    <div style={{ flex: 1, padding: 10 }}>
+                      <div style={{ fontWeight: "bold", marginBottom: 6 }}>
+                        Reference Image
+                      </div>
+                      <img
+                        src={referenceImage || "https://via.placeholder.com/800"}
+                        alt="Reference"
+                        draggable={false}
+                        style={{
+                          width: "100%",
+                          height: "calc(100% - 22px)",
+                          objectFit: "contain",
+                          userSelect: "none",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ width: 2, background: "#ddd" }} />
+
+                    {/* Right */}
+                    <div style={{ flex: 1, padding: 10 }}>
+                      <div style={{ fontWeight: "bold", marginBottom: 6 }}>
+                        Evaluated Image
+                      </div>
+                      <img
+                        src={evaluatedImage || "https://via.placeholder.com/800"}
+                        alt="Evaluated"
+                        draggable={false}
+                        style={{
+                          width: "100%",
+                          height: "calc(100% - 22px)",
+                          objectFit: "contain",
+                          userSelect: "none",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </TransformComponent>
+              </div>
+            </>
+          );
+        }}
+      </TransformWrapper>
+
+      {/* ✅ Centered instruction sentence (as requested) */}
+      <div
+        style={{
+          maxWidth: 1700,
+          margin: "12px auto 8px",
+          textAlign: "center",
+          fontSize: "16px",
+          fontWeight: 600,
+        }}
+      >
+        How would you rate the quality and realism of the evaluated image?
+      </div>
+
+      {/* ✅ One-line ratings bar: label left, ratings middle, submit right */}
+      <div
+        style={{
+          maxWidth: 1700,
+          margin: "6px auto 0",
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+        }}
+      >
+        {/* Left label */}
+        <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
+          Rate evaluated image (1–5)
+        </div>
+
+        {/* Middle: Realism + Quality */}
+        <div
+          style={{
+            display: "flex",
+            gap: 40,
+            alignItems: "center",
+            justifyContent: "center",
+            flexWrap: "wrap",
+            flex: 1,
+          }}
+        >
+          {/* Realism */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ whiteSpace: "nowrap", fontWeight: 600 }}>Realism</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {[1, 2, 3, 4, 5].map((score) => (
+                <button
+                  key={`realism-${score}`}
+                  onClick={() => handleRatingChange("realism", score)}
+                  style={{
+                    padding: "6px 10px",
+                    fontSize: 14,
+                    backgroundColor:
+                      ratings.realism === score ? "#4caf50" : "#f0f0f0",
+                    cursor: "pointer",
+                    borderRadius: 6,
+                    border: "1px solid #ccc",
+                  }}
+                >
+                  {score}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Quality */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ whiteSpace: "nowrap", fontWeight: 600 }}>Quality</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {[1, 2, 3, 4, 5].map((score) => (
+                <button
+                  key={`quality-${score}`}
+                  onClick={() => handleRatingChange("quality", score)}
+                  style={{
+                    padding: "6px 10px",
+                    fontSize: 14,
+                    backgroundColor:
+                      ratings.quality === score ? "#4caf50" : "#f0f0f0",
+                    cursor: "pointer",
+                    borderRadius: 6,
+                    border: "1px solid #ccc",
+                  }}
+                >
+                  {score}
+                </button>
+              ))}
             </div>
           </div>
         </div>
+
+        {/* Right submit */}
+        <button
+          onClick={submitFinalRating}
+          style={{
+            padding: "10px 16px",
+            fontSize: 16,
+            fontWeight: 700,
+            cursor: "pointer",
+            backgroundColor: "#007BFF",
+            color: "white",
+            border: "none",
+            borderRadius: 8,
+            whiteSpace: "nowrap",
+          }}
+        >
+          Submit
+        </button>
       </div>
     </div>
   );
