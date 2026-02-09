@@ -39,6 +39,14 @@ const COUNTRIES = [
   "Virgin Islands, British","Virgin Islands, U.S.","Wallis and Futuna","Western Sahara","Yemen","Zambia","Zimbabwe"
 ];
 
+
+const Field = ({ label, children }) => (
+  <div style={{ marginBottom: 12, textAlign: "left" }}>
+    <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
+    {children}
+  </div>
+);
+
 const App = () => {
   const [referenceImage, setReferenceImage] = useState("");
   const [evaluatedImage, setEvaluatedImage] = useState("");
@@ -49,7 +57,6 @@ const App = () => {
     age: "",
     gender: "",
     email: "",
-
     selfDescription: "", // Regular person / Photographer / Imaging Expert
     visionStatus: "", // No ordinary / No corrected / Yes
     visionDetails: "", // only required when visionStatus === "Yes"
@@ -192,13 +199,6 @@ const App = () => {
     const isVisionYes = demographics.visionStatus === "Yes";
     const inputStyle = { width: "100%", padding: "8px" };
     const selectStyle = { width: "100%", padding: "8px" };
-
-    const Field = ({ label, children }) => (
-      <div style={{ marginBottom: 12, textAlign: "left" }}>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
-        {children}
-      </div>
-    );
 
     return (
       <div
@@ -416,11 +416,7 @@ const App = () => {
       >
         <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>Progress</div>
 
-        <progress
-          value={completed}
-          max={totalImages}
-          style={{ width: "100%", height: 12 }}
-        />
+        <progress value={completed} max={totalImages} style={{ width: "100%", height: 12 }} />
 
         <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
           {completed}/{totalImages}
@@ -461,17 +457,11 @@ const App = () => {
                   flexWrap: "wrap",
                 }}
               >
-                <button
-                  onClick={() => resetTransform(150)}
-                  style={{ padding: "6px 10px", cursor: "pointer" }}
-                >
+                <button onClick={() => resetTransform(150)} style={{ padding: "6px 10px", cursor: "pointer" }}>
                   100%
                 </button>
 
-                <button
-                  onClick={() => applyScale(ZOOMED_SCALE)}
-                  style={{ padding: "6px 10px", cursor: "pointer" }}
-                >
+                <button onClick={() => applyScale(ZOOMED_SCALE)} style={{ padding: "6px 10px", cursor: "pointer" }}>
                   Zoom
                 </button>
 
@@ -505,16 +495,11 @@ const App = () => {
                   background: "#fafafa",
                 }}
               >
-                <TransformComponent
-                  wrapperStyle={{ width: "100%", height: "100%" }}
-                  contentStyle={{ width: "100%", height: "100%" }}
-                >
+                <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "100%", height: "100%" }}>
                   <div style={{ display: "flex", width: "100%", height: "100%" }}>
                     {/* Left */}
                     <div style={{ flex: 1, padding: 10 }}>
-                      <div style={{ fontWeight: "bold", marginBottom: 6 }}>
-                        Reference Image
-                      </div>
+                      <div style={{ fontWeight: "bold", marginBottom: 6 }}>Reference Image</div>
                       <img
                         src={referenceImage || "https://via.placeholder.com/800"}
                         alt="Reference"
@@ -533,9 +518,7 @@ const App = () => {
 
                     {/* Right */}
                     <div style={{ flex: 1, padding: 10 }}>
-                      <div style={{ fontWeight: "bold", marginBottom: 6 }}>
-                        Evaluated Image
-                      </div>
+                      <div style={{ fontWeight: "bold", marginBottom: 6 }}>Evaluated Image</div>
                       <img
                         src={evaluatedImage || "https://via.placeholder.com/800"}
                         alt="Evaluated"
@@ -582,9 +565,7 @@ const App = () => {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-          Rate evaluated image (1–5)
-        </div>
+        <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>Rate evaluated image (1–5)</div>
 
         <div
           style={{
@@ -607,8 +588,7 @@ const App = () => {
                   style={{
                     padding: "6px 10px",
                     fontSize: 14,
-                    backgroundColor:
-                      ratings.realism === score ? "#4caf50" : "#f0f0f0",
+                    backgroundColor: ratings.realism === score ? "#4caf50" : "#f0f0f0",
                     cursor: "pointer",
                     borderRadius: 6,
                     border: "1px solid #ccc",
@@ -631,8 +611,7 @@ const App = () => {
                   style={{
                     padding: "6px 10px",
                     fontSize: 14,
-                    backgroundColor:
-                      ratings.quality === score ? "#4caf50" : "#f0f0f0",
+                    backgroundColor: ratings.quality === score ? "#4caf50" : "#f0f0f0",
                     cursor: "pointer",
                     borderRadius: 6,
                     border: "1px solid #ccc",

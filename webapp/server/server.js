@@ -108,13 +108,36 @@ app.post("/submit-rating", async (req, res) => {
 
     // Insert or get existing user
     const userResult = await client.query(
-      `INSERT INTO users (email, gender, age)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (email) DO UPDATE SET gender = EXCLUDED.gender, age = EXCLUDED.age
-       RETURNING id`,
-      [demographics.email, demographics.gender, demographics.age]
+      `INSERT INTO users (
+          email, gender, age,
+          self_description, vision_status, vision_details,
+          color_blind, country_of_origin, display_type, lighting
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      ON CONFLICT (email) DO UPDATE SET
+          gender = EXCLUDED.gender,
+          age = EXCLUDED.age,
+          self_description = EXCLUDED.self_description,
+          vision_status = EXCLUDED.vision_status,
+          vision_details = EXCLUDED.vision_details,
+          color_blind = EXCLUDED.color_blind,
+          country_of_origin = EXCLUDED.country_of_origin,
+          display_type = EXCLUDED.display_type,
+          lighting = EXCLUDED.lighting
+      RETURNING id`,
+      [
+        demographics.email,
+        demographics.gender,
+        demographics.age,
+        demographics.selfDescription,
+        demographics.visionStatus,
+        demographics.visionDetails || null,
+        demographics.colorBlind === "Yes",
+        demographics.countryOfOrigin,
+        demographics.displayType,
+        demographics.lighting,
+      ]
     );
-
     const userId = userResult.rows[0].id;
 
     // Insert rating
