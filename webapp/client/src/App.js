@@ -8,16 +8,57 @@ const API_BASE = "http://localhost:5000";
 // Two zoom levels like FastStone
 const ZOOMED_SCALE = 2.25; // change to 2, 2.5, 3, etc.
 
+// Country list (from: https://gist.github.com/kalinchernev/486393efcca01623b18d)
+const COUNTRIES = [
+  "Afghanistan","Albania","Algeria","American Samoa","Andorra","Angola","Anguilla","Antarctica","Antigua and Barbuda",
+  "Argentina","Armenia","Aruba","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus",
+  "Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Bouvet Island","Brazil",
+  "British Indian Ocean Territory","Brunei Darussalam","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada",
+  "Cape Verde","Cayman Islands","Central African Republic","Chad","Chile","China","Christmas Island","Cocos (Keeling) Islands",
+  "Colombia","Comoros","Congo","Congo, The Democratic Republic of The","Cook Islands","Costa Rica","Cote D'ivoire","Croatia",
+  "Cuba","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador",
+  "Equatorial Guinea","Eritrea","Estonia","Ethiopia","Falkland Islands (Malvinas)","Faroe Islands","Fiji","Finland","France",
+  "French Guiana","French Polynesia","French Southern Territories","Gabon","Gambia","Georgia","Germany","Ghana","Gibraltar",
+  "Greece","Greenland","Grenada","Guadeloupe","Guam","Guatemala","Guinea","Guinea-bissau","Guyana","Haiti",
+  "Heard Island and Mcdonald Islands","Holy See (Vatican City State)","Honduras","Hong Kong","Hungary","Iceland","India",
+  "Indonesia","Iran, Islamic Republic of","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya",
+  "Kiribati","Korea, Democratic People's Republic of","Korea, Republic of","Kuwait","Kyrgyzstan","Lao People's Democratic Republic",
+  "Latvia","Lebanon","Lesotho","Liberia","Libyan Arab Jamahiriya","Liechtenstein","Lithuania","Luxembourg","Macao","Macedonia, The Former Yugoslav Republic of",
+  "Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Martinique","Mauritania","Mauritius","Mayotte",
+  "Mexico","Micronesia, Federated States of","Moldova, Republic of","Monaco","Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar",
+  "Namibia","Nauru","Nepal","Netherlands","Netherlands Antilles","New Caledonia","New Zealand","Nicaragua","Niger","Nigeria",
+  "Niue","Norfolk Island","Northern Mariana Islands","Norway","Oman","Pakistan","Palau","Palestinian Territory, Occupied","Panama",
+  "Papua New Guinea","Paraguay","Peru","Philippines","Pitcairn","Poland","Portugal","Puerto Rico","Qatar","Reunion","Romania",
+  "Russian Federation","Rwanda","Saint Helena","Saint Kitts and Nevis","Saint Lucia","Saint Pierre and Miquelon",
+  "Saint Vincent and The Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles",
+  "Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Georgia and The South Sandwich Islands",
+  "Spain","Sri Lanka","Sudan","Suriname","Svalbard and Jan Mayen","Swaziland","Sweden","Switzerland","Syrian Arab Republic",
+  "Taiwan, Province of China","Tajikistan","Tanzania, United Republic of","Thailand","Timor-leste","Togo","Tokelau","Tonga",
+  "Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Turks and Caicos Islands","Tuvalu","Uganda","Ukraine","United Arab Emirates",
+  "United Kingdom","United States","United States Minor Outlying Islands","Uruguay","Uzbekistan","Vanuatu","Venezuela","Viet Nam",
+  "Virgin Islands, British","Virgin Islands, U.S.","Wallis and Futuna","Western Sahara","Yemen","Zambia","Zimbabwe"
+];
+
 const App = () => {
   const [referenceImage, setReferenceImage] = useState("");
   const [evaluatedImage, setEvaluatedImage] = useState("");
   const [ratings, setRatings] = useState({ realism: 0, quality: 0 });
 
+  // expanded demographics state
   const [demographics, setDemographics] = useState({
     age: "",
     gender: "",
     email: "",
+
+    selfDescription: "", // Regular person / Photographer / Imaging Expert
+    visionStatus: "", // No ordinary / No corrected / Yes
+    visionDetails: "", // only required when visionStatus === "Yes"
+    colorBlind: "", // Yes / No
+    countryOfOrigin: "",
+    displayType: "", // Laptop / External Monitor
+    lighting: "", // Dim / Normal indoor / Outdoor
   });
+
   const [demographicsSubmitted, setDemographicsSubmitted] = useState(false);
 
   const [ratedImages, setRatedImages] = useState(new Set());
@@ -71,11 +112,41 @@ const App = () => {
   };
 
   const submitDemographics = () => {
-    const { age, gender, email } = demographics;
-    if (!age || !gender || !email) {
-      alert("Please fill out all demographic fields.");
+    const {
+      age,
+      gender,
+      email,
+      selfDescription,
+      visionStatus,
+      visionDetails,
+      colorBlind,
+      countryOfOrigin,
+      displayType,
+      lighting,
+    } = demographics;
+
+    // required fields
+    if (
+      !age ||
+      !gender ||
+      !email ||
+      !selfDescription ||
+      !visionStatus ||
+      !colorBlind ||
+      !countryOfOrigin ||
+      !displayType ||
+      !lighting
+    ) {
+      alert("Please fill out all required demographic fields.");
       return;
     }
+
+    // conditional: vision details required if "Yes"
+    if (visionStatus === "Yes" && !visionDetails.trim()) {
+      alert("Please provide details about your vision degradation.");
+      return;
+    }
+
     setDemographicsSubmitted(true);
     fetchNextImage();
   };
@@ -94,7 +165,7 @@ const App = () => {
       const payload = {
         imageUrl: evaluatedImage,
         ratings,
-        demographics,
+        demographics, // includes new fields
       };
 
       await axios.post(`${API_BASE}/submit-rating`, payload);
@@ -118,68 +189,204 @@ const App = () => {
 
   // Show demographics form if not submitted
   if (!demographicsSubmitted) {
+    const isVisionYes = demographics.visionStatus === "Yes";
+    const inputStyle = { width: "100%", padding: "8px" };
+    const selectStyle = { width: "100%", padding: "8px" };
+
+    const Field = ({ label, children }) => (
+      <div style={{ marginBottom: 12, textAlign: "left" }}>
+        <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
+        {children}
+      </div>
+    );
+
     return (
       <div
         style={{
-          maxWidth: "500px",
-          margin: "50px auto",
-          padding: "20px",
+          maxWidth: 780,
+          margin: "30px auto",
+          padding: "18px",
           textAlign: "center",
         }}
       >
-        <h2>User Demographics</h2>
+        <h2 style={{ marginBottom: 12 }}>User Demographics</h2>
 
-        <div style={{ marginBottom: "15px" }}>
-          <label>Age: </label>
-          <input
-            type="number"
-            name="age"
-            value={demographics.age}
-            onChange={handleDemographicsChange}
-            style={{ width: "100%", padding: "8px" }}
-          />
+        {/* Two-column grid, collapses naturally on small screens */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <Field label="Age *">
+            <input
+              type="number"
+              name="age"
+              value={demographics.age}
+              onChange={handleDemographicsChange}
+              style={inputStyle}
+            />
+          </Field>
+
+          <Field label="Gender *">
+            <select
+              name="gender"
+              value={demographics.gender}
+              onChange={handleDemographicsChange}
+              style={selectStyle}
+            >
+              <option value="">Select</option>
+              <option value="Female">Female</option>
+              <option value="Male">Male</option>
+              <option value="Non-binary">Non-binary</option>
+              <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+          </Field>
+
+          <div style={{ gridColumn: "1 / -1" }}>
+            <Field label="Email *">
+              <input
+                type="email"
+                name="email"
+                value={demographics.email || ""}
+                onChange={handleDemographicsChange}
+                style={inputStyle}
+                placeholder="you@example.com"
+              />
+            </Field>
+          </div>
+
+          <div style={{ gridColumn: "1 / -1" }}>
+            <Field label="How would you describe yourself? *">
+              <select
+                name="selfDescription"
+                value={demographics.selfDescription}
+                onChange={handleDemographicsChange}
+                style={selectStyle}
+              >
+                <option value="">Select</option>
+                <option value="Regular person">Regular person</option>
+                <option value="Photographer / Imaging Expert">
+                  Photographer / Imaging Expert
+                </option>
+              </select>
+            </Field>
+          </div>
+
+          <div style={{ gridColumn: "1 / -1" }}>
+            <Field label="Is your vision degraded? *">
+              <select
+                name="visionStatus"
+                value={demographics.visionStatus}
+                onChange={(e) => {
+                  const { value } = e.target;
+                  setDemographics((prev) => ({
+                    ...prev,
+                    visionStatus: value,
+                    ...(value !== "Yes" ? { visionDetails: "" } : {}),
+                  }));
+                }}
+                style={selectStyle}
+              >
+                <option value="">Select</option>
+                <option value="No - Ordinary vision">No - Ordinary vision</option>
+                <option value="No because of correction with glasses/contact lenses/surgery">
+                  No because of correction with glasses/contact lenses/surgery
+                </option>
+                <option value="Yes">Yes, provide details</option>
+              </select>
+            </Field>
+          </div>
+
+          {isVisionYes && (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <Field label="Vision details *">
+                <textarea
+                  name="visionDetails"
+                  value={demographics.visionDetails}
+                  onChange={handleDemographicsChange}
+                  style={{ ...inputStyle, minHeight: 70 }}
+                  placeholder="Provide details about your vision."
+                />
+              </Field>
+            </div>
+          )}
+
+          <Field label="Color blindness? *">
+            <select
+              name="colorBlind"
+              value={demographics.colorBlind}
+              onChange={handleDemographicsChange}
+              style={selectStyle}
+            >
+              <option value="">Select</option>
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </Field>
+
+          <Field label="Country of origin *">
+            <select
+              name="countryOfOrigin"
+              value={demographics.countryOfOrigin}
+              onChange={handleDemographicsChange}
+              style={selectStyle}
+            >
+              <option value="">Select</option>
+              {COUNTRIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="What kind of display? *">
+            <select
+              name="displayType"
+              value={demographics.displayType}
+              onChange={handleDemographicsChange}
+              style={selectStyle}
+            >
+              <option value="">Select</option>
+              <option value="Laptop">Laptop</option>
+              <option value="External Monitor">External Monitor</option>
+            </select>
+          </Field>
+
+          <Field label="What kind of lighting? *">
+            <select
+              name="lighting"
+              value={demographics.lighting}
+              onChange={handleDemographicsChange}
+              style={selectStyle}
+            >
+              <option value="">Select</option>
+              <option value="Dim Light">Dim Light</option>
+              <option value="Normal Indoor Lighting">Normal Indoor Lighting</option>
+              <option value="Outdoor Lighting (not recommended)">
+                Outdoor Lighting (not recommended)
+              </option>
+            </select>
+          </Field>
         </div>
-        <div style={{ marginBottom: "15px" }}>
-          <label>Gender: </label>
-          <select
-            name="gender"
-            value={demographics.gender}
-            onChange={handleDemographicsChange}
-            style={{ width: "100%", padding: "8px" }}
+
+        <div style={{ marginTop: 14 }}>
+          <button
+            onClick={submitDemographics}
+            style={{
+              padding: "12px 20px",
+              fontSize: "16px",
+              cursor: "pointer",
+              backgroundColor: "#007BFF",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              width: "100%",
+              maxWidth: 280,
+            }}
           >
-            <option value="">Select</option>
-            <option value="Female">Female</option>
-            <option value="Male">Male</option>
-            <option value="Non-binary">Non-binary</option>
-            <option value="Prefer not to say">Prefer not to say</option>
-          </select>
+            Continue
+          </button>
+          <div style={{ marginTop: 10, fontSize: 12, color: "#555" }}>
+            * Required fields
+          </div>
         </div>
-        <div style={{ marginBottom: "15px" }}>
-          <label>Email: </label>
-          <input
-            type="email"
-            name="email"
-            value={demographics.email || ""}
-            onChange={handleDemographicsChange}
-            style={{ width: "100%", padding: "8px" }}
-            placeholder="you@example.com"
-          />
-        </div>
-
-        <button
-          onClick={submitDemographics}
-          style={{
-            padding: "12px 20px",
-            fontSize: "16px",
-            cursor: "pointer",
-            backgroundColor: "#007BFF",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-          }}
-        >
-          Continue
-        </button>
       </div>
     );
   }
@@ -197,7 +404,7 @@ const App = () => {
 
   return (
     <div style={{ textAlign: "center", padding: "8px 12px" }}>
-      {/* ✅ Compact progress row: label left, bar middle, count right */}
+      {/* Compact progress row: label left, bar middle, count right */}
       <div
         style={{
           display: "flex",
@@ -223,7 +430,7 @@ const App = () => {
       {/* Shared zoom/pan wrapper for BOTH images */}
       <TransformWrapper
         initialScale={1}
-        minScale={0.5} // ✅ allow smaller than 100%
+        minScale={0.5}
         maxScale={6}
         centerOnInit
         wheel={{ step: 0.15 }}
@@ -244,7 +451,7 @@ const App = () => {
 
           return (
             <>
-              {/* ✅ tighter controls row */}
+              {/* Controls */}
               <div
                 style={{
                   marginTop: 6,
@@ -350,7 +557,7 @@ const App = () => {
         }}
       </TransformWrapper>
 
-      {/* ✅ Centered instruction sentence (as requested) */}
+      {/* Centered instruction sentence */}
       <div
         style={{
           maxWidth: 1700,
@@ -363,7 +570,7 @@ const App = () => {
         How would you rate the quality and realism of the evaluated image?
       </div>
 
-      {/* ✅ One-line ratings bar: label left, ratings middle, submit right */}
+      {/* One-line ratings bar */}
       <div
         style={{
           maxWidth: 1700,
@@ -375,12 +582,10 @@ const App = () => {
           justifyContent: "space-between",
         }}
       >
-        {/* Left label */}
         <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
           Rate evaluated image (1–5)
         </div>
 
-        {/* Middle: Realism + Quality */}
         <div
           style={{
             display: "flex",
@@ -440,7 +645,6 @@ const App = () => {
           </div>
         </div>
 
-        {/* Right submit */}
         <button
           onClick={submitFinalRating}
           style={{
