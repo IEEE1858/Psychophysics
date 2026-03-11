@@ -8,6 +8,7 @@ import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 import './App.css'
 
 const EXPLORATION_RATIO = 0.35
+const NEXT_IMAGE_VALIDATION_MESSAGE = 'please move slider to the right to look at other more processed images before deciding.'
 const DEFAULT_VIEWPORT = {
   scale: 1,
   positionX: 0,
@@ -48,6 +49,14 @@ function buildMarks(imageState) {
 
 function getExplorationThreshold(maxLevel) {
   return Math.max(2, Math.ceil(maxLevel * EXPLORATION_RATIO))
+}
+
+function hasAdvanceDecision(imageState, maxLevel) {
+  return (
+    imageState.mostRealisticLevel != null
+    || imageState.highestQualityLevel != null
+    || imageState.currentLevel === maxLevel
+  )
 }
 
 function App() {
@@ -171,6 +180,20 @@ function App() {
   }
 
   function moveToImage(nextIndex) {
+    if (nextIndex > selectedImageIndex && currentImage) {
+      const threshold = getExplorationThreshold(maxLevel)
+      const exploredEnough = imageState.furthestVisitedLevel >= threshold || imageState.currentLevel === maxLevel
+      const madeDecision = hasAdvanceDecision(imageState, maxLevel)
+
+      if (!exploredEnough || !madeDecision) {
+        setMessage({
+          severity: 'error',
+          text: NEXT_IMAGE_VALIDATION_MESSAGE,
+        })
+        return
+      }
+    }
+
     setSelectedImageIndex(nextIndex)
     setMessage(null)
   }
@@ -186,7 +209,7 @@ function App() {
     if (!exploredEnough) {
       setMessage({
         severity: 'error',
-        text: 'Please move slider to the right to look at other images before deciding.',
+        text: NEXT_IMAGE_VALIDATION_MESSAGE,
       })
       return
     }

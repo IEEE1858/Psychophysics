@@ -1,6 +1,6 @@
 .app-shell {
   min-height: 100vh;
-  padding: 10px 12px;
+  padding: 10px 0;
 }
 
 .app-panel {
@@ -21,6 +21,7 @@
     linear-gradient(135deg, rgba(250, 240, 223, 0.94), rgba(236, 247, 255, 0.92));
   border: 1px solid rgba(67, 87, 133, 0.14);
   box-shadow: 0 24px 70px rgba(39, 50, 74, 0.12);
+  margin: 0 12px;
 }
 
 .eyebrow {
@@ -79,6 +80,7 @@
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 16px 40px rgba(34, 46, 68, 0.08);
+  margin: 0 12px;
 }
 
 .toolbar {
@@ -89,6 +91,7 @@
   background: rgba(255, 252, 247, 0.84);
   border: 1px solid rgba(70, 84, 118, 0.12);
   box-shadow: 0 18px 48px rgba(35, 47, 69, 0.08);
+  margin: 0 12px;
 }
 
 .toolbar-header {
@@ -162,8 +165,12 @@
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 8px;
-  padding: 8px;
-  border-radius: 18px;
+  width: 100vw;
+  max-width: 100vw;
+  min-height: calc(100vh - 210px);
+  justify-self: center;
+  padding: 8px 12px 12px;
+  border-radius: 0;
   background:
     linear-gradient(160deg, rgba(20, 30, 48, 0.94), rgba(34, 48, 78, 0.9)),
     linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
@@ -198,19 +205,21 @@
 
 .transform-content {
   width: 100%;
-  height: 100%;
-  min-height: 100%;
+  min-width: 100%;
+  height: auto;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .stage-image {
+  display: block;
   width: 100%;
   max-width: none;
-  max-height: calc(100vh - 210px);
+  height: auto;
+  max-height: none;
   border-radius: 16px;
-  object-fit: contain;
   box-shadow: 0 22px 54px rgba(0, 0, 0, 0.28);
 }
 
@@ -236,6 +245,20 @@
     border-radius: 14px;
   }
 
+  .hero-panel,
+  .status-panel,
+  .toolbar {
+    margin: 0;
+  }
+
+  .image-stage {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    min-height: calc(100vh - 230px);
+    border-radius: 14px;
+    padding: 8px;
+  }
+
   .image-stage-toolbar {
     flex-direction: column;
     align-items: flex-start;
@@ -255,6 +278,6 @@
   }
 
   .stage-image {
-    max-height: calc(100vh - 250px);
+    border-radius: 12px;
   }
 }
