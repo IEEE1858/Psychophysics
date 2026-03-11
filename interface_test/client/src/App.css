@@ -1,20 +1,20 @@
 .app-shell {
   min-height: 100vh;
-  padding: 24px;
+  padding: 10px 12px;
 }
 
 .app-panel {
-  min-height: calc(100vh - 48px);
+  min-height: calc(100vh - 20px);
   display: grid;
   grid-template-rows: auto auto 1fr;
-  gap: 20px;
+  gap: 10px;
 }
 
 .hero-panel {
   display: grid;
-  gap: 18px;
-  padding: 28px;
-  border-radius: 28px;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 20px;
   background:
     radial-gradient(circle at top left, rgba(255, 196, 109, 0.34), transparent 38%),
     radial-gradient(circle at top right, rgba(77, 151, 255, 0.28), transparent 32%),
@@ -24,8 +24,8 @@
 }
 
 .eyebrow {
-  margin: 0 0 8px;
-  font-size: 0.82rem;
+  margin: 0 0 4px;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -34,32 +34,33 @@
 
 .hero-panel h1 {
   margin: 0;
-  max-width: 14ch;
-  font-size: clamp(2.4rem, 5vw, 4.4rem);
-  line-height: 0.95;
+  max-width: 18ch;
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  line-height: 1;
 }
 
 .hero-copy {
-  max-width: 62ch;
-  margin: 12px 0 0;
+  max-width: 78ch;
+  margin: 4px 0 0;
+  font-size: 0.94rem;
   color: #455168;
 }
 
 .collection-switcher {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
 }
 
 .collection-tab {
-  min-width: 180px;
+  min-width: 150px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 18px;
+  padding: 10px 14px;
   border: 1px solid rgba(66, 81, 120, 0.15);
-  border-radius: 18px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.68);
   color: #263144;
 }
@@ -82,9 +83,9 @@
 
 .toolbar {
   display: grid;
-  gap: 16px;
-  padding: 22px;
-  border-radius: 26px;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 18px;
   background: rgba(255, 252, 247, 0.84);
   border: 1px solid rgba(70, 84, 118, 0.12);
   box-shadow: 0 18px 48px rgba(35, 47, 69, 0.08);
@@ -94,47 +95,47 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
 }
 
 .toolbar-header h2 {
-  margin: 4px 0 0;
-  font-size: 1.55rem;
+  margin: 2px 0 0;
+  font-size: 1.2rem;
 }
 
 .image-index {
   margin: 0;
   color: #6a7280;
-  font-size: 0.92rem;
+  font-size: 0.82rem;
 }
 
 .selection-summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   justify-content: flex-end;
 }
 
 .selection-summary span {
-  padding: 10px 14px;
+  padding: 7px 11px;
   border-radius: 999px;
   background: rgba(239, 241, 245, 0.92);
   color: #495267;
-  font-size: 0.94rem;
+  font-size: 0.82rem;
 }
 
 .toolbar-controls {
   display: grid;
   grid-template-columns: auto minmax(280px, 1.5fr) auto auto auto;
-  gap: 14px;
+  gap: 10px;
   align-items: center;
 }
 
 .slider-block {
   display: grid;
-  gap: 10px;
-  padding: 14px 18px;
-  border-radius: 20px;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid rgba(69, 85, 122, 0.08);
 }
@@ -160,9 +161,9 @@
   min-height: 0;
   display: grid;
   grid-template-rows: auto 1fr;
-  gap: 16px;
-  padding: 24px;
-  border-radius: 28px;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 18px;
   background:
     linear-gradient(160deg, rgba(20, 30, 48, 0.94), rgba(34, 48, 78, 0.9)),
     linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
@@ -174,18 +175,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
+  padding: 4px 6px 0;
   color: rgba(239, 243, 252, 0.9);
 }
 
 .image-stage-hint {
-  font-size: 0.92rem;
+  font-size: 0.82rem;
 }
 
 .image-stage-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .transform-wrapper {
@@ -196,6 +198,7 @@
 
 .transform-content {
   width: 100%;
+  height: 100%;
   min-height: 100%;
   display: flex;
   align-items: center;
@@ -203,8 +206,9 @@
 }
 
 .stage-image {
-  max-width: 100%;
-  max-height: calc(100vh - 360px);
+  width: 100%;
+  max-width: none;
+  max-height: calc(100vh - 210px);
   border-radius: 16px;
   object-fit: contain;
   box-shadow: 0 22px 54px rgba(0, 0, 0, 0.28);
@@ -222,14 +226,14 @@
 
 @media (max-width: 760px) {
   .app-shell {
-    padding: 16px;
+    padding: 8px;
   }
 
   .hero-panel,
   .toolbar,
   .image-stage {
-    padding: 18px;
-    border-radius: 20px;
+    padding: 12px;
+    border-radius: 14px;
   }
 
   .image-stage-toolbar {
@@ -251,6 +255,6 @@
   }
 
   .stage-image {
-    max-height: calc(100vh - 420px);
+    max-height: calc(100vh - 250px);
   }
 }
