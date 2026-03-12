@@ -1,6 +1,6 @@
 # Interface Test
 
-This app serves full-resolution Sharpness and HDR image sets from the psychophysics-images workspace folder and provides a review UI for stepping through processing levels.
+This app lists full-resolution Sharpness and HDR image sets from the `psychophysics-images` S3 bucket and provides a review UI for stepping through processing levels.
 
 ## Run
 
@@ -13,6 +13,14 @@ The root `dev` command starts:
 
 - the Express API on `http://localhost:5001`
 - the Vite client on `http://localhost:5173`
+
+## Data Source
+
+- The backend uses Amazon S3 `ListObjects` requests against bucket `psychophysics-images`.
+- Sharpness prefix: `images/sharpness_final/full_res_jpg/`
+- HDR prefix: `images/HDR_final/full_res_jpg/`
+- Returned image URLs point directly at `https://psychophysics-images.s3.us-east-1.amazonaws.com/...`
+- The backend requires AWS credentials with permission to list that bucket.
 
 ## Notes
 
