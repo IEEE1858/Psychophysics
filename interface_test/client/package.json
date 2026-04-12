@@ -13,7 +13,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.9",
-    "axios": "^1.13.6",
+    "axios": "^1.15.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-zoom-pan-pinch": "^3.7.0"
