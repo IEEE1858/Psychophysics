@@ -1,4 +1,4 @@
-const AWS = require("aws-sdk");
+const { S3Client, ListObjectsV2Command } = require("@aws-sdk/client-s3");
 const cors = require("cors");
 const express = require("express");
 
@@ -9,7 +9,7 @@ const S3_REGION = "us-east-1";
 const S3_BUCKET = "psychophysics-images";
 const S3_PUBLIC_BASE_URL = "https://psychophysics-images.s3.us-east-1.amazonaws.com";
 
-const s3 = new AWS.S3({
+const s3 = new S3Client({
   region: S3_REGION,
 });
 
@@ -104,16 +104,16 @@ function parseHdrFile(fileName) {
 
 async function listS3ObjectKeys(prefix) {
   const keys = [];
-  let marker;
+  let continuationToken;
 
   do {
-    const request = {
+    const command = new ListObjectsV2Command({
       Bucket: S3_BUCKET,
       Prefix: prefix,
-      Marker: marker,
-    };
+      ContinuationToken: continuationToken,
+    });
 
-    const response = await s3.listObjects(request).promise();
+    const response = await s3.send(command);
 
     for (const item of response.Contents || []) {
       if (item.Key && item.Key.toLowerCase().endsWith(".jpg")) {
@@ -121,9 +121,8 @@ async function listS3ObjectKeys(prefix) {
       }
     }
 
-    const lastKey = response.Contents?.at(-1)?.Key;
-    marker = response.IsTruncated ? response.NextMarker || lastKey : undefined;
-  } while (marker);
+    continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+  } while (continuationToken);
 
   return keys;
 }

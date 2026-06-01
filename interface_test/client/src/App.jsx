@@ -9,7 +9,6 @@ import './App.css'
 
 const EXPLORATION_RATIO = 0.35
 const NEXT_IMAGE_VALIDATION_MESSAGE = 'please move slider to the right to look at other more processed images before deciding.'
-const PRELOAD_BATCH_SIZE = 6
 const DEFAULT_VIEWPORT = {
   scale: 1,
   positionX: 0,
@@ -76,7 +75,6 @@ function App() {
   const [message, setMessage] = useState(null)
   const [viewportTransform, setViewportTransform] = useState(DEFAULT_VIEWPORT)
   const [showLoadingModal, setShowLoadingModal] = useState(false)
-  const [loadingProgress, setLoadingProgress] = useState({ loaded: 0, total: 0 })
   const loadedImageUrlsRef = useRef(new Set())
 
   useEffect(() => {
@@ -206,89 +204,32 @@ function App() {
       return undefined
     }
 
-    const currentUrls = collectImageUrls(currentImage)
-    const previousImage = selectedCollection.images[selectedImageIndex - 1]
     const nextImage = selectedCollection.images[selectedImageIndex + 1]
-    const priorityUrls = [
-      ...currentUrls,
-      ...collectImageUrls(previousImage),
-      ...collectImageUrls(nextImage),
-    ]
 
-    priorityUrls.forEach((url) => {
+    // Preload current image variants first, then next image
+    collectImageUrls(currentImage).forEach((url) => {
       void preloadUrl(url)
     })
 
-    const remainingUrls = selectedCollection.images
-      .flatMap((image) => collectImageUrls(image))
-      .filter((url) => !priorityUrls.includes(url))
-
-    let cancelled = false
-    let nextIndex = 0
-    let timeoutId
-    let idleId
-
-    const scheduleBatch = () => {
-      if (cancelled || nextIndex >= remainingUrls.length) {
-        return
-      }
-
-      const batch = remainingUrls.slice(nextIndex, nextIndex + PRELOAD_BATCH_SIZE)
-      nextIndex += PRELOAD_BATCH_SIZE
-
-      batch.forEach((url) => {
-        void preloadUrl(url)
-      })
-
-      if (typeof window.requestIdleCallback === 'function') {
-        idleId = window.requestIdleCallback(scheduleBatch)
-      } else {
-        timeoutId = window.setTimeout(scheduleBatch, 120)
-      }
-    }
-
-    if (typeof window.requestIdleCallback === 'function') {
-      idleId = window.requestIdleCallback(scheduleBatch)
-    } else {
-      timeoutId = window.setTimeout(scheduleBatch, 120)
-    }
-
-    return () => {
-      cancelled = true
-
-      if (typeof window.cancelIdleCallback === 'function' && idleId != null) {
-        window.cancelIdleCallback(idleId)
-      }
-
-      if (timeoutId != null) {
-        window.clearTimeout(timeoutId)
-      }
-    }
+    collectImageUrls(nextImage).forEach((url) => {
+      void preloadUrl(url)
+    })
   }, [currentImage, selectedCollection, selectedImageIndex])
 
   useEffect(() => {
-    if (!currentImage) {
+    const url = currentVariant?.url
+
+    if (!url) {
       setShowLoadingModal(false)
       return undefined
     }
 
-    const variantUrls = collectImageUrls(currentImage)
-    const total = variantUrls.length
-
-    if (total === 0) {
-      setShowLoadingModal(false)
-      return undefined
-    }
-
-    let lastLoaded = variantUrls.filter((url) => loadedImageUrlsRef.current.has(url)).length
-
-    if (lastLoaded >= total) {
+    if (loadedImageUrlsRef.current.has(url)) {
       setShowLoadingModal(false)
       return undefined
     }
 
     setShowLoadingModal(true)
-    setLoadingProgress({ loaded: lastLoaded, total })
 
     let dismissed = false
     let rafId
@@ -298,15 +239,7 @@ function App() {
         return
       }
 
-      const loaded = variantUrls.filter((url) => loadedImageUrlsRef.current.has(url)).length
-
-      if (loaded !== lastLoaded) {
-        lastLoaded = loaded
-        setLoadingProgress({ loaded, total })
-      }
-
-      if (loaded >= total) {
-        setLoadingProgress({ loaded: total, total })
+      if (loadedImageUrlsRef.current.has(url)) {
         setTimeout(() => {
           if (!dismissed) {
             setShowLoadingModal(false)
@@ -326,7 +259,7 @@ function App() {
         cancelAnimationFrame(rafId)
       }
     }
-  }, [currentImage, imageKey])
+  }, [currentVariant?.url, imageKey])
 
   function updateSliderLevel(level) {
     if (!imageKey) {
@@ -533,23 +466,11 @@ function App() {
         {!loading && !loadError && currentImage ? (
           <section className="image-stage">
             {showLoadingModal ? (
-              <div className="image-loading-overlay" role="dialog" aria-modal="true" aria-label="Caching image variants">
+              <div className="image-loading-overlay" role="dialog" aria-modal="true" aria-label="Loading image">
                 <div className="loading-modal">
-                  <h2 className="loading-modal-title">Caching image variants</h2>
-                  <p className="loading-modal-image">{currentImage?.label}</p>
-                  <div className="loading-progress-bar">
-                    <div
-                      className="loading-progress-fill"
-                      style={{
-                        width: loadingProgress.total > 0
-                          ? `${Math.round((loadingProgress.loaded / loadingProgress.total) * 100)}%`
-                          : '0%',
-                      }}
-                    />
-                  </div>
-                  <p className="loading-progress-text">
-                    {loadingProgress.loaded} of {loadingProgress.total} variants loaded
-                  </p>
+                  <h2 className="loading-modal-title">Loading image</h2>
+                  <p className="loading-modal-image">{currentImage?.label} — {currentVariant?.shortLabel}</p>
+                  <CircularProgress size={36} />
                 </div>
               </div>
             ) : null}
