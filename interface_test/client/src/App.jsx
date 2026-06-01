@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import axios from 'axios'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
@@ -9,6 +9,7 @@ import './App.css'
 
 const EXPLORATION_RATIO = 0.35
 const NEXT_IMAGE_VALIDATION_MESSAGE = 'please move slider to the right to look at other more processed images before deciding.'
+const PRELOAD_BATCH_SIZE = 6
 const DEFAULT_VIEWPORT = {
   scale: 1,
   positionX: 0,
@@ -59,8 +60,13 @@ function hasAdvanceDecision(imageState, maxLevel) {
   )
 }
 
+function collectImageUrls(image) {
+  return image?.variants?.map((variant) => variant.url).filter(Boolean) ?? []
+}
+
 function App() {
   const transformRef = useRef(null)
+  const preloadPromisesRef = useRef(new Map())
   const [library, setLibrary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -69,6 +75,9 @@ function App() {
   const [imageStates, setImageStates] = useState({})
   const [message, setMessage] = useState(null)
   const [viewportTransform, setViewportTransform] = useState(DEFAULT_VIEWPORT)
+  const [showLoadingModal, setShowLoadingModal] = useState(false)
+  const [loadingProgress, setLoadingProgress] = useState({ loaded: 0, total: 0 })
+  const loadedImageUrlsRef = useRef(new Set())
 
   useEffect(() => {
     async function loadLibrary() {
@@ -115,6 +124,15 @@ function App() {
     })
   }, [currentImage, imageKey])
 
+  const handleArrowSliderStep = useEffectEvent((direction) => {
+    if (direction < 0) {
+      updateSliderLevel(Math.max(0, imageState.currentLevel - 1))
+      return
+    }
+
+    updateSliderLevel(Math.min(maxLevel, imageState.currentLevel + 1))
+  })
+
   useEffect(() => {
     function handleKeyDown(event) {
       if (!currentImage || event.altKey || event.ctrlKey || event.metaKey) {
@@ -128,18 +146,18 @@ function App() {
 
       if (event.key === 'ArrowLeft') {
         event.preventDefault()
-        updateSliderLevel(Math.max(0, imageState.currentLevel - 1))
+        handleArrowSliderStep(-1)
       }
 
       if (event.key === 'ArrowRight') {
         event.preventDefault()
-        updateSliderLevel(Math.min(maxLevel, imageState.currentLevel + 1))
+        handleArrowSliderStep(1)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [currentImage, imageState.currentLevel, maxLevel])
+  }, [currentImage])
 
   useEffect(() => {
     if (!currentVariant?.url || !transformRef.current) {
@@ -153,6 +171,162 @@ function App() {
       0,
     )
   }, [currentVariant?.url, viewportTransform.positionX, viewportTransform.positionY, viewportTransform.scale])
+
+  useEffect(() => {
+    function preloadUrl(url) {
+      if (!url) {
+        return Promise.resolve()
+      }
+
+      const existingPromise = preloadPromisesRef.current.get(url)
+      if (existingPromise) {
+        return existingPromise
+      }
+
+      const preloadPromise = new Promise((resolve) => {
+        const img = new Image()
+        img.decoding = 'async'
+        img.loading = 'eager'
+        img.onload = () => {
+          loadedImageUrlsRef.current.add(url)
+          resolve()
+        }
+        img.onerror = () => {
+          loadedImageUrlsRef.current.add(url)
+          resolve()
+        }
+        img.src = url
+      })
+
+      preloadPromisesRef.current.set(url, preloadPromise)
+      return preloadPromise
+    }
+
+    if (!currentImage || !selectedCollection) {
+      return undefined
+    }
+
+    const currentUrls = collectImageUrls(currentImage)
+    const previousImage = selectedCollection.images[selectedImageIndex - 1]
+    const nextImage = selectedCollection.images[selectedImageIndex + 1]
+    const priorityUrls = [
+      ...currentUrls,
+      ...collectImageUrls(previousImage),
+      ...collectImageUrls(nextImage),
+    ]
+
+    priorityUrls.forEach((url) => {
+      void preloadUrl(url)
+    })
+
+    const remainingUrls = selectedCollection.images
+      .flatMap((image) => collectImageUrls(image))
+      .filter((url) => !priorityUrls.includes(url))
+
+    let cancelled = false
+    let nextIndex = 0
+    let timeoutId
+    let idleId
+
+    const scheduleBatch = () => {
+      if (cancelled || nextIndex >= remainingUrls.length) {
+        return
+      }
+
+      const batch = remainingUrls.slice(nextIndex, nextIndex + PRELOAD_BATCH_SIZE)
+      nextIndex += PRELOAD_BATCH_SIZE
+
+      batch.forEach((url) => {
+        void preloadUrl(url)
+      })
+
+      if (typeof window.requestIdleCallback === 'function') {
+        idleId = window.requestIdleCallback(scheduleBatch)
+      } else {
+        timeoutId = window.setTimeout(scheduleBatch, 120)
+      }
+    }
+
+    if (typeof window.requestIdleCallback === 'function') {
+      idleId = window.requestIdleCallback(scheduleBatch)
+    } else {
+      timeoutId = window.setTimeout(scheduleBatch, 120)
+    }
+
+    return () => {
+      cancelled = true
+
+      if (typeof window.cancelIdleCallback === 'function' && idleId != null) {
+        window.cancelIdleCallback(idleId)
+      }
+
+      if (timeoutId != null) {
+        window.clearTimeout(timeoutId)
+      }
+    }
+  }, [currentImage, selectedCollection, selectedImageIndex])
+
+  useEffect(() => {
+    if (!currentImage) {
+      setShowLoadingModal(false)
+      return undefined
+    }
+
+    const variantUrls = collectImageUrls(currentImage)
+    const total = variantUrls.length
+
+    if (total === 0) {
+      setShowLoadingModal(false)
+      return undefined
+    }
+
+    let lastLoaded = variantUrls.filter((url) => loadedImageUrlsRef.current.has(url)).length
+
+    if (lastLoaded >= total) {
+      setShowLoadingModal(false)
+      return undefined
+    }
+
+    setShowLoadingModal(true)
+    setLoadingProgress({ loaded: lastLoaded, total })
+
+    let dismissed = false
+    let rafId
+
+    function tick() {
+      if (dismissed) {
+        return
+      }
+
+      const loaded = variantUrls.filter((url) => loadedImageUrlsRef.current.has(url)).length
+
+      if (loaded !== lastLoaded) {
+        lastLoaded = loaded
+        setLoadingProgress({ loaded, total })
+      }
+
+      if (loaded >= total) {
+        setLoadingProgress({ loaded: total, total })
+        setTimeout(() => {
+          if (!dismissed) {
+            setShowLoadingModal(false)
+          }
+        }, 200)
+        return
+      }
+
+      rafId = requestAnimationFrame(tick)
+    }
+
+    rafId = requestAnimationFrame(tick)
+
+    return () => {
+      dismissed = true
+      if (rafId != null) {
+        cancelAnimationFrame(rafId)
+      }
+    }
+  }, [currentImage, imageKey])
 
   function updateSliderLevel(level) {
     if (!imageKey) {
@@ -240,28 +414,30 @@ function App() {
     <main className="app-shell">
       <section className="app-panel">
         <header className="hero-panel">
-          <div>
-            <p className="eyebrow">Psychophysics Interface Test</p>
-            <h1>Explore processing strength and record the best-looking level.</h1>
-            <p className="hero-copy">
-              Browse full-resolution Sharpness and HDR image sets, move through processing levels,
-              and mark the most realistic and highest quality version for each image.
-            </p>
+          <div className="hero-top-row">
+            <div className="hero-text">
+              <p className="eyebrow">IEEE 1858</p>
+              <h1>Image Rank</h1>
+            </div>
+
+            <div className="collection-switcher" role="tablist" aria-label="Image collections">
+              {collections.map((collection) => (
+                <button
+                  key={collection.id}
+                  type="button"
+                  className={collection.id === selectedCollection?.id ? 'collection-tab active' : 'collection-tab'}
+                  onClick={() => switchCollection(collection.id)}
+                >
+                  <span>{collection.label}</span>
+                  <strong>{collection.imageCount}</strong>
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="collection-switcher" role="tablist" aria-label="Image collections">
-            {collections.map((collection) => (
-              <button
-                key={collection.id}
-                type="button"
-                className={collection.id === selectedCollection?.id ? 'collection-tab active' : 'collection-tab'}
-                onClick={() => switchCollection(collection.id)}
-              >
-                <span>{collection.label}</span>
-                <strong>{collection.imageCount}</strong>
-              </button>
-            ))}
-          </div>
+          <p className="hero-copy">
+            Move through processing levels, mark the most realistic and highest quality version.
+          </p>
         </header>
 
         {loading ? (
@@ -274,8 +450,7 @@ function App() {
         {loadError ? <Alert severity="error">{loadError}</Alert> : null}
 
         {!loading && !loadError && currentImage ? (
-          <>
-            <section className="toolbar">
+          <section className="toolbar">
               <div className="toolbar-header">
                 <div>
                   <p className="image-index">
@@ -332,6 +507,7 @@ function App() {
                   </div>
                 </div>
 
+              <div className="selection-buttons">
                 <Button variant="contained" onClick={() => setSelection('mostRealisticLevel')}>
                   Set Most Realistic Image
                 </Button>
@@ -339,6 +515,7 @@ function App() {
                 <Button variant="contained" color="secondary" onClick={() => setSelection('highestQualityLevel')}>
                   Set Highest Quality Image
                 </Button>
+              </div>
 
                 {canGoForward ? (
                   <Button variant="outlined" onClick={() => moveToImage(selectedImageIndex + 1)}>
@@ -350,9 +527,33 @@ function App() {
               </div>
 
               {message ? <Alert severity={message.severity}>{message.text}</Alert> : null}
-            </section>
+          </section>
+        ) : null}
 
-            <section className="image-stage">
+        {!loading && !loadError && currentImage ? (
+          <section className="image-stage">
+            {showLoadingModal ? (
+              <div className="image-loading-overlay" role="dialog" aria-modal="true" aria-label="Caching image variants">
+                <div className="loading-modal">
+                  <h2 className="loading-modal-title">Caching image variants</h2>
+                  <p className="loading-modal-image">{currentImage?.label}</p>
+                  <div className="loading-progress-bar">
+                    <div
+                      className="loading-progress-fill"
+                      style={{
+                        width: loadingProgress.total > 0
+                          ? `${Math.round((loadingProgress.loaded / loadingProgress.total) * 100)}%`
+                          : '0%',
+                      }}
+                    />
+                  </div>
+                  <p className="loading-progress-text">
+                    {loadingProgress.loaded} of {loadingProgress.total} variants loaded
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
               <TransformWrapper
                 ref={transformRef}
                 initialScale={DEFAULT_VIEWPORT.scale}
@@ -416,8 +617,7 @@ function App() {
                   </>
                 )}
               </TransformWrapper>
-            </section>
-          </>
+          </section>
         ) : null}
       </section>
     </main>
