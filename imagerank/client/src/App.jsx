@@ -272,6 +272,18 @@ function App() {
   }, 0)
   const allImagesGraded = totalImageCount > 0 && gradedImageCount === totalImageCount
 
+  // Every image this participant has ranked across all sessions — prior
+  // rankings restored at load plus anything graded since — not just the current
+  // playlist. Shown on the completion screen.
+  const totalRankedCount = useMemo(
+    () =>
+      Object.values(imageStates).reduce((sum, state) => {
+        const resolved = ensureImageState(state)
+        return sum + (resolved.mostRealisticLevel != null || resolved.highestQualityLevel != null ? 1 : 0)
+      }, 0),
+    [imageStates],
+  )
+
   useEffect(() => {
     if (!currentImage || !imageKey) {
       return
@@ -730,11 +742,19 @@ function App() {
           <p className="eyebrow">Study complete</p>
           <h1 className="completion-title">Thank you!</h1>
           <p className="completion-copy">
-            {totalImageCount > 0
-              ? `Your responses for all ${totalImageCount} ${totalImageCount === 1 ? 'image' : 'images'} have been recorded. `
+            {totalRankedCount > 0
+              ? `Your responses for all ${totalRankedCount} ${totalRankedCount === 1 ? 'image' : 'images'} you have ranked have been recorded. `
               : 'Your responses have been recorded. '}
             We appreciate the time you took to take part in this study.
           </p>
+
+          {totalRankedCount > 0 ? (
+            <div className="completion-review-block">
+              <Button variant="outlined" onClick={() => navigate('/rankings')}>
+                Review your ranked images
+              </Button>
+            </div>
+          ) : null}
 
           {noMoreImages ? (
             <p className="completion-copy completion-muted">
