@@ -57,19 +57,49 @@ function HomePage() {
     <main className="page-shell">
       <section className="page-panel">
         <header className="home-hero">
-          <p className="eyebrow">IEEE 1858 · Psychophysics Study</p>
-          <h1>Image Rank</h1>
-          <p className="home-lead">
-            This study explores how <strong>sharpening</strong> and <strong>HDR</strong> image
-            processing change the way a photo is perceived. You will review the same image rendered
-            at several different levels of processing and choose the version that looks the{' '}
-            <strong>highest quality</strong> and the version that looks the{' '}
-            <strong>most realistic</strong>.
-          </p>
-          <p className="home-lead">
-            These two choices need not be the same — the most realistic image is not always the one
-            that looks the most polished, and that tension is exactly what we are measuring.
-          </p>
+          <div className="home-hero-text">
+            <p className="eyebrow">IEEE 1858 · Psychophysics Study</p>
+            <h1>Image Rank</h1>
+            <p className="home-lead">
+              This study explores how <strong>sharpening</strong> and <strong>HDR</strong> image
+              processing change the way a photo is perceived. You will review the same image
+              rendered at several different levels of processing and choose the version that looks
+              the <strong>highest quality</strong> and the version that looks the{' '}
+              <strong>most realistic</strong>.
+            </p>
+            <p className="home-lead">
+              These two choices need not be the same — the most realistic image is not always the
+              one that looks the most polished, and that tension is exactly what we are measuring.
+            </p>
+          </div>
+
+          <div className="home-hero-cta">
+            {isMobile ? (
+              <Alert severity="info" className="mobile-gate">
+                <strong>Please switch to a desktop or laptop computer.</strong>
+                <span>
+                  Accurate viewing requires a larger screen in indoor lighting conditions. Open this
+                  page (<code>imagerank.imatest.com</code>) on your desktop or laptop to take part in
+                  the study.
+                </span>
+              </Alert>
+            ) : (
+              <div className="cta-block">
+                <p className="cta-note">
+                  For consistent results, please take the study on a desktop or laptop computer in
+                  indoor lighting conditions.
+                </p>
+                <Button
+                  variant="contained"
+                  size="large"
+                  className="cta-button"
+                  onClick={() => navigate(hasSession() ? '/study' : '/demographics')}
+                >
+                  {hasSession() ? 'Resume the Study' : 'Start the Study'}
+                </Button>
+              </div>
+            )}
+          </div>
         </header>
 
         <section className="examples">
@@ -107,32 +137,37 @@ function HomePage() {
           ) : null}
         </section>
 
-        <section className="get-started">
-          {isMobile ? (
-            <Alert severity="info" className="mobile-gate">
-              <strong>Please switch to a desktop or laptop computer.</strong>
-              <span>
-                Accurate viewing requires a larger screen in indoor lighting conditions. Open this
-                page (<code>imagerank.imatest.com</code>) on your desktop or laptop to take part in
-                the study.
-              </span>
-            </Alert>
-          ) : (
-            <div className="cta-block">
-              <p className="cta-note">
-                For consistent results, please take the study on a desktop or laptop computer in
-                indoor lighting conditions.
-              </p>
-              <Button
-                variant="contained"
-                size="large"
-                className="cta-button"
-                onClick={() => navigate(hasSession() ? '/study' : '/demographics')}
-              >
-                {hasSession() ? 'Resume the Study' : 'Start the Study'}
-              </Button>
-            </div>
-          )}
+        <section className="about-study">
+          <h2 className="section-title">Who is conducting this study?</h2>
+          <p className="about-body">
+            This study is run by the{' '}
+            <a
+              className="about-link"
+              href="https://sagroups.ieee.org/1858/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              IEEE 1858 Camera Perceptual Image Quality
+            </a>{' '}
+            working group — a group of imaging engineers and researchers who develop open
+            standards for measuring how good a camera&apos;s photos really look to people.
+          </p>
+          <p className="about-body">
+            Phone and camera quality has long been described with numbers like megapixels, but
+            those numbers don&apos;t always match what our eyes actually notice. Since publishing
+            its first standard in 2016 (with updated versions in 2023 and another in development),
+            the group has worked to measure image quality the way real viewers perceive it, so that
+            cameras from different makers can be compared fairly. Your choices in this study help
+            connect those measurements to genuine human perception.
+          </p>
+          <a
+            className="preview-link"
+            href="https://sagroups.ieee.org/1858/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Learn more about IEEE 1858 →
+          </a>
         </section>
       </section>
     </main>
