@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS participants (
   country_of_origin  TEXT,
   display_type       TEXT,
   lighting           TEXT,
+  time_budget_minutes INTEGER,                          -- how long the participant said they could spend
   user_agent         TEXT,
   created_at         TEXT NOT NULL DEFAULT (datetime('now')),
   completed_at       TEXT                              -- NULL until the study is finished (partial otherwise)

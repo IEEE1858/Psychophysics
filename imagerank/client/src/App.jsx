@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Alert from '@mui/material/Alert'
@@ -7,8 +7,18 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Slider from '@mui/material/Slider'
 import { useTheme } from '@mui/material/styles'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
-import { getParticipantId, getStudyPosition, setStudyPosition } from './lib/session'
+import {
+  getParticipantId,
+  getStoredDemographics,
+  getStudyPlaylist,
+  getStudyPosition,
+  setStudyPlaylist,
+  setStudyPosition,
+} from './lib/session'
+import { buildPlaylist, DEFAULT_AVG_GRADING_MS } from './lib/playlist'
 import './App.css'
+
+const DEFAULT_TIME_BUDGET_MINUTES = 30
 
 const EXPLORATION_RATIO = 0.35
 const NEXT_IMAGE_VALIDATION_MESSAGE = 'please move slider to the right to look at other more processed images before deciding.'
@@ -63,14 +73,21 @@ function App() {
   const [library, setLibrary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
-  const [selectedCollectionId, setSelectedCollectionId] = useState('')
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  // The participant's assigned playlist ({ collectionId, imageId }[]) and their
+  // current position within it. The playlist is sized to the time budget they
+  // reported and excludes images they have already ranked (issue #19).
+  const [playlist, setPlaylist] = useState([])
+  const [position, setPosition] = useState(0)
   const [imageStates, setImageStates] = useState({})
   const [message, setMessage] = useState(null)
   const [toastClosing, setToastClosing] = useState(false)
   const [viewportTransform, setViewportTransform] = useState(DEFAULT_VIEWPORT)
   const [showLoadingModal, setShowLoadingModal] = useState(false)
   const [isFinished, setIsFinished] = useState(false)
+  // "I have more time" controls on the completion screen.
+  const [moreMinutes, setMoreMinutes] = useState(10)
+  const [addingMore, setAddingMore] = useState(false)
+  const [noMoreImages, setNoMoreImages] = useState(false)
   const loadedImageUrlsRef = useRef(new Set())
   const participantIdRef = useRef(null)
   const gradingStartRef = useRef(0)
@@ -92,40 +109,84 @@ function App() {
 
     async function load() {
       try {
-        const [libraryResponse, participantResponse] = await Promise.all([
+        const [libraryResponse, participantResponse, statsResponse] = await Promise.all([
           axios.get('/api/library'),
           axios.get(`/api/participants/${participantId}`).catch(() => null),
+          axios.get('/api/stats/avg-grading-ms').catch(() => null),
         ])
 
         const libraryData = libraryResponse.data
         setLibrary(libraryData)
+        const collectionsData = libraryData.collections ?? []
 
         // Restore prior rankings so markers, the exploration gate, and the
-        // completion check all reflect what the participant already did.
+        // completion check all reflect what the participant already did. Track
+        // which images already carry a decision so we never assign them again.
         const rankings = participantResponse?.data?.rankings ?? []
-        if (rankings.length > 0) {
-          const restored = {}
-          for (const ranking of rankings) {
-            restored[getImageKey(ranking.collection_id, ranking.image_id)] = ensureImageState({
-              currentLevel: 0,
-              furthestVisitedLevel: ranking.furthest_visited_level ?? 0,
-              mostRealisticLevel: ranking.most_realistic_level,
-              highestQualityLevel: ranking.highest_quality_level,
-            })
+        const restored = {}
+        const rankedKeys = new Set()
+        for (const ranking of rankings) {
+          const key = getImageKey(ranking.collection_id, ranking.image_id)
+          restored[key] = ensureImageState({
+            currentLevel: 0,
+            furthestVisitedLevel: ranking.furthest_visited_level ?? 0,
+            mostRealisticLevel: ranking.most_realistic_level,
+            highestQualityLevel: ranking.highest_quality_level,
+          })
+          if (ranking.most_realistic_level != null || ranking.highest_quality_level != null) {
+            rankedKeys.add(key)
           }
+        }
+        if (rankings.length > 0) {
           setImageStates(restored)
         }
 
-        // Restore the saved navigation position, falling back to the start.
-        const collectionsData = libraryData.collections ?? []
-        const savedPosition = getStudyPosition()
-        const savedCollection = collectionsData.find((collection) => collection.id === savedPosition?.collectionId)
-        if (savedCollection) {
-          const maxIndex = savedCollection.images.length - 1
-          setSelectedCollectionId(savedCollection.id)
-          setSelectedImageIndex(Math.min(Math.max(savedPosition.imageIndex ?? 0, 0), maxIndex))
-        } else {
-          setSelectedCollectionId(collectionsData[0]?.id ?? '')
+        // The set of image keys that actually exist in the current library, so a
+        // stale stored playlist (an image removed from S3) is silently dropped.
+        const validKeys = new Set()
+        for (const collection of collectionsData) {
+          for (const image of collection.images) {
+            validKeys.add(getImageKey(collection.id, image.id))
+          }
+        }
+
+        // Resume an existing playlist, or build one sized to the participant's
+        // time budget — interleaving collections and skipping ranked images.
+        let playlistData = (getStudyPlaylist() ?? []).filter((item) =>
+          validKeys.has(getImageKey(item.collectionId, item.imageId)),
+        )
+        if (playlistData.length === 0) {
+          const avgMs = statsResponse?.data?.avgMs || DEFAULT_AVG_GRADING_MS
+          const budgetMinutes = Number(
+            getStoredDemographics()?.timeBudgetMinutes
+              ?? participantResponse?.data?.participant?.time_budget_minutes,
+          ) || DEFAULT_TIME_BUDGET_MINUTES
+          playlistData = buildPlaylist({
+            collections: collectionsData,
+            budgetSeconds: budgetMinutes * 60,
+            avgSeconds: avgMs / 1000,
+            excludeKeys: rankedKeys,
+          })
+          setStudyPlaylist(playlistData)
+          setStudyPosition(0)
+        }
+        setPlaylist(playlistData)
+
+        // Resume at the saved position, clamped to the playlist bounds.
+        const savedIndex = Math.min(Math.max(getStudyPosition(), 0), Math.max(0, playlistData.length - 1))
+        setPosition(savedIndex)
+
+        // Go straight to the thank-you screen when there is nothing left to do:
+        // the assigned set is already fully ranked, or a returning participant
+        // has ranked every image in the study (so no playlist could be built).
+        const allGraded = playlistData.length > 0 && playlistData.every((item) =>
+          rankedKeys.has(getImageKey(item.collectionId, item.imageId)),
+        )
+        if (playlistData.length === 0) {
+          setNoMoreImages(true)
+          setIsFinished(true)
+        } else if (allGraded) {
+          setIsFinished(true)
         }
       } catch (error) {
         setLoadError(error.response?.data?.error ?? 'Failed to load images from the server.')
@@ -139,34 +200,34 @@ function App() {
 
   // Persist the navigation position so a returning participant resumes here.
   useEffect(() => {
-    if (!selectedCollectionId) {
+    if (playlist.length === 0) {
       return
     }
-    setStudyPosition({ collectionId: selectedCollectionId, imageIndex: selectedImageIndex })
-  }, [selectedCollectionId, selectedImageIndex])
+    setStudyPosition(position)
+  }, [position, playlist.length])
 
-  const collections = library?.collections ?? []
-  const selectedCollection = collections.find((collection) => collection.id === selectedCollectionId) ?? collections[0]
-  const currentImage = selectedCollection?.images[selectedImageIndex] ?? null
-  const imageKey = currentImage ? getImageKey(selectedCollection.id, currentImage.id) : ''
+  const collections = useMemo(() => library?.collections ?? [], [library])
+  // Resolve the current playlist entry to its collection and image.
+  const currentItem = playlist[position] ?? null
+  const selectedCollection = currentItem
+    ? collections.find((collection) => collection.id === currentItem.collectionId) ?? null
+    : null
+  const currentImage = selectedCollection?.images.find((image) => image.id === currentItem?.imageId) ?? null
+  const imageKey = currentImage && selectedCollection ? getImageKey(selectedCollection.id, currentImage.id) : ''
   const imageState = ensureImageState(imageStates[imageKey])
   const currentVariant = currentImage?.variants.find((variant) => variant.level === imageState.currentLevel) ?? currentImage?.variants[0] ?? null
   const maxLevel = currentImage?.maxLevel ?? 0
-  // Navigation flows linearly across collections (Sharpness then HDR), so the
-  // top-bar label can read "<collection> image X of <total>".
-  const collectionIndex = collections.findIndex((collection) => collection.id === selectedCollection?.id)
-  const isLastInCollection = Boolean(selectedCollection) && selectedImageIndex >= selectedCollection.images.length - 1
-  const canGoBack = selectedImageIndex > 0 || collectionIndex > 0
-  const isLastImageOverall = isLastInCollection && collectionIndex === collections.length - 1
+  // Navigation flows through the assigned playlist, so the top-bar label reads
+  // "<collection> image X of <total>".
+  const totalImageCount = playlist.length
+  const canGoBack = position > 0
+  const isLastImageOverall = position >= totalImageCount - 1
 
-  // The study is complete once every image in every collection has at least one
-  // selection (most realistic or highest quality).
-  const totalImageCount = collections.reduce((sum, collection) => sum + collection.images.length, 0)
-  const gradedImageCount = collections.reduce((sum, collection) => {
-    return sum + collection.images.filter((image) => {
-      const state = ensureImageState(imageStates[getImageKey(collection.id, image.id)])
-      return state.mostRealisticLevel != null || state.highestQualityLevel != null
-    }).length
+  // The study is complete once every image in the assigned playlist has at least
+  // one selection (most realistic or highest quality).
+  const gradedImageCount = playlist.reduce((sum, item) => {
+    const state = ensureImageState(imageStates[getImageKey(item.collectionId, item.imageId)])
+    return sum + (state.mostRealisticLevel != null || state.highestQualityLevel != null ? 1 : 0)
   }, 0)
   const allImagesGraded = totalImageCount > 0 && gradedImageCount === totalImageCount
 
@@ -336,7 +397,13 @@ function App() {
       return undefined
     }
 
-    const nextImage = selectedCollection.images[selectedImageIndex + 1]
+    // The next playlist entry may live in a different collection, so resolve it
+    // against the whole library rather than the current collection's images.
+    const nextItem = playlist[position + 1]
+    const nextCollection = nextItem
+      ? collections.find((collection) => collection.id === nextItem.collectionId)
+      : null
+    const nextImage = nextCollection?.images.find((image) => image.id === nextItem?.imageId) ?? null
 
     // Preload current image variants first, then next image
     collectImageUrls(currentImage).forEach((url) => {
@@ -346,7 +413,7 @@ function App() {
     collectImageUrls(nextImage).forEach((url) => {
       void preloadUrl(url)
     })
-  }, [currentImage, selectedCollection, selectedImageIndex])
+  }, [currentImage, selectedCollection, playlist, position, collections])
 
   useEffect(() => {
     const url = currentVariant?.url
@@ -461,8 +528,8 @@ function App() {
     setMessage({ severity, text })
   }
 
-  // Advance to the next image, crossing into the next collection at the end of
-  // the current one. Gated on enough exploration and a decision being made.
+  // Advance to the next image in the playlist. Gated on enough exploration and
+  // a decision being made.
   function goNext() {
     if (!currentImage || !selectedCollection) {
       return
@@ -480,16 +547,13 @@ function App() {
     submitActiveRanking()
     setMessage(null)
 
-    if (selectedImageIndex < selectedCollection.images.length - 1) {
-      setSelectedImageIndex(selectedImageIndex + 1)
-    } else if (collectionIndex < collections.length - 1) {
-      setSelectedCollectionId(collections[collectionIndex + 1].id)
-      setSelectedImageIndex(0)
+    if (position < playlist.length - 1) {
+      setPosition(position + 1)
     }
   }
 
-  // Step back to the previous image, crossing into the previous collection's
-  // last image at the start of the current one. No exploration gate going back.
+  // Step back to the previous image in the playlist. No exploration gate going
+  // back.
   function goPrev() {
     if (!canGoBack) {
       return
@@ -497,14 +561,7 @@ function App() {
 
     submitActiveRanking()
     setMessage(null)
-
-    if (selectedImageIndex > 0) {
-      setSelectedImageIndex(selectedImageIndex - 1)
-    } else if (collectionIndex > 0) {
-      const previousCollection = collections[collectionIndex - 1]
-      setSelectedCollectionId(previousCollection.id)
-      setSelectedImageIndex(previousCollection.images.length - 1)
-    }
+    setPosition(position - 1)
   }
 
   function finishStudy() {
@@ -518,6 +575,45 @@ function App() {
       })
     }
     setIsFinished(true)
+  }
+
+  // "I have more time": build a fresh playlist of images the participant hasn't
+  // ranked yet, sized to the extra minutes they asked for, and drop them back
+  // into the study. If nothing is left, say so instead.
+  async function addMoreTime() {
+    setAddingMore(true)
+    try {
+      const statsResponse = await axios.get('/api/stats/avg-grading-ms').catch(() => null)
+      const avgMs = statsResponse?.data?.avgMs || DEFAULT_AVG_GRADING_MS
+
+      const excludeKeys = new Set()
+      for (const [key, state] of Object.entries(imageStates)) {
+        const resolved = ensureImageState(state)
+        if (resolved.mostRealisticLevel != null || resolved.highestQualityLevel != null) {
+          excludeKeys.add(key)
+        }
+      }
+
+      const nextPlaylist = buildPlaylist({
+        collections,
+        budgetSeconds: moreMinutes * 60,
+        avgSeconds: avgMs / 1000,
+        excludeKeys,
+      })
+
+      if (nextPlaylist.length === 0) {
+        setNoMoreImages(true)
+        return
+      }
+
+      setPlaylist(nextPlaylist)
+      setStudyPlaylist(nextPlaylist)
+      setPosition(0)
+      setStudyPosition(0)
+      setIsFinished(false)
+    } finally {
+      setAddingMore(false)
+    }
   }
 
   // Save progress for the current image, then go edit demographics. On save the
@@ -567,10 +663,44 @@ function App() {
           <p className="eyebrow">Study complete</p>
           <h1 className="completion-title">Thank you!</h1>
           <p className="completion-copy">
-            Your responses for all {totalImageCount} images have been recorded. We appreciate the
-            time you took to take part in this study.
+            {totalImageCount > 0
+              ? `Your responses for all ${totalImageCount} ${totalImageCount === 1 ? 'image' : 'images'} have been recorded. `
+              : 'Your responses have been recorded. '}
+            We appreciate the time you took to take part in this study.
           </p>
-          <p className="completion-copy completion-muted">You can now close this tab.</p>
+
+          {noMoreImages ? (
+            <p className="completion-copy completion-muted">
+              You have now reviewed every image available in the study. Thank you for being so thorough!
+            </p>
+          ) : (
+            <div className="more-time-block">
+              <p className="completion-copy">
+                Have a little more time? We can show you more images you haven&apos;t seen yet.
+              </p>
+              <div className="more-time-control">
+                <span id="more-time-label" className="more-time-label">
+                  {moreMinutes} more {moreMinutes === 1 ? 'minute' : 'minutes'}
+                </span>
+                <Slider
+                  aria-labelledby="more-time-label"
+                  value={moreMinutes}
+                  onChange={(_, value) => setMoreMinutes(Array.isArray(value) ? value[0] : value)}
+                  min={1}
+                  max={30}
+                  step={1}
+                  valueLabelDisplay="auto"
+                  valueLabelFormat={(value) => `${value} min`}
+                  disabled={addingMore}
+                />
+              </div>
+              <Button variant="contained" onClick={addMoreTime} disabled={addingMore}>
+                {addingMore ? 'Loading more images…' : 'Review more images'}
+              </Button>
+            </div>
+          )}
+
+          <p className="completion-copy completion-muted">You can also close this tab.</p>
           <a className="completion-home-link" href="/">
             Return to the home page
           </a>
@@ -586,7 +716,7 @@ function App() {
 
         <span className="study-center">
           {!loading && !loadError && currentImage
-            ? `${selectedCollection.label} image ${selectedImageIndex + 1} of ${selectedCollection.images.length}: ${currentImage.label}`
+            ? `${selectedCollection.label} image ${position + 1} of ${totalImageCount}: ${currentImage.label}`
             : ''}
         </span>
 

@@ -23,13 +23,22 @@ try {
   // column already exists
 }
 
+// Migration for databases created before the time-budget question existed.
+try {
+  db.exec("ALTER TABLE participants ADD COLUMN time_budget_minutes INTEGER");
+} catch {
+  // column already exists
+}
+
 const insertParticipantStmt = db.prepare(`
   INSERT INTO participants (
     age, gender, email, self_description, vision_status, vision_details,
-    color_blind, country_of_origin, display_type, lighting, user_agent
+    color_blind, country_of_origin, display_type, lighting, time_budget_minutes,
+    user_agent
   ) VALUES (
     :age, :gender, :email, :selfDescription, :visionStatus, :visionDetails,
-    :colorBlind, :countryOfOrigin, :displayType, :lighting, :userAgent
+    :colorBlind, :countryOfOrigin, :displayType, :lighting, :timeBudgetMinutes,
+    :userAgent
   )
 `);
 
@@ -54,6 +63,10 @@ const upsertRankingStmt = db.prepare(`
 
 const participantExistsStmt = db.prepare("SELECT id FROM participants WHERE id = ?");
 
+function toIntOrNull(value) {
+  return value != null && value !== "" && Number.isFinite(Number(value)) ? Number(value) : null;
+}
+
 function createParticipant(demographics, userAgent) {
   const result = insertParticipantStmt.run({
     age: demographics.age != null && demographics.age !== "" ? Number(demographics.age) : null,
@@ -66,6 +79,7 @@ function createParticipant(demographics, userAgent) {
     countryOfOrigin: demographics.countryOfOrigin ?? null,
     displayType: demographics.displayType ?? null,
     lighting: demographics.lighting ?? null,
+    timeBudgetMinutes: toIntOrNull(demographics.timeBudgetMinutes),
     userAgent: userAgent ?? null,
   });
 
@@ -80,7 +94,8 @@ const updateParticipantStmt = db.prepare(`
   UPDATE participants SET
     age = :age, gender = :gender, email = :email, self_description = :selfDescription,
     vision_status = :visionStatus, vision_details = :visionDetails, color_blind = :colorBlind,
-    country_of_origin = :countryOfOrigin, display_type = :displayType, lighting = :lighting
+    country_of_origin = :countryOfOrigin, display_type = :displayType, lighting = :lighting,
+    time_budget_minutes = :timeBudgetMinutes
   WHERE id = :id
 `);
 
@@ -98,6 +113,7 @@ function updateParticipant(participantId, demographics) {
     countryOfOrigin: demographics.countryOfOrigin ?? null,
     displayType: demographics.displayType ?? null,
     lighting: demographics.lighting ?? null,
+    timeBudgetMinutes: toIntOrNull(demographics.timeBudgetMinutes),
   });
 }
 
@@ -120,6 +136,21 @@ function recordRanking(ranking) {
     highestQualityLevel: ranking.highestQualityLevel == null ? null : Number(ranking.highestQualityLevel),
     gradingMs: ranking.gradingMs == null ? null : Number(ranking.gradingMs),
   });
+}
+
+// Average time participants have spent grading a single image, across all
+// recorded rankings. Used to size each new participant's image set to their
+// stated time budget; ignores rows without a usable timing (NULL or <= 0).
+function getAverageGradingMs() {
+  const row = db
+    .prepare(
+      "SELECT AVG(grading_ms) AS avg_ms, COUNT(*) AS sample_count FROM image_rankings WHERE grading_ms IS NOT NULL AND grading_ms > 0"
+    )
+    .get();
+  return {
+    avgMs: row?.avg_ms != null ? Number(row.avg_ms) : null,
+    sampleCount: Number(row?.sample_count ?? 0),
+  };
 }
 
 function getParticipantWithRankings(participantId) {
@@ -152,7 +183,7 @@ function exportRankingsFlat() {
          p.id                AS participant_id,
          p.age, p.gender, p.email, p.self_description, p.vision_status,
          p.vision_details, p.color_blind, p.country_of_origin, p.display_type,
-         p.lighting,
+         p.lighting, p.time_budget_minutes,
          r.collection_id, r.image_id, r.max_level, r.furthest_visited_level,
          r.most_realistic_level, r.highest_quality_level, r.grading_ms,
          r.created_at        AS ranked_at,
@@ -277,6 +308,7 @@ module.exports = {
   participantExists,
   recordRanking,
   getParticipantWithRankings,
+  getAverageGradingMs,
   exportAll,
   exportRankingsFlat,
 };

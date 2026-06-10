@@ -8,6 +8,7 @@ const {
   participantExists,
   recordRanking,
   getParticipantWithRankings,
+  getAverageGradingMs,
   exportAll,
   exportRankingsFlat,
   verifyAdmin,
@@ -238,6 +239,18 @@ app.get("/api/library", async (req, res) => {
 
 // --- Study data collection -------------------------------------------------
 
+// Average time spent grading one image, used by the client to size each
+// participant's image set to the time budget they reported. Returns the running
+// average plus the sample size (0 before any timings have been recorded).
+app.get("/api/stats/avg-grading-ms", (_req, res) => {
+  try {
+    res.json(getAverageGradingMs());
+  } catch (error) {
+    console.error("Failed to compute average grading time", error);
+    res.status(500).json({ error: "Failed to compute average grading time." });
+  }
+});
+
 // Create a participant from the demographics questionnaire. Returns the new id,
 // which the client sends back with each image ranking.
 app.post("/api/participants", (req, res) => {
@@ -364,7 +377,7 @@ app.get("/api/export.csv", (_req, res) => {
   const columns = [
     "ranking_id", "participant_id", "age", "gender", "email", "self_description",
     "vision_status", "vision_details", "color_blind", "country_of_origin",
-    "display_type", "lighting", "collection_id", "image_id", "max_level",
+    "display_type", "lighting", "time_budget_minutes", "collection_id", "image_id", "max_level",
     "furthest_visited_level", "most_realistic_level", "highest_quality_level",
     "grading_ms", "ranked_at", "participant_created_at", "user_agent",
   ];

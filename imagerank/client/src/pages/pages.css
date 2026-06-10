@@ -608,6 +608,24 @@
   align-items: center;
 }
 
+.time-budget-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 12px 0;
+}
+
+.time-budget-label {
+  font-weight: 600;
+  color: rgba(35, 47, 69, 0.9);
+}
+
+.time-budget-help {
+  margin: 0 0 18px;
+  font-size: 0.9rem;
+  color: rgba(35, 47, 69, 0.62);
+}
+
 @media (max-width: 760px) {
   .form-grid {
     grid-template-columns: 1fr;
