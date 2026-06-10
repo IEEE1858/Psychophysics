@@ -447,6 +447,10 @@ app.post("/api/admin/users", requireAdmin, (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Interface test server listening on http://localhost:${PORT}`);
+// Bind to loopback only by default — the service sits behind the Apache reverse
+// proxy, so port 5001 must not be reachable from outside the host. Override with
+// HOST if the app is ever run without a fronting proxy.
+const HOST = process.env.HOST || "127.0.0.1";
+app.listen(PORT, HOST, () => {
+  console.log(`Interface test server listening on http://${HOST}:${PORT}`);
 });
