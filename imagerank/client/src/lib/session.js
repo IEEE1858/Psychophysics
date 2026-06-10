@@ -5,6 +5,7 @@ const PARTICIPANT_KEY = 'participantId'
 const DEMOGRAPHICS_KEY = 'demographics'
 const POSITION_KEY = 'studyPosition'
 const PLAYLIST_KEY = 'studyPlaylist'
+const TOUR_SEEN_KEY = 'tourSeen'
 
 export function getParticipantId() {
   return localStorage.getItem(PARTICIPANT_KEY)
@@ -61,6 +62,17 @@ export function setStudyPlaylist(playlist) {
 export function clearStudyPlaylist() {
   localStorage.removeItem(PLAYLIST_KEY)
   localStorage.removeItem(POSITION_KEY)
+}
+
+// Whether the participant has already seen the guided tour ("tour mode") that
+// explains the grading interface. Tracked so the tour auto-launches only on a
+// participant's very first image; the top-bar [?] button can replay it anytime.
+export function getTourSeen() {
+  return localStorage.getItem(TOUR_SEEN_KEY) === '1'
+}
+
+export function setTourSeen() {
+  localStorage.setItem(TOUR_SEEN_KEY, '1')
 }
 
 // Map a server participant row (snake_case) into the demographics form shape.

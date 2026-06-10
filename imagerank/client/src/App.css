@@ -563,6 +563,15 @@
   color: #1d3557;
 }
 
+.study-help.MuiButton-root {
+  min-width: 32px;
+  width: 32px;
+  padding: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border-radius: 50%;
+}
+
 .study-status {
   flex: 1 1 auto;
   display: flex;

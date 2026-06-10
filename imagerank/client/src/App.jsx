@@ -12,10 +12,14 @@ import {
   getStoredDemographics,
   getStudyPlaylist,
   getStudyPosition,
+  getTourSeen,
   setStudyPlaylist,
   setStudyPosition,
+  setTourSeen,
 } from './lib/session'
 import { buildPlaylist, DEFAULT_AVG_GRADING_MS } from './lib/playlist'
+import StudyTour from './components/StudyTour'
+import { buildTourSteps } from './lib/tourSteps'
 import './App.css'
 
 const DEFAULT_TIME_BUDGET_MINUTES = 30
@@ -88,6 +92,12 @@ function App() {
   const [moreMinutes, setMoreMinutes] = useState(10)
   const [addingMore, setAddingMore] = useState(false)
   const [noMoreImages, setNoMoreImages] = useState(false)
+  // "Tour mode" (issue #15): a guided walkthrough of the grading interface. It
+  // auto-launches the first time a participant reaches the study (tracked in
+  // localStorage); the top-bar [?] button replays it on demand. The tour
+  // component only renders once an image is on screen, so run=true here never
+  // starts Joyride before its target elements exist.
+  const [runTour, setRunTour] = useState(() => !getTourSeen())
   const loadedImageUrlsRef = useRef(new Set())
   const participantIdRef = useRef(null)
   const gradingStartRef = useRef(0)
@@ -255,6 +265,18 @@ function App() {
     }
     gradingStartRef.current = Date.now()
   }, [imageKey])
+
+  // Build the tour steps for the current image; drop the closing "Next image"
+  // step on the last image, where that button is replaced by Finish.
+  const tourSteps = useMemo(
+    () => buildTourSteps({ isLastImage: isLastImageOverall }),
+    [isLastImageOverall],
+  )
+
+  function closeTour() {
+    setRunTour(false)
+    setTourSeen()
+  }
 
   // The per-navigation submit covers in-app moves; this beacon captures the
   // image still on screen if the participant closes or refreshes the tab.
@@ -721,13 +743,23 @@ function App() {
         </span>
 
         <div className="study-zoom">
+          <Button
+            size="small"
+            variant="outlined"
+            className="study-help"
+            aria-label="Show the guided tour"
+            title="Show the guided tour"
+            onClick={() => setRunTour(true)}
+          >
+            ?
+          </Button>
           <Button size="small" variant="outlined" className="study-edit-demographics" onClick={editDemographics}>
             Edit demographics
           </Button>
           <Button size="small" variant="outlined" onClick={() => transformRef.current?.zoomOut()}>
             Zoom out
           </Button>
-          <Button size="small" variant="outlined" onClick={() => transformRef.current?.zoomIn()}>
+          <Button size="small" variant="outlined" data-tour="zoom" onClick={() => transformRef.current?.zoomIn()}>
             Zoom in
           </Button>
           <Button
@@ -816,7 +848,7 @@ function App() {
 
           <span className="study-slider-label">Unprocessed</span>
 
-          <div className="slider-with-markers study-slider">
+          <div className="slider-with-markers study-slider" data-tour="slider">
             {imageState.mostRealisticLevel != null ? (
               <span
                 className="slider-marker slider-marker-realism"
@@ -851,16 +883,16 @@ function App() {
 
           <span className="study-slider-label">Heavily processed</span>
 
-          <Button className="study-pick" variant="contained" onClick={() => setSelection('mostRealisticLevel')}>
+          <Button className="study-pick" data-tour="pick-realistic" variant="contained" onClick={() => setSelection('mostRealisticLevel')}>
             Pick Most Realistic
           </Button>
 
-          <Button className="study-pick" variant="contained" color="secondary" onClick={() => setSelection('highestQualityLevel')}>
+          <Button className="study-pick" data-tour="pick-quality" variant="contained" color="secondary" onClick={() => setSelection('highestQualityLevel')}>
             Pick Highest Quality
           </Button>
 
           {!isLastImageOverall ? (
-            <Button className="study-nav" variant="outlined" onClick={goNext}>
+            <Button className="study-nav" data-tour="next" variant="outlined" onClick={goNext}>
               Next image
             </Button>
           ) : null}
@@ -877,6 +909,10 @@ function App() {
         <div className={`study-toast${toastClosing ? ' study-toast-closing' : ''}`} role="status">
           <Alert severity={message.severity} variant="filled">{message.text}</Alert>
         </div>
+      ) : null}
+
+      {!loading && !loadError && currentImage ? (
+        <StudyTour run={runTour} steps={tourSteps} onClose={closeTour} />
       ) : null}
     </main>
   )
