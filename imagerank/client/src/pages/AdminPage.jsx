@@ -7,14 +7,9 @@ import CircularProgress from '@mui/material/CircularProgress'
 import TextField from '@mui/material/TextField'
 import { useLibrary } from '../lib/useLibrary'
 import { thumbnailFor } from '../lib/sample'
+import { authHeader, useAdminAuth } from '../lib/adminAuth'
+import AdminLogin from '../components/AdminLogin'
 import './pages.css'
-
-const AUTH_STORAGE_KEY = 'adminAuth'
-
-function authHeader() {
-  const token = sessionStorage.getItem(AUTH_STORAGE_KEY)
-  return token ? { Authorization: `Basic ${token}` } : {}
-}
 
 function formatDuration(ms) {
   if (!ms) {
@@ -51,71 +46,6 @@ function formatLevel(level, maxLevel) {
     return '—'
   }
   return maxLevel != null ? `L${level} / ${maxLevel}` : `L${level}`
-}
-
-function LoginForm({ onAuthenticated }) {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-
-  async function handleSubmit(event) {
-    event.preventDefault()
-    setError('')
-    setSubmitting(true)
-    const token = btoa(`${username}:${password}`)
-    try {
-      await axios.get('/api/admin/me', { headers: { Authorization: `Basic ${token}` } })
-      sessionStorage.setItem(AUTH_STORAGE_KEY, token)
-      onAuthenticated()
-    } catch (requestError) {
-      if (requestError.response?.status === 401) {
-        setError('Invalid username or password.')
-      } else {
-        setError('Could not reach the server. Please try again.')
-      }
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <main className="page-shell">
-      <section className="page-panel admin-login">
-        <header className="preview-header">
-          <p className="eyebrow">Admin</p>
-          <h1>Sign in</h1>
-          <p className="home-lead">Enter your administrator credentials to view study submissions.</p>
-        </header>
-
-        <form className="form-card admin-login-card" onSubmit={handleSubmit} noValidate>
-          <TextField
-            label="Username"
-            name="username"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            autoComplete="username"
-            fullWidth
-          />
-          <TextField
-            label="Password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            autoComplete="current-password"
-            fullWidth
-          />
-          {error ? <Alert severity="error">{error}</Alert> : null}
-          <div className="form-actions">
-            <Button type="submit" variant="contained" size="large" className="cta-button" disabled={submitting}>
-              {submitting ? 'Signing in…' : 'Sign in'}
-            </Button>
-          </div>
-        </form>
-      </section>
-    </main>
-  )
 }
 
 function SubmissionsTable({ submissions, onSelect }) {
@@ -366,9 +296,7 @@ function AdminUsersPanel() {
 }
 
 function AdminPage() {
-  const [authed, setAuthed] = useState(false)
-  // Only "checking" if there are stored credentials to validate on mount.
-  const [checkingAuth, setCheckingAuth] = useState(() => Boolean(sessionStorage.getItem(AUTH_STORAGE_KEY)))
+  const { authed, checking, signIn, signOut } = useAdminAuth()
   const [submissions, setSubmissions] = useState(null)
   const [error, setError] = useState('')
   const [selectedId, setSelectedId] = useState(null)
@@ -385,18 +313,6 @@ function AdminPage() {
     }
     return lookup
   }, [library])
-
-  // On mount, validate any stored credentials before showing the dashboard.
-  useEffect(() => {
-    if (!sessionStorage.getItem(AUTH_STORAGE_KEY)) {
-      return
-    }
-    axios
-      .get('/api/admin/me', { headers: authHeader() })
-      .then(() => setAuthed(true))
-      .catch(() => sessionStorage.removeItem(AUTH_STORAGE_KEY))
-      .finally(() => setCheckingAuth(false))
-  }, [])
 
   // Load submissions once authenticated.
   useEffect(() => {
@@ -416,27 +332,25 @@ function AdminPage() {
           return
         }
         if (requestError.response?.status === 401) {
-          sessionStorage.removeItem(AUTH_STORAGE_KEY)
-          setAuthed(false)
+          signOut()
         }
         setError('Failed to load submissions.')
       })
     return () => {
       active = false
     }
-  }, [authed])
+  }, [authed, signOut])
 
   const loading = authed && submissions === null && !error
 
   function handleSignOut() {
-    sessionStorage.removeItem(AUTH_STORAGE_KEY)
-    setAuthed(false)
+    signOut()
     setSubmissions(null)
     setSelectedId(null)
     setError('')
   }
 
-  if (checkingAuth) {
+  if (checking) {
     return (
       <main className="page-shell">
         <section className="page-panel">
@@ -450,7 +364,7 @@ function AdminPage() {
   }
 
   if (!authed) {
-    return <LoginForm onAuthenticated={() => setAuthed(true)} />
+    return <AdminLogin onAuthenticated={signIn} />
   }
 
   return (
@@ -462,6 +376,9 @@ function AdminPage() {
             <h1>Study submissions</h1>
           </div>
           <div className="admin-header-actions">
+            <Button component={Link} to="/admin/analytics" variant="contained" size="small">
+              Analytics
+            </Button>
             <Button onClick={() => setShowAdmins((value) => !value)} variant="outlined" size="small">
               {showAdmins ? 'View submissions' : 'Manage admins'}
             </Button>

@@ -8,6 +8,8 @@ import PreviewPage from './pages/PreviewPage.jsx'
 import PreviewViewer from './pages/PreviewViewer.jsx'
 import DemographicsPage from './pages/DemographicsPage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
+import AnalyticsPage from './pages/AnalyticsPage.jsx'
+import ImageDetailPage from './pages/ImageDetailPage.jsx'
 import RankingsPage from './pages/RankingsPage.jsx'
 
 createRoot(document.getElementById('root')).render(
@@ -19,6 +21,8 @@ createRoot(document.getElementById('root')).render(
         <Route path="/preview/:collectionId/:imageId" element={<PreviewViewer />} />
         <Route path="/demographics" element={<DemographicsPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/analytics" element={<AnalyticsPage />} />
+        <Route path="/admin/images/:collectionId/:imageId" element={<ImageDetailPage />} />
         <Route path="/rankings" element={<RankingsPage />} />
         <Route path="/study" element={<App />} />
         <Route path="*" element={<Navigate to="/" replace />} />

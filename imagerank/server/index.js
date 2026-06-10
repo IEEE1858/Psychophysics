@@ -17,7 +17,11 @@ const {
   listAdminUsers,
   listSubmissions,
   getSubmissionDetail,
+  getRankingRowsForStats,
+  getParticipantCounts,
+  getImageRankingDetail,
 } = require("./db");
+const { summarize } = require("./stats");
 
 const app = express();
 const PORT = Number(process.env.PORT || 5001);
@@ -423,6 +427,131 @@ app.get("/api/admin/me", requireAdmin, (req, res) => {
 
 app.get("/api/admin/submissions", requireAdmin, (_req, res) => {
   res.json({ submissions: listSubmissions() });
+});
+
+// --- Analytics (issue #24) --------------------------------------------------
+
+// Processing levels differ per image (max_level varies), so a raw level isn't
+// comparable across images. We report both the raw chosen level and a level
+// *fraction* (level / max_level, 0..1) which normalizes scale for cross-image
+// plots like the realism-vs-quality scatter.
+function levelFraction(level, maxLevel) {
+  if (level == null || maxLevel == null || maxLevel <= 0) {
+    return null;
+  }
+  return level / maxLevel;
+}
+
+// Aggregate every recorded ranking into the shape the analytics dashboard
+// needs: study-wide counts, per-collection summary stats + raw distributions
+// (for box/whisker plots and histograms), and per-image means (for the
+// clickable realism-vs-quality scatter).
+function buildAnalytics() {
+  const rows = getRankingRowsForStats();
+  const participants = getParticipantCounts();
+
+  const collections = COLLECTIONS.map(({ id, label }) => {
+    const collectionRows = rows.filter((row) => row.collection_id === id);
+    const qualityLevels = collectionRows
+      .map((row) => row.highest_quality_level)
+      .filter((value) => value != null);
+    const realismLevels = collectionRows
+      .map((row) => row.most_realistic_level)
+      .filter((value) => value != null);
+
+    return {
+      id,
+      label,
+      rankedCount: collectionRows.length,
+      uniqueImages: new Set(collectionRows.map((row) => row.image_id)).size,
+      quality: summarize(qualityLevels),
+      realism: summarize(realismLevels),
+      // Raw selected levels — the box/whisker and histogram source data.
+      qualityLevels,
+      realismLevels,
+    };
+  });
+
+  // Per-image means, keyed by collection + image.
+  const imageMap = new Map();
+  for (const row of rows) {
+    const key = `${row.collection_id} ${row.image_id}`;
+    let entry = imageMap.get(key);
+    if (!entry) {
+      entry = {
+        collectionId: row.collection_id,
+        imageId: row.image_id,
+        maxLevel: row.max_level,
+        quality: [],
+        realism: [],
+        qualityFrac: [],
+        realismFrac: [],
+      };
+      imageMap.set(key, entry);
+    }
+    entry.maxLevel = Math.max(entry.maxLevel, row.max_level);
+    if (row.highest_quality_level != null) {
+      entry.quality.push(row.highest_quality_level);
+      const frac = levelFraction(row.highest_quality_level, row.max_level);
+      if (frac != null) entry.qualityFrac.push(frac);
+    }
+    if (row.most_realistic_level != null) {
+      entry.realism.push(row.most_realistic_level);
+      const frac = levelFraction(row.most_realistic_level, row.max_level);
+      if (frac != null) entry.realismFrac.push(frac);
+    }
+  }
+
+  const images = Array.from(imageMap.values()).map((entry) => {
+    const quality = summarize(entry.quality);
+    const realism = summarize(entry.realism);
+    const qualityFrac = summarize(entry.qualityFrac);
+    const realismFrac = summarize(entry.realismFrac);
+    return {
+      collectionId: entry.collectionId,
+      imageId: entry.imageId,
+      maxLevel: entry.maxLevel,
+      n: Math.max(quality.n, realism.n),
+      meanQuality: quality.mean,
+      meanRealism: realism.mean,
+      meanQualityFrac: qualityFrac.mean,
+      meanRealismFrac: realismFrac.mean,
+    };
+  });
+
+  return { generatedAt: new Date().toISOString(), participants, collections, images };
+}
+
+// Study-wide summary: subject counts, per-collection min/max/mean/std for the
+// quality and realism selections, raw distributions, and per-image means.
+app.get("/api/admin/analytics", requireAdmin, (_req, res) => {
+  try {
+    res.json(buildAnalytics());
+  } catch (error) {
+    console.error("Failed to build analytics", error);
+    res.status(500).json({ error: "Failed to build analytics." });
+  }
+});
+
+// All rankings for a single image, with quality/realism stats. Backs the
+// shareable detail page reached by clicking a scatter point.
+app.get("/api/admin/images/:collectionId/:imageId", requireAdmin, (req, res) => {
+  try {
+    const { collectionId, imageId } = req.params;
+    const rankings = getImageRankingDetail(collectionId, imageId);
+    res.json({
+      collectionId,
+      imageId,
+      count: rankings.length,
+      maxLevel: rankings.reduce((max, row) => Math.max(max, row.max_level ?? 0), 0),
+      quality: summarize(rankings.map((row) => row.highest_quality_level)),
+      realism: summarize(rankings.map((row) => row.most_realistic_level)),
+      rankings,
+    });
+  } catch (error) {
+    console.error("Failed to load image analytics", error);
+    res.status(500).json({ error: "Failed to load image analytics." });
+  }
 });
 
 app.get("/api/admin/submissions/:id", requireAdmin, (req, res) => {
