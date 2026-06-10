@@ -8,7 +8,9 @@ import FormHelperText from '@mui/material/FormHelperText'
 import InputLabel from '@mui/material/InputLabel'
 import MenuItem from '@mui/material/MenuItem'
 import Select from '@mui/material/Select'
+import Slider from '@mui/material/Slider'
 import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
 import { COUNTRIES } from '../lib/countries'
 import {
   demographicsFromServer,
@@ -19,6 +21,12 @@ import {
   setStoredDemographics,
 } from '../lib/session'
 import './pages.css'
+
+// How long the study can run, in minutes. The chosen value sizes how many
+// images the participant is shown (issue #19).
+const TIME_BUDGET_MIN = 15
+const TIME_BUDGET_MAX = 45
+const TIME_BUDGET_DEFAULT = 30
 
 const INITIAL_DEMOGRAPHICS = {
   age: '',
@@ -31,6 +39,7 @@ const INITIAL_DEMOGRAPHICS = {
   countryOfOrigin: '',
   displayType: '',
   lighting: '',
+  timeBudgetMinutes: TIME_BUDGET_DEFAULT,
 }
 
 // Every field except visionDetails is always required; visionDetails is only
@@ -330,6 +339,27 @@ function DemographicsPage() {
                 { value: 'Outdoor Lighting (not recommended)', label: 'Outdoor Lighting (not recommended)' },
               ]}
             />
+
+            <div className="form-full time-budget-field">
+              <Typography component="label" id="time-budget-label" className="time-budget-label">
+                How much time do you have to review images?
+              </Typography>
+              <p className="time-budget-help">
+                We will show you about as many images as fit in this time — you can always stop early
+                or ask for more at the end.
+              </p>
+              <Slider
+                aria-labelledby="time-budget-label"
+                value={Number(demographics.timeBudgetMinutes) || TIME_BUDGET_DEFAULT}
+                onChange={(_, value) => updateField('timeBudgetMinutes', value)}
+                min={TIME_BUDGET_MIN}
+                max={TIME_BUDGET_MAX}
+                step={5}
+                marks
+                valueLabelDisplay="on"
+                valueLabelFormat={(value) => `${value} min`}
+              />
+            </div>
           </div>
 
           {submitAttempted && Object.keys(errors).length > 0 ? (

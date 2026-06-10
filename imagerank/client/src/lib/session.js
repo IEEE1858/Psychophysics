@@ -4,6 +4,7 @@
 const PARTICIPANT_KEY = 'participantId'
 const DEMOGRAPHICS_KEY = 'demographics'
 const POSITION_KEY = 'studyPosition'
+const PLAYLIST_KEY = 'studyPlaylist'
 
 export function getParticipantId() {
   return localStorage.getItem(PARTICIPANT_KEY)
@@ -29,16 +30,37 @@ export function setStoredDemographics(demographics) {
   localStorage.setItem(DEMOGRAPHICS_KEY, JSON.stringify(demographics))
 }
 
+// The position is the participant's index into their personal playlist (see
+// below), so a returning participant resumes on the same image.
 export function getStudyPosition() {
+  const raw = Number(localStorage.getItem(POSITION_KEY))
+  return Number.isFinite(raw) && raw >= 0 ? raw : 0
+}
+
+export function setStudyPosition(index) {
+  localStorage.setItem(POSITION_KEY, String(index))
+}
+
+// The playlist is the ordered set of images this participant was assigned, sized
+// to the time budget they reported and interleaved across collections. It is
+// built once (after demographics) and persisted so the same set is shown on a
+// return visit. Each entry is { collectionId, imageId }.
+export function getStudyPlaylist() {
   try {
-    return JSON.parse(localStorage.getItem(POSITION_KEY) || 'null')
+    const parsed = JSON.parse(localStorage.getItem(PLAYLIST_KEY) || 'null')
+    return Array.isArray(parsed) ? parsed : null
   } catch {
     return null
   }
 }
 
-export function setStudyPosition(position) {
-  localStorage.setItem(POSITION_KEY, JSON.stringify(position))
+export function setStudyPlaylist(playlist) {
+  localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist))
+}
+
+export function clearStudyPlaylist() {
+  localStorage.removeItem(PLAYLIST_KEY)
+  localStorage.removeItem(POSITION_KEY)
 }
 
 // Map a server participant row (snake_case) into the demographics form shape.
@@ -54,5 +76,6 @@ export function demographicsFromServer(participant) {
     countryOfOrigin: participant.country_of_origin ?? '',
     displayType: participant.display_type ?? '',
     lighting: participant.lighting ?? '',
+    timeBudgetMinutes: participant.time_budget_minutes ?? '',
   }
 }
