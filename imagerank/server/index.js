@@ -285,6 +285,7 @@ app.post("/api/rankings", (req, res) => {
     mostRealisticLevel,
     highestQualityLevel,
     gradingMs,
+    reRank,
   } = req.body || {};
 
   if (participantId == null || !collectionId || !imageId) {
@@ -309,6 +310,7 @@ app.post("/api/rankings", (req, res) => {
       mostRealisticLevel: parseLevel(mostRealisticLevel),
       highestQualityLevel: parseLevel(highestQualityLevel),
       gradingMs: parseLevel(gradingMs),
+      reRank: Boolean(reRank),
     });
     res.status(201).json({ ok: true });
   } catch (error) {
@@ -379,7 +381,7 @@ app.get("/api/export.csv", (_req, res) => {
     "vision_status", "vision_details", "color_blind", "country_of_origin",
     "display_type", "lighting", "time_budget_minutes", "collection_id", "image_id", "max_level",
     "furthest_visited_level", "most_realistic_level", "highest_quality_level",
-    "grading_ms", "ranked_at", "participant_created_at", "user_agent",
+    "grading_ms", "re_ranked", "ranked_at", "participant_created_at", "user_agent",
   ];
 
   const lines = [columns.join(",")];

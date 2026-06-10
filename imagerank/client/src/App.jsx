@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
@@ -72,6 +72,22 @@ function collectImageUrls(image) {
 function App() {
   const theme = useTheme()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  // Re-rank mode (issue #23): /study?rerank=collectionId:imageId reopens the
+  // grading interface for one already-ranked image so the participant can
+  // revise it. The normal playlist, progress, and completion flow are bypassed.
+  const reRankTarget = useMemo(() => {
+    const raw = searchParams.get('rerank')
+    if (!raw) {
+      return null
+    }
+    const separator = raw.indexOf(':')
+    if (separator === -1) {
+      return null
+    }
+    return { collectionId: raw.slice(0, separator), imageId: raw.slice(separator + 1) }
+  }, [searchParams])
+  const isReRank = Boolean(reRankTarget)
   const transformRef = useRef(null)
   const preloadPromisesRef = useRef(new Map())
   const [library, setLibrary] = useState(null)
@@ -160,6 +176,20 @@ function App() {
           }
         }
 
+        // Re-rank mode: show only the requested image. Leave the stored playlist
+        // and position untouched so the participant resumes their real study
+        // exactly where they left off after they finish revising.
+        if (reRankTarget) {
+          const targetKey = getImageKey(reRankTarget.collectionId, reRankTarget.imageId)
+          if (!validKeys.has(targetKey)) {
+            navigate('/rankings', { replace: true })
+            return
+          }
+          setPlaylist([{ collectionId: reRankTarget.collectionId, imageId: reRankTarget.imageId }])
+          setPosition(0)
+          return
+        }
+
         // Resume an existing playlist, or build one sized to the participant's
         // time budget — interleaving collections and skipping ranked images.
         let playlistData = (getStudyPlaylist() ?? []).filter((item) =>
@@ -206,15 +236,16 @@ function App() {
     }
 
     load()
-  }, [navigate])
+  }, [navigate, reRankTarget])
 
   // Persist the navigation position so a returning participant resumes here.
+  // Skipped in re-rank mode, which must not clobber the real study position.
   useEffect(() => {
-    if (playlist.length === 0) {
+    if (playlist.length === 0 || isReRank) {
       return
     }
     setStudyPosition(position)
-  }, [position, playlist.length])
+  }, [position, playlist.length, isReRank])
 
   const collections = useMemo(() => library?.collections ?? [], [library])
   // Resolve the current playlist entry to its collection and image.
@@ -297,6 +328,9 @@ function App() {
         mostRealisticLevel: imageState.mostRealisticLevel,
         highestQualityLevel: imageState.highestQualityLevel,
         gradingMs: (accumulatedMsRef.current[imageKey] ?? 0) + elapsed,
+        // In re-rank mode the server adds this time to the existing total and
+        // flags the row; this image was already counted in the study otherwise.
+        reRank: isReRank,
       }
 
       navigator.sendBeacon('/api/rankings', new Blob([JSON.stringify(payload)], { type: 'application/json' }))
@@ -304,7 +338,7 @@ function App() {
 
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [currentImage, selectedCollection, imageKey, maxLevel, imageState])
+  }, [currentImage, selectedCollection, imageKey, maxLevel, imageState, isReRank])
 
   // Begin fading the toast on a click anywhere — unless that click just raised
   // a new toast (justNotifiedRef), in which case keep the new one.
@@ -532,11 +566,22 @@ function App() {
       mostRealisticLevel: imageState.mostRealisticLevel,
       highestQualityLevel: imageState.highestQualityLevel,
       gradingMs: flushActiveGradingMs(imageKey),
+      // In re-rank mode the server adds this session's time to the prior total
+      // and marks the row re_ranked (issue #23).
+      reRank: isReRank,
     }
 
     axios.post('/api/rankings', payload).catch((error) => {
       console.error('Failed to submit ranking', error)
     })
+  }
+
+  // Save a revision made in re-rank mode and return to the rankings list. A
+  // decision is already present (the image was ranked before), so there is no
+  // exploration gate here.
+  function saveReRank() {
+    submitActiveRanking()
+    navigate('/rankings')
   }
 
   // Show a toast message. Mark the raising click so the dismiss listener won't
@@ -737,25 +782,38 @@ function App() {
         <span className="study-brand">IEEE 1858 CPIQ Image Rank</span>
 
         <span className="study-center">
-          {!loading && !loadError && currentImage
-            ? `${selectedCollection.label} image ${position + 1} of ${totalImageCount}: ${currentImage.label}`
-            : ''}
+          {loading || loadError || !currentImage
+            ? ''
+            : isReRank
+              ? `Re-ranking: ${selectedCollection.label} — ${currentImage.label}`
+              : `${selectedCollection.label} image ${position + 1} of ${totalImageCount}: ${currentImage.label}`}
         </span>
 
         <div className="study-zoom">
-          <Button
-            size="small"
-            variant="outlined"
-            className="study-help"
-            aria-label="Show the guided tour"
-            title="Show the guided tour"
-            onClick={() => setRunTour(true)}
-          >
-            ?
-          </Button>
-          <Button size="small" variant="outlined" className="study-edit-demographics" onClick={editDemographics}>
-            Edit demographics
-          </Button>
+          {isReRank ? (
+            <Button size="small" variant="outlined" onClick={() => navigate('/rankings')}>
+              Rankings
+            </Button>
+          ) : (
+            <>
+              <Button
+                size="small"
+                variant="outlined"
+                className="study-help"
+                aria-label="Show the guided tour"
+                title="Show the guided tour"
+                onClick={() => setRunTour(true)}
+              >
+                ?
+              </Button>
+              <Button size="small" variant="outlined" onClick={() => navigate('/rankings')}>
+                Rankings
+              </Button>
+              <Button size="small" variant="outlined" className="study-edit-demographics" onClick={editDemographics}>
+                Edit demographics
+              </Button>
+            </>
+          )}
           <Button size="small" variant="outlined" onClick={() => transformRef.current?.zoomOut()}>
             Zoom out
           </Button>
@@ -891,17 +949,25 @@ function App() {
             Pick Highest Quality
           </Button>
 
-          {!isLastImageOverall ? (
-            <Button className="study-nav" data-tour="next" variant="outlined" onClick={goNext}>
-              Next image
+          {isReRank ? (
+            <Button className="study-nav" variant="contained" color="success" onClick={saveReRank}>
+              Save changes
             </Button>
-          ) : null}
+          ) : (
+            <>
+              {!isLastImageOverall ? (
+                <Button className="study-nav" data-tour="next" variant="outlined" onClick={goNext}>
+                  Next image
+                </Button>
+              ) : null}
 
-          {allImagesGraded ? (
-            <Button className="study-nav" variant="contained" color="success" onClick={finishStudy}>
-              Finish
-            </Button>
-          ) : null}
+              {allImagesGraded ? (
+                <Button className="study-nav" variant="contained" color="success" onClick={finishStudy}>
+                  Finish
+                </Button>
+              ) : null}
+            </>
+          )}
         </footer>
       ) : null}
 
@@ -911,7 +977,7 @@ function App() {
         </div>
       ) : null}
 
-      {!loading && !loadError && currentImage ? (
+      {!loading && !loadError && currentImage && !isReRank ? (
         <StudyTour run={runTour} steps={tourSteps} onClose={closeTour} />
       ) : null}
     </main>
