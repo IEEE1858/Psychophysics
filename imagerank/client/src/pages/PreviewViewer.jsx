@@ -10,7 +10,7 @@ import './pages.css'
 
 // A read-only image viewer for the preview flow. It lets a visitor move through
 // the processing levels of a single image, but unlike the study it never
-// records a "most realistic" / "highest quality" selection and has no
+// records a "most realistic" / "favorite" selection and has no
 // exploration gate.
 function PreviewViewer() {
   const { collectionId, imageId } = useParams()

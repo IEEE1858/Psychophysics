@@ -67,10 +67,10 @@ function SubmissionsTable({ submissions, onSelect }) {
           </tr>
           <tr>
             <th className="admin-num admin-group-start">Ranked</th>
-            <th className="admin-num">Quality</th>
+            <th className="admin-num">Favorite</th>
             <th className="admin-num">Realism</th>
             <th className="admin-num admin-group-start">Ranked</th>
-            <th className="admin-num">Quality</th>
+            <th className="admin-num">Favorite</th>
             <th className="admin-num">Realism</th>
           </tr>
         </thead>
@@ -86,10 +86,10 @@ function SubmissionsTable({ submissions, onSelect }) {
               <td className="admin-num">{formatDate(submission.started_at)}</td>
               <td className="admin-num">{formatDuration(submission.total_test_time_ms)}</td>
               <td className="admin-num admin-group-start">{submission.sharpness_count}</td>
-              <td className="admin-num">{formatAvg(submission.sharpness_quality_avg)}</td>
+              <td className="admin-num">{formatAvg(submission.sharpness_favorite_avg)}</td>
               <td className="admin-num">{formatAvg(submission.sharpness_realism_avg)}</td>
               <td className="admin-num admin-group-start">{submission.hdr_count}</td>
-              <td className="admin-num">{formatAvg(submission.hdr_quality_avg)}</td>
+              <td className="admin-num">{formatAvg(submission.hdr_favorite_avg)}</td>
               <td className="admin-num">{formatAvg(submission.hdr_realism_avg)}</td>
             </tr>
           ))}
@@ -177,7 +177,7 @@ function SubmissionDetail({ participantId, imageLookup, onBack }) {
                     </div>
                     <div className="admin-level-row">
                       <span>Most realistic: <strong>{formatLevel(ranking.most_realistic_level, ranking.max_level)}</strong></span>
-                      <span>Highest quality: <strong>{formatLevel(ranking.highest_quality_level, ranking.max_level)}</strong></span>
+                      <span>Favorite: <strong>{formatLevel(ranking.favorite_level, ranking.max_level)}</strong></span>
                       <span>Browsed to: <strong>{formatLevel(ranking.furthest_visited_level, ranking.max_level)}</strong></span>
                       <span>Time: <strong>{formatDuration(ranking.grading_ms)}</strong></span>
                     </div>

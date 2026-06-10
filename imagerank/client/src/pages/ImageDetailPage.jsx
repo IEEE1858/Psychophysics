@@ -78,13 +78,13 @@ function ImageDetailView({ collectionId, imageId }) {
   const rankings = useMemo(() => detail?.rankings ?? [], [detail])
   const accent = collectionColor(collectionId)
 
-  // Histogram of every selected level for this image — quality vs realism.
+  // Histogram of every selected level for this image — favorite vs realism.
   const histData = useMemo(
     () => [
       {
         type: 'histogram',
-        name: 'Highest quality',
-        x: rankings.map((row) => row.highest_quality_level).filter((value) => value != null),
+        name: 'Favorite image',
+        x: rankings.map((row) => row.favorite_level).filter((value) => value != null),
         marker: { color: accent },
         opacity: 0.75,
       },
@@ -147,7 +147,7 @@ function ImageDetailView({ collectionId, imageId }) {
           </div>
 
           <div className="analytics-statblocks">
-            <StatBlock title="Highest quality" stats={detail.quality} color={accent} />
+            <StatBlock title="Favorite image" stats={detail.favorite} color={accent} />
             <StatBlock title="Most realistic" stats={detail.realism} color="#1d3557" />
           </div>
 
@@ -170,7 +170,7 @@ function ImageDetailView({ collectionId, imageId }) {
                   <tr>
                     <th>Subject</th>
                     <th className="admin-num">Most realistic</th>
-                    <th className="admin-num">Highest quality</th>
+                    <th className="admin-num">Favorite image</th>
                     <th className="admin-num">Browsed to</th>
                     <th className="admin-num">Time</th>
                   </tr>
@@ -183,7 +183,7 @@ function ImageDetailView({ collectionId, imageId }) {
                         {row.re_ranked ? <span className="rankings-revised-chip">re-ranked</span> : null}
                       </td>
                       <td className="admin-num">{formatLevel(row.most_realistic_level, row.max_level)}</td>
-                      <td className="admin-num">{formatLevel(row.highest_quality_level, row.max_level)}</td>
+                      <td className="admin-num">{formatLevel(row.favorite_level, row.max_level)}</td>
                       <td className="admin-num">{formatLevel(row.furthest_visited_level, row.max_level)}</td>
                       <td className="admin-num">{formatDuration(row.grading_ms)}</td>
                     </tr>

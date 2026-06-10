@@ -41,7 +41,7 @@ function ensureImageState(imageState = {}) {
     currentLevel: imageState.currentLevel ?? 0,
     furthestVisitedLevel: imageState.furthestVisitedLevel ?? 0,
     mostRealisticLevel: imageState.mostRealisticLevel ?? null,
-    highestQualityLevel: imageState.highestQualityLevel ?? null,
+    favoriteLevel: imageState.favoriteLevel ?? null,
   }
 }
 
@@ -60,7 +60,7 @@ function getExplorationThreshold(maxLevel) {
 function hasAdvanceDecision(imageState, maxLevel) {
   return (
     imageState.mostRealisticLevel != null
-    || imageState.highestQualityLevel != null
+    || imageState.favoriteLevel != null
     || imageState.currentLevel === maxLevel
   )
 }
@@ -157,9 +157,9 @@ function App() {
             currentLevel: 0,
             furthestVisitedLevel: ranking.furthest_visited_level ?? 0,
             mostRealisticLevel: ranking.most_realistic_level,
-            highestQualityLevel: ranking.highest_quality_level,
+            favoriteLevel: ranking.favorite_level,
           })
-          if (ranking.most_realistic_level != null || ranking.highest_quality_level != null) {
+          if (ranking.most_realistic_level != null || ranking.favorite_level != null) {
             rankedKeys.add(key)
           }
         }
@@ -265,10 +265,10 @@ function App() {
   const isLastImageOverall = position >= totalImageCount - 1
 
   // The study is complete once every image in the assigned playlist has at least
-  // one selection (most realistic or highest quality).
+  // one selection (most realistic or favorite).
   const gradedImageCount = playlist.reduce((sum, item) => {
     const state = ensureImageState(imageStates[getImageKey(item.collectionId, item.imageId)])
-    return sum + (state.mostRealisticLevel != null || state.highestQualityLevel != null ? 1 : 0)
+    return sum + (state.mostRealisticLevel != null || state.favoriteLevel != null ? 1 : 0)
   }, 0)
   const allImagesGraded = totalImageCount > 0 && gradedImageCount === totalImageCount
 
@@ -279,7 +279,7 @@ function App() {
     () =>
       Object.values(imageStates).reduce((sum, state) => {
         const resolved = ensureImageState(state)
-        return sum + (resolved.mostRealisticLevel != null || resolved.highestQualityLevel != null ? 1 : 0)
+        return sum + (resolved.mostRealisticLevel != null || resolved.favoriteLevel != null ? 1 : 0)
       }, 0),
     [imageStates],
   )
@@ -338,7 +338,7 @@ function App() {
         maxLevel,
         furthestVisitedLevel: imageState.furthestVisitedLevel,
         mostRealisticLevel: imageState.mostRealisticLevel,
-        highestQualityLevel: imageState.highestQualityLevel,
+        favoriteLevel: imageState.favoriteLevel,
         gradingMs: (accumulatedMsRef.current[imageKey] ?? 0) + elapsed,
         // In re-rank mode the server adds this time to the existing total and
         // flags the row; this image was already counted in the study otherwise.
@@ -576,7 +576,7 @@ function App() {
       maxLevel,
       furthestVisitedLevel: imageState.furthestVisitedLevel,
       mostRealisticLevel: imageState.mostRealisticLevel,
-      highestQualityLevel: imageState.highestQualityLevel,
+      favoriteLevel: imageState.favoriteLevel,
       gradingMs: flushActiveGradingMs(imageKey),
       // In re-rank mode the server adds this session's time to the prior total
       // and marks the row re_ranked (issue #23).
@@ -668,7 +668,7 @@ function App() {
       const excludeKeys = new Set()
       for (const [key, state] of Object.entries(imageStates)) {
         const resolved = ensureImageState(state)
-        if (resolved.mostRealisticLevel != null || resolved.highestQualityLevel != null) {
+        if (resolved.mostRealisticLevel != null || resolved.favoriteLevel != null) {
           excludeKeys.add(key)
         }
       }
@@ -730,7 +730,7 @@ function App() {
       'success',
       selectionType === 'mostRealisticLevel'
         ? `Most realistic image set to ${currentVariant?.shortLabel ?? 'the current level'}.`
-        : `Highest quality image set to ${currentVariant?.shortLabel ?? 'the current level'}.`,
+        : `Favorite image set to ${currentVariant?.shortLabel ?? 'the current level'}.`,
     )
   }
 
@@ -947,14 +947,14 @@ function App() {
               aria-label="Processing level"
             />
 
-            {imageState.highestQualityLevel != null ? (
+            {imageState.favoriteLevel != null ? (
               <span
-                className="slider-marker slider-marker-quality"
+                className="slider-marker slider-marker-favorite"
                 style={{
-                  left: `${levelPercent(imageState.highestQualityLevel, maxLevel)}%`,
+                  left: `${levelPercent(imageState.favoriteLevel, maxLevel)}%`,
                   borderBottomColor: theme.palette.secondary.main,
                 }}
-                aria-label={`Highest quality at level ${imageState.highestQualityLevel}`}
+                aria-label={`Favorite image at level ${imageState.favoriteLevel}`}
               />
             ) : null}
           </div>
@@ -965,8 +965,8 @@ function App() {
             Pick Most Realistic
           </Button>
 
-          <Button className="study-pick" data-tour="pick-quality" variant="contained" color="secondary" onClick={() => setSelection('highestQualityLevel')}>
-            Pick Highest Quality
+          <Button className="study-pick" data-tour="pick-favorite" variant="contained" color="secondary" onClick={() => setSelection('favoriteLevel')}>
+            Pick Favorite Image
           </Button>
 
           {isReRank ? (

@@ -36,18 +36,18 @@ export function buildTourSteps({ isLastImage } = {}) {
         'The most realistic image is a true-to-life representation of the scene with accurate colors and tones — not exaggerated, not too blurry.',
     },
     {
-      target: '[data-tour="pick-quality"]',
+      target: '[data-tour="pick-favorite"]',
       placement: 'top',
-      title: 'Highest quality',
+      title: 'Favorite image',
       content:
-        'The highest quality image is simply the one you like the best — the version of the set that looks most pleasing to you.',
+        'Your favorite image is simply the one you like the best — the version of the set that looks most pleasing to you.',
     },
     {
       target: '[data-tour="slider"]',
       placement: 'top',
       title: 'Explore the set',
       content:
-        'Move the slider left and right until you find the image that looks most realistic, and the one with the highest quality. Tip: you can also use the ← and → arrow keys on your keyboard.',
+        'Move the slider left and right until you find the image that looks most realistic, and the one that is your favorite. Tip: you can also use the ← and → arrow keys on your keyboard.',
     },
     {
       target: '[data-tour="zoom"]',
@@ -61,7 +61,7 @@ export function buildTourSteps({ isLastImage } = {}) {
       placement: 'top',
       title: 'Record your choice',
       content:
-        'Once you have found it, click “Pick Most Realistic” or “Pick Highest Quality” to record your selection. A marker appears on the slider showing the level you picked.',
+        'Once you have found it, click “Pick Most Realistic” or “Pick Favorite Image” to record your selection. A marker appears on the slider showing the level you picked.',
     },
   ]
 
@@ -71,7 +71,7 @@ export function buildTourSteps({ isLastImage } = {}) {
       placement: 'top',
       title: 'Move on',
       content:
-        'When you are happy with the most realistic and highest quality image you have selected, click “Next image” to continue.',
+        'When you are happy with the most realistic and favorite image you have selected, click “Next image” to continue.',
     })
   }
 

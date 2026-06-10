@@ -19,7 +19,7 @@ function formatLevel(level, maxLevel) {
 }
 
 // "Review and revise your rankings" (issue #23): a two-column grid of every
-// image this participant has ranked, with the chosen quality and realism levels
+// image this participant has ranked, with the chosen favorite and realism levels
 // alongside each. Clicking a card reopens the grading interface for that single
 // image (/study?rerank=...) so the participant can re-rank it.
 function RankingsPage() {
@@ -71,7 +71,7 @@ function RankingsPage() {
     () =>
       (rankings ?? []).filter(
         (ranking) =>
-          ranking.most_realistic_level != null || ranking.highest_quality_level != null,
+          ranking.most_realistic_level != null || ranking.favorite_level != null,
       ),
     [rankings],
   )
@@ -87,7 +87,7 @@ function RankingsPage() {
             <h1>Review and revise</h1>
             <p className="home-lead">
               These are the images you have ranked so far. Select any image to revisit it and
-              change your most realistic and highest quality choices.
+              change your most realistic and favorite choices.
             </p>
           </div>
           <div className="admin-header-actions">
@@ -136,8 +136,8 @@ function RankingsPage() {
                     </div>
                     <div className="rankings-levels">
                       <span className="rankings-level">
-                        <span className="rankings-level-label">Quality</span>
-                        <strong>{formatLevel(ranking.highest_quality_level, ranking.max_level)}</strong>
+                        <span className="rankings-level-label">Favorite</span>
+                        <strong>{formatLevel(ranking.favorite_level, ranking.max_level)}</strong>
                       </span>
                       <span className="rankings-level">
                         <span className="rankings-level-label">Realism</span>

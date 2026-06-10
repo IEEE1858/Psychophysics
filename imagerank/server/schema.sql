@@ -1,7 +1,7 @@
 -- SQLite schema for the imagerank psychophysics study.
 -- Loosely based on webapp/schema.sql (PostgreSQL), adapted to imagerank's model:
 -- participants do not give a 1-5 rating; instead they pick the *processing level*
--- they judge highest quality and most realistic for each image.
+-- they judge favorite and most realistic for each image.
 
 PRAGMA foreign_keys = ON;
 
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS image_rankings (
   max_level               INTEGER NOT NULL,              -- highest processing level available
   furthest_visited_level  INTEGER NOT NULL,              -- how far into processing they browsed
   most_realistic_level    INTEGER,                       -- chosen level (nullable if skipped)
-  highest_quality_level   INTEGER,                       -- chosen level (nullable if skipped)
+  favorite_level          INTEGER,                       -- chosen level (nullable if skipped)
   grading_ms              INTEGER,                        -- time spent grading this image (incl. any re-ranking)
   re_ranked               INTEGER NOT NULL DEFAULT 0,     -- 1 if revisited and revised from the /rankings page
   created_at              TEXT NOT NULL DEFAULT (datetime('now')),
