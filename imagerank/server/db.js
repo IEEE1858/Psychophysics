@@ -30,6 +30,13 @@ try {
   // column already exists
 }
 
+// Migration for databases created before re-ranking (issue #23) existed.
+try {
+  db.exec("ALTER TABLE image_rankings ADD COLUMN re_ranked INTEGER NOT NULL DEFAULT 0");
+} catch {
+  // column already exists
+}
+
 const insertParticipantStmt = db.prepare(`
   INSERT INTO participants (
     age, gender, email, self_description, vision_status, vision_details,
@@ -58,6 +65,28 @@ const upsertRankingStmt = db.prepare(`
     most_realistic_level = excluded.most_realistic_level,
     highest_quality_level = excluded.highest_quality_level,
     grading_ms = excluded.grading_ms,
+    created_at = datetime('now')
+`);
+
+// Re-rank upsert (issue #23): the participant revisited an already-ranked image
+// from the /rankings page and revised it. Unlike the normal upsert, the time
+// they just spent is *added* to the existing grading time rather than replacing
+// it, the row is flagged re_ranked, and furthest_visited_level only grows.
+const reRankRankingStmt = db.prepare(`
+  INSERT INTO image_rankings (
+    participant_id, collection_id, image_id, max_level, furthest_visited_level,
+    most_realistic_level, highest_quality_level, grading_ms, re_ranked
+  ) VALUES (
+    :participantId, :collectionId, :imageId, :maxLevel, :furthestVisitedLevel,
+    :mostRealisticLevel, :highestQualityLevel, :gradingMs, 1
+  )
+  ON CONFLICT (participant_id, collection_id, image_id) DO UPDATE SET
+    max_level = excluded.max_level,
+    furthest_visited_level = max(image_rankings.furthest_visited_level, excluded.furthest_visited_level),
+    most_realistic_level = excluded.most_realistic_level,
+    highest_quality_level = excluded.highest_quality_level,
+    grading_ms = COALESCE(image_rankings.grading_ms, 0) + COALESCE(excluded.grading_ms, 0),
+    re_ranked = 1,
     created_at = datetime('now')
 `);
 
@@ -126,7 +155,8 @@ function markParticipantComplete(participantId) {
 }
 
 function recordRanking(ranking) {
-  upsertRankingStmt.run({
+  const statement = ranking.reRank ? reRankRankingStmt : upsertRankingStmt;
+  statement.run({
     participantId: Number(ranking.participantId),
     collectionId: String(ranking.collectionId),
     imageId: String(ranking.imageId),
@@ -185,7 +215,7 @@ function exportRankingsFlat() {
          p.vision_details, p.color_blind, p.country_of_origin, p.display_type,
          p.lighting, p.time_budget_minutes,
          r.collection_id, r.image_id, r.max_level, r.furthest_visited_level,
-         r.most_realistic_level, r.highest_quality_level, r.grading_ms,
+         r.most_realistic_level, r.highest_quality_level, r.grading_ms, r.re_ranked,
          r.created_at        AS ranked_at,
          p.created_at        AS participant_created_at,
          p.user_agent

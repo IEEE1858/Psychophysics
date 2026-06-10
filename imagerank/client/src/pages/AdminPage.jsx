@@ -243,6 +243,7 @@ function SubmissionDetail({ participantId, imageLookup, onBack }) {
                     <div className="admin-ranking-head">
                       <span className="admin-collection-chip">{ranking.collection_id}</span>
                       <span className="admin-image-name">{image?.label ?? ranking.image_id}</span>
+                      {ranking.re_ranked ? <span className="rankings-revised-chip">re-ranked</span> : null}
                     </div>
                     <div className="admin-level-row">
                       <span>Most realistic: <strong>{formatLevel(ranking.most_realistic_level, ranking.max_level)}</strong></span>

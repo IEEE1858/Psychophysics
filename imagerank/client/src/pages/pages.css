@@ -196,6 +196,95 @@
   color: #556078;
 }
 
+/* /rankings — review & revise grid (issue #23) */
+.rankings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .rankings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.rankings-card {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+  padding: 10px 14px 10px 10px;
+  border-radius: 14px;
+  background: rgba(255, 252, 247, 0.84);
+  border: 1px solid rgba(70, 84, 118, 0.12);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.rankings-card:hover {
+  border-color: rgba(29, 53, 87, 0.45);
+  box-shadow: 0 6px 18px rgba(29, 53, 87, 0.16);
+  transform: translateY(-1px);
+}
+
+.rankings-card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.rankings-card .admin-ranking-head {
+  min-width: 0;
+}
+
+/* Long image ids must truncate, not wrap a character per line. */
+.rankings-card .admin-image-name {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+}
+
+.rankings-revised-chip {
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(40, 114, 113, 0.14);
+  color: #287271;
+}
+
+.rankings-levels {
+  display: flex;
+  gap: 28px;
+  justify-content: flex-end;
+}
+
+.rankings-level {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 1.02rem;
+  color: #1d3557;
+}
+
+.rankings-level-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a93a6;
+}
+
 .admin-users-panel {
   display: flex;
   flex-direction: column;

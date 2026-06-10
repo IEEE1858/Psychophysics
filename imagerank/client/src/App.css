@@ -477,6 +477,12 @@
   text-decoration: underline;
 }
 
+.completion-review-block {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0;
+}
+
 .more-time-block {
   display: flex;
   flex-direction: column;
