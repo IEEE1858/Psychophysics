@@ -1,10 +1,13 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
 import CircularProgress from '@mui/material/CircularProgress'
 import Slider from '@mui/material/Slider'
+import { useTheme } from '@mui/material/styles'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
+import { getParticipantId, getStudyPosition, setStudyPosition } from './lib/session'
 import './App.css'
 
 const EXPLORATION_RATIO = 0.35
@@ -28,23 +31,12 @@ function ensureImageState(imageState = {}) {
   }
 }
 
-function buildMarks(imageState) {
-  const marks = []
-
-  if (imageState.mostRealisticLevel != null) {
-    marks.push({ value: imageState.mostRealisticLevel, label: 'R' })
+// Position of a level along the slider track, as a percentage (0-100).
+function levelPercent(level, maxLevel) {
+  if (maxLevel <= 0 || level == null) {
+    return 0
   }
-
-  if (imageState.highestQualityLevel != null) {
-    const existingMark = marks.find((mark) => mark.value === imageState.highestQualityLevel)
-    if (existingMark) {
-      existingMark.label = `${existingMark.label}Q`
-    } else {
-      marks.push({ value: imageState.highestQualityLevel, label: 'Q' })
-    }
-  }
-
-  return marks.sort((left, right) => left.value - right.value)
+  return (level / maxLevel) * 100
 }
 
 function getExplorationThreshold(maxLevel) {
@@ -64,6 +56,8 @@ function collectImageUrls(image) {
 }
 
 function App() {
+  const theme = useTheme()
+  const navigate = useNavigate()
   const transformRef = useRef(null)
   const preloadPromisesRef = useRef(new Map())
   const [library, setLibrary] = useState(null)
@@ -73,18 +67,66 @@ function App() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [imageStates, setImageStates] = useState({})
   const [message, setMessage] = useState(null)
+  const [toastClosing, setToastClosing] = useState(false)
   const [viewportTransform, setViewportTransform] = useState(DEFAULT_VIEWPORT)
   const [showLoadingModal, setShowLoadingModal] = useState(false)
+  const [isFinished, setIsFinished] = useState(false)
   const loadedImageUrlsRef = useRef(new Set())
+  const participantIdRef = useRef(null)
+  const gradingStartRef = useRef(0)
+  const accumulatedMsRef = useRef({})
+  // True for the brief window around a click that itself raised a new toast, so
+  // the dismiss-on-click listener doesn't immediately close that fresh toast.
+  const justNotifiedRef = useRef(false)
 
+  // Load the library and (for a returning participant) their saved progress,
+  // then resume at the position they left off. A missing session means the
+  // participant skipped demographics, so send them there first.
   useEffect(() => {
-    async function loadLibrary() {
-      try {
-        const response = await axios.get('/api/library')
-        setLibrary(response.data)
+    const participantId = getParticipantId()
+    if (!participantId) {
+      navigate('/demographics', { replace: true })
+      return
+    }
+    participantIdRef.current = participantId
 
-        const firstCollection = response.data.collections[0]
-        setSelectedCollectionId(firstCollection?.id ?? '')
+    async function load() {
+      try {
+        const [libraryResponse, participantResponse] = await Promise.all([
+          axios.get('/api/library'),
+          axios.get(`/api/participants/${participantId}`).catch(() => null),
+        ])
+
+        const libraryData = libraryResponse.data
+        setLibrary(libraryData)
+
+        // Restore prior rankings so markers, the exploration gate, and the
+        // completion check all reflect what the participant already did.
+        const rankings = participantResponse?.data?.rankings ?? []
+        if (rankings.length > 0) {
+          const restored = {}
+          for (const ranking of rankings) {
+            restored[getImageKey(ranking.collection_id, ranking.image_id)] = ensureImageState({
+              currentLevel: 0,
+              furthestVisitedLevel: ranking.furthest_visited_level ?? 0,
+              mostRealisticLevel: ranking.most_realistic_level,
+              highestQualityLevel: ranking.highest_quality_level,
+            })
+          }
+          setImageStates(restored)
+        }
+
+        // Restore the saved navigation position, falling back to the start.
+        const collectionsData = libraryData.collections ?? []
+        const savedPosition = getStudyPosition()
+        const savedCollection = collectionsData.find((collection) => collection.id === savedPosition?.collectionId)
+        if (savedCollection) {
+          const maxIndex = savedCollection.images.length - 1
+          setSelectedCollectionId(savedCollection.id)
+          setSelectedImageIndex(Math.min(Math.max(savedPosition.imageIndex ?? 0, 0), maxIndex))
+        } else {
+          setSelectedCollectionId(collectionsData[0]?.id ?? '')
+        }
       } catch (error) {
         setLoadError(error.response?.data?.error ?? 'Failed to load images from the server.')
       } finally {
@@ -92,8 +134,16 @@ function App() {
       }
     }
 
-    loadLibrary()
-  }, [])
+    load()
+  }, [navigate])
+
+  // Persist the navigation position so a returning participant resumes here.
+  useEffect(() => {
+    if (!selectedCollectionId) {
+      return
+    }
+    setStudyPosition({ collectionId: selectedCollectionId, imageIndex: selectedImageIndex })
+  }, [selectedCollectionId, selectedImageIndex])
 
   const collections = library?.collections ?? []
   const selectedCollection = collections.find((collection) => collection.id === selectedCollectionId) ?? collections[0]
@@ -102,8 +152,23 @@ function App() {
   const imageState = ensureImageState(imageStates[imageKey])
   const currentVariant = currentImage?.variants.find((variant) => variant.level === imageState.currentLevel) ?? currentImage?.variants[0] ?? null
   const maxLevel = currentImage?.maxLevel ?? 0
-  const canGoBack = selectedImageIndex > 0
-  const canGoForward = Boolean(selectedCollection && selectedImageIndex < selectedCollection.images.length - 1)
+  // Navigation flows linearly across collections (Sharpness then HDR), so the
+  // top-bar label can read "<collection> image X of <total>".
+  const collectionIndex = collections.findIndex((collection) => collection.id === selectedCollection?.id)
+  const isLastInCollection = Boolean(selectedCollection) && selectedImageIndex >= selectedCollection.images.length - 1
+  const canGoBack = selectedImageIndex > 0 || collectionIndex > 0
+  const isLastImageOverall = isLastInCollection && collectionIndex === collections.length - 1
+
+  // The study is complete once every image in every collection has at least one
+  // selection (most realistic or highest quality).
+  const totalImageCount = collections.reduce((sum, collection) => sum + collection.images.length, 0)
+  const gradedImageCount = collections.reduce((sum, collection) => {
+    return sum + collection.images.filter((image) => {
+      const state = ensureImageState(imageStates[getImageKey(collection.id, image.id)])
+      return state.mostRealisticLevel != null || state.highestQualityLevel != null
+    }).length
+  }, 0)
+  const allImagesGraded = totalImageCount > 0 && gradedImageCount === totalImageCount
 
   useEffect(() => {
     if (!currentImage || !imageKey) {
@@ -121,6 +186,73 @@ function App() {
       }
     })
   }, [currentImage, imageKey])
+
+  // Start the grading clock fresh whenever a different image becomes active.
+  useEffect(() => {
+    if (!imageKey) {
+      return
+    }
+    gradingStartRef.current = Date.now()
+  }, [imageKey])
+
+  // The per-navigation submit covers in-app moves; this beacon captures the
+  // image still on screen if the participant closes or refreshes the tab.
+  useEffect(() => {
+    function handleBeforeUnload() {
+      const participantId = participantIdRef.current
+      if (!participantId || !currentImage || !selectedCollection || !imageKey) {
+        return
+      }
+
+      const elapsed = Math.max(0, Date.now() - gradingStartRef.current)
+      const payload = {
+        participantId: Number(participantId),
+        collectionId: selectedCollection.id,
+        imageId: currentImage.id,
+        maxLevel,
+        furthestVisitedLevel: imageState.furthestVisitedLevel,
+        mostRealisticLevel: imageState.mostRealisticLevel,
+        highestQualityLevel: imageState.highestQualityLevel,
+        gradingMs: (accumulatedMsRef.current[imageKey] ?? 0) + elapsed,
+      }
+
+      navigator.sendBeacon('/api/rankings', new Blob([JSON.stringify(payload)], { type: 'application/json' }))
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [currentImage, selectedCollection, imageKey, maxLevel, imageState])
+
+  // Begin fading the toast on a click anywhere — unless that click just raised
+  // a new toast (justNotifiedRef), in which case keep the new one.
+  useEffect(() => {
+    if (!message || toastClosing) {
+      return undefined
+    }
+
+    function dismiss() {
+      if (justNotifiedRef.current) {
+        justNotifiedRef.current = false
+        return
+      }
+      setToastClosing(true)
+    }
+
+    document.addEventListener('click', dismiss)
+    return () => document.removeEventListener('click', dismiss)
+  }, [message, toastClosing])
+
+  // After the fade-out transition, remove the toast from the DOM.
+  useEffect(() => {
+    if (!toastClosing) {
+      return undefined
+    }
+    const timer = window.setTimeout(() => {
+      setMessage(null)
+      setToastClosing(false)
+    }, 280)
+    return () => window.clearTimeout(timer)
+  }, [toastClosing])
 
   const handleArrowSliderStep = useEffectEvent((direction) => {
     if (direction < 0) {
@@ -280,29 +412,119 @@ function App() {
     })
   }
 
-  function switchCollection(collectionId) {
-    setSelectedCollectionId(collectionId)
-    setSelectedImageIndex(0)
-    setMessage(null)
+  // Roll the time spent on `key` since the clock last started into its running
+  // total, restart the clock, and return the new total in milliseconds.
+  function flushActiveGradingMs(key) {
+    if (!key) {
+      return 0
+    }
+    const elapsed = Math.max(0, Date.now() - gradingStartRef.current)
+    const total = (accumulatedMsRef.current[key] ?? 0) + elapsed
+    accumulatedMsRef.current[key] = total
+    gradingStartRef.current = Date.now()
+    return total
   }
 
-  function moveToImage(nextIndex) {
-    if (nextIndex > selectedImageIndex && currentImage) {
-      const threshold = getExplorationThreshold(maxLevel)
-      const exploredEnough = imageState.furthestVisitedLevel >= threshold || imageState.currentLevel === maxLevel
-      const madeDecision = hasAdvanceDecision(imageState, maxLevel)
-
-      if (!exploredEnough || !madeDecision) {
-        setMessage({
-          severity: 'error',
-          text: NEXT_IMAGE_VALIDATION_MESSAGE,
-        })
-        return
-      }
+  // Persist the ranking for the image the participant is leaving. Best-effort:
+  // failures are logged but never block navigation, and the upsert on the
+  // server means re-submitting the same image just overwrites the prior row.
+  function submitActiveRanking() {
+    const participantId = participantIdRef.current
+    if (!participantId || !currentImage || !selectedCollection || !imageKey) {
+      return
     }
 
-    setSelectedImageIndex(nextIndex)
+    const payload = {
+      participantId: Number(participantId),
+      collectionId: selectedCollection.id,
+      imageId: currentImage.id,
+      maxLevel,
+      furthestVisitedLevel: imageState.furthestVisitedLevel,
+      mostRealisticLevel: imageState.mostRealisticLevel,
+      highestQualityLevel: imageState.highestQualityLevel,
+      gradingMs: flushActiveGradingMs(imageKey),
+    }
+
+    axios.post('/api/rankings', payload).catch((error) => {
+      console.error('Failed to submit ranking', error)
+    })
+  }
+
+  // Show a toast message. Mark the raising click so the dismiss listener won't
+  // close this fresh toast; the flag is cleared on the next tick.
+  function notify(severity, text) {
+    justNotifiedRef.current = true
+    window.setTimeout(() => {
+      justNotifiedRef.current = false
+    }, 0)
+    setToastClosing(false)
+    setMessage({ severity, text })
+  }
+
+  // Advance to the next image, crossing into the next collection at the end of
+  // the current one. Gated on enough exploration and a decision being made.
+  function goNext() {
+    if (!currentImage || !selectedCollection) {
+      return
+    }
+
+    const threshold = getExplorationThreshold(maxLevel)
+    const exploredEnough = imageState.furthestVisitedLevel >= threshold || imageState.currentLevel === maxLevel
+    const madeDecision = hasAdvanceDecision(imageState, maxLevel)
+
+    if (!exploredEnough || !madeDecision) {
+      notify('error', NEXT_IMAGE_VALIDATION_MESSAGE)
+      return
+    }
+
+    submitActiveRanking()
     setMessage(null)
+
+    if (selectedImageIndex < selectedCollection.images.length - 1) {
+      setSelectedImageIndex(selectedImageIndex + 1)
+    } else if (collectionIndex < collections.length - 1) {
+      setSelectedCollectionId(collections[collectionIndex + 1].id)
+      setSelectedImageIndex(0)
+    }
+  }
+
+  // Step back to the previous image, crossing into the previous collection's
+  // last image at the start of the current one. No exploration gate going back.
+  function goPrev() {
+    if (!canGoBack) {
+      return
+    }
+
+    submitActiveRanking()
+    setMessage(null)
+
+    if (selectedImageIndex > 0) {
+      setSelectedImageIndex(selectedImageIndex - 1)
+    } else if (collectionIndex > 0) {
+      const previousCollection = collections[collectionIndex - 1]
+      setSelectedCollectionId(previousCollection.id)
+      setSelectedImageIndex(previousCollection.images.length - 1)
+    }
+  }
+
+  function finishStudy() {
+    // Persist the image currently on screen, mark the session complete (so it's
+    // no longer a partial submission), then show the completion screen.
+    submitActiveRanking()
+    const participantId = participantIdRef.current
+    if (participantId) {
+      axios.post(`/api/participants/${participantId}/complete`).catch((error) => {
+        console.error('Failed to mark study complete', error)
+      })
+    }
+    setIsFinished(true)
+  }
+
+  // Save progress for the current image, then go edit demographics. On save the
+  // demographics page returns the participant to the study at this position.
+  function editDemographics() {
+    submitActiveRanking()
+    navigate('/demographics?edit=1')
   }
 
   function setSelection(selectionType) {
@@ -314,10 +536,7 @@ function App() {
     const exploredEnough = imageState.furthestVisitedLevel >= threshold || imageState.currentLevel === maxLevel
 
     if (!exploredEnough) {
-      setMessage({
-        severity: 'error',
-        text: NEXT_IMAGE_VALIDATION_MESSAGE,
-      })
+      notify('error', NEXT_IMAGE_VALIDATION_MESSAGE)
       return
     }
 
@@ -332,215 +551,203 @@ function App() {
       }
     })
 
-    setMessage({
-      severity: 'success',
-      text:
-        selectionType === 'mostRealisticLevel'
-          ? `Most realistic image set to ${currentVariant?.shortLabel ?? 'the current level'}.`
-          : `Highest quality image set to ${currentVariant?.shortLabel ?? 'the current level'}.`,
-    })
+    notify(
+      'success',
+      selectionType === 'mostRealisticLevel'
+        ? `Most realistic image set to ${currentVariant?.shortLabel ?? 'the current level'}.`
+        : `Highest quality image set to ${currentVariant?.shortLabel ?? 'the current level'}.`,
+    )
   }
 
-  const sliderMarks = buildMarks(imageState)
+
+  if (isFinished) {
+    return (
+      <main className="app-shell">
+        <section className="completion-panel">
+          <p className="eyebrow">Study complete</p>
+          <h1 className="completion-title">Thank you!</h1>
+          <p className="completion-copy">
+            Your responses for all {totalImageCount} images have been recorded. We appreciate the
+            time you took to take part in this study.
+          </p>
+          <p className="completion-copy completion-muted">You can now close this tab.</p>
+          <a className="completion-home-link" href="/">
+            Return to the home page
+          </a>
+        </section>
+      </main>
+    )
+  }
 
   return (
-    <main className="app-shell">
-      <section className="app-panel">
-        <header className="hero-panel">
-          <div className="hero-top-row">
-            <div className="hero-text">
-              <p className="eyebrow">IEEE 1858</p>
-              <h1>Image Rank</h1>
+    <main className="study-shell">
+      <header className="study-topbar">
+        <span className="study-brand">IEEE 1858 CPIQ Image Rank</span>
+
+        <span className="study-center">
+          {!loading && !loadError && currentImage
+            ? `${selectedCollection.label} image ${selectedImageIndex + 1} of ${selectedCollection.images.length}: ${currentImage.label}`
+            : ''}
+        </span>
+
+        <div className="study-zoom">
+          <Button size="small" variant="outlined" className="study-edit-demographics" onClick={editDemographics}>
+            Edit demographics
+          </Button>
+          <Button size="small" variant="outlined" onClick={() => transformRef.current?.zoomOut()}>
+            Zoom out
+          </Button>
+          <Button size="small" variant="outlined" onClick={() => transformRef.current?.zoomIn()}>
+            Zoom in
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => {
+              transformRef.current?.resetTransform(0)
+              setViewportTransform(DEFAULT_VIEWPORT)
+            }}
+          >
+            Reset view
+          </Button>
+        </div>
+      </header>
+
+      {loading ? (
+        <div className="study-status">
+          <CircularProgress size={32} />
+          <span>Loading image library…</span>
+        </div>
+      ) : null}
+
+      {loadError ? (
+        <div className="study-status">
+          <Alert severity="error">{loadError}</Alert>
+        </div>
+      ) : null}
+
+      {!loading && !loadError && currentImage ? (
+        <section className="study-stage">
+          {showLoadingModal ? (
+            <div className="image-loading-overlay" role="dialog" aria-modal="true" aria-label="Loading image">
+              <div className="loading-modal">
+                <h2 className="loading-modal-title">Loading image</h2>
+                <p className="loading-modal-image">{currentImage?.label} — {currentVariant?.shortLabel}</p>
+                <CircularProgress size={36} />
+              </div>
             </div>
+          ) : null}
 
-            <div className="collection-switcher" role="tablist" aria-label="Image collections">
-              {collections.map((collection) => (
-                <button
-                  key={collection.id}
-                  type="button"
-                  className={collection.id === selectedCollection?.id ? 'collection-tab active' : 'collection-tab'}
-                  onClick={() => switchCollection(collection.id)}
-                >
-                  <span>{collection.label}</span>
-                  <strong>{collection.imageCount}</strong>
-                </button>
-              ))}
-            </div>
-          </div>
+          <TransformWrapper
+            ref={transformRef}
+            initialScale={DEFAULT_VIEWPORT.scale}
+            minScale={1}
+            maxScale={12}
+            centerOnInit
+            limitToBounds={false}
+            wheel={{ step: 0.12 }}
+            doubleClick={{ step: 1.4 }}
+            onTransformed={(_, state) => {
+              setViewportTransform((previousTransform) => {
+                if (
+                  previousTransform.scale === state.scale
+                  && previousTransform.positionX === state.positionX
+                  && previousTransform.positionY === state.positionY
+                ) {
+                  return previousTransform
+                }
 
-          <p className="hero-copy">
-            Move through processing levels, mark the most realistic and highest quality version.
-          </p>
-        </header>
+                return {
+                  scale: state.scale,
+                  positionX: state.positionX,
+                  positionY: state.positionY,
+                }
+              })
+            }}
+          >
+            <TransformComponent wrapperClass="transform-wrapper" contentClass="transform-content">
+              <img
+                className="stage-image"
+                src={currentVariant?.url}
+                alt={`${currentImage.label} at ${currentVariant?.shortLabel ?? 'original'} processing`}
+              />
+            </TransformComponent>
+          </TransformWrapper>
+        </section>
+      ) : null}
 
-        {loading ? (
-          <div className="status-panel">
-            <CircularProgress size={32} />
-            <span>Loading image library…</span>
-          </div>
-        ) : null}
+      {!loading && !loadError && currentImage ? (
+        <footer className="study-bottombar">
+          {canGoBack ? (
+            <Button className="study-nav" size="small" variant="outlined" onClick={goPrev}>
+              Previous
+            </Button>
+          ) : null}
 
-        {loadError ? <Alert severity="error">{loadError}</Alert> : null}
+          <span className="study-slider-label">Unprocessed</span>
 
-        {!loading && !loadError && currentImage ? (
-          <section className="toolbar">
-              <div className="toolbar-header">
-                <div>
-                  <p className="image-index">
-                    {selectedCollection.label} image {selectedImageIndex + 1} of {selectedCollection.images.length}
-                  </p>
-                  <h2>{currentImage.label}</h2>
-                </div>
-                <div className="selection-summary">
-                  <span>
-                    Most realistic:{' '}
-                    {imageState.mostRealisticLevel == null
-                      ? 'not set'
-                      : currentImage.variants.find((variant) => variant.level === imageState.mostRealisticLevel)?.shortLabel}
-                  </span>
-                  <span>
-                    Highest quality:{' '}
-                    {imageState.highestQualityLevel == null
-                      ? 'not set'
-                      : currentImage.variants.find((variant) => variant.level === imageState.highestQualityLevel)?.shortLabel}
-                  </span>
-                </div>
-              </div>
-
-              <div className="toolbar-controls">
-                {canGoBack ? (
-                  <Button variant="outlined" onClick={() => moveToImage(selectedImageIndex - 1)}>
-                    Previous image
-                  </Button>
-                ) : (
-                  <div className="button-placeholder" aria-hidden="true" />
-                )}
-
-                <div className="slider-block">
-                  <div className="slider-label-row">
-                    <span>Unprocessed</span>
-                    <span>Heavily processed</span>
-                  </div>
-
-                  <Slider
-                    min={0}
-                    max={maxLevel}
-                    marks={sliderMarks}
-                    step={1}
-                    value={imageState.currentLevel}
-                    onChange={(_, value) => updateSliderLevel(Array.isArray(value) ? value[0] : value)}
-                    aria-label="Processing level"
-                  />
-
-                  <div className="slider-meta-row">
-                    <span>{currentVariant?.description}</span>
-                    <span>
-                      Explored to {imageState.furthestVisitedLevel}/{maxLevel}
-                    </span>
-                  </div>
-                </div>
-
-              <div className="selection-buttons">
-                <Button variant="contained" onClick={() => setSelection('mostRealisticLevel')}>
-                  Set Most Realistic Image
-                </Button>
-
-                <Button variant="contained" color="secondary" onClick={() => setSelection('highestQualityLevel')}>
-                  Set Highest Quality Image
-                </Button>
-              </div>
-
-                {canGoForward ? (
-                  <Button variant="outlined" onClick={() => moveToImage(selectedImageIndex + 1)}>
-                    Next image
-                  </Button>
-                ) : (
-                  <div className="button-placeholder" aria-hidden="true" />
-                )}
-              </div>
-
-              {message ? <Alert severity={message.severity}>{message.text}</Alert> : null}
-          </section>
-        ) : null}
-
-        {!loading && !loadError && currentImage ? (
-          <section className="image-stage">
-            {showLoadingModal ? (
-              <div className="image-loading-overlay" role="dialog" aria-modal="true" aria-label="Loading image">
-                <div className="loading-modal">
-                  <h2 className="loading-modal-title">Loading image</h2>
-                  <p className="loading-modal-image">{currentImage?.label} — {currentVariant?.shortLabel}</p>
-                  <CircularProgress size={36} />
-                </div>
-              </div>
+          <div className="slider-with-markers study-slider">
+            {imageState.mostRealisticLevel != null ? (
+              <span
+                className="slider-marker slider-marker-realism"
+                style={{
+                  left: `${levelPercent(imageState.mostRealisticLevel, maxLevel)}%`,
+                  borderTopColor: theme.palette.primary.main,
+                }}
+                aria-label={`Most realistic at level ${imageState.mostRealisticLevel}`}
+              />
             ) : null}
 
-              <TransformWrapper
-                ref={transformRef}
-                initialScale={DEFAULT_VIEWPORT.scale}
-                minScale={1}
-                maxScale={12}
-                centerOnInit
-                limitToBounds={false}
-                wheel={{ step: 0.12 }}
-                doubleClick={{ step: 1.4 }}
-                onTransformed={(_, state) => {
-                  setViewportTransform((previousTransform) => {
-                    if (
-                      previousTransform.scale === state.scale
-                      && previousTransform.positionX === state.positionX
-                      && previousTransform.positionY === state.positionY
-                    ) {
-                      return previousTransform
-                    }
+            <Slider
+              min={0}
+              max={maxLevel}
+              step={1}
+              value={imageState.currentLevel}
+              onChange={(_, value) => updateSliderLevel(Array.isArray(value) ? value[0] : value)}
+              aria-label="Processing level"
+            />
 
-                    return {
-                      scale: state.scale,
-                      positionX: state.positionX,
-                      positionY: state.positionY,
-                    }
-                  })
+            {imageState.highestQualityLevel != null ? (
+              <span
+                className="slider-marker slider-marker-quality"
+                style={{
+                  left: `${levelPercent(imageState.highestQualityLevel, maxLevel)}%`,
+                  borderBottomColor: theme.palette.secondary.main,
                 }}
-              >
-                {({ zoomIn, zoomOut, resetTransform }) => (
-                  <>
-                    <div className="image-stage-toolbar">
-                      <div className="image-stage-hint">
-                        Scroll to zoom. Drag to pan. View stays locked while you switch images.
-                      </div>
-                      <div className="image-stage-actions">
-                        <Button size="small" variant="outlined" onClick={() => zoomOut()}>
-                          Zoom out
-                        </Button>
-                        <Button size="small" variant="outlined" onClick={() => zoomIn()}>
-                          Zoom in
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={() => {
-                            resetTransform(0)
-                            setViewportTransform(DEFAULT_VIEWPORT)
-                          }}
-                        >
-                          Reset view
-                        </Button>
-                      </div>
-                    </div>
+                aria-label={`Highest quality at level ${imageState.highestQualityLevel}`}
+              />
+            ) : null}
+          </div>
 
-                    <TransformComponent wrapperClass="transform-wrapper" contentClass="transform-content">
-                      <img
-                        className="stage-image"
-                        src={currentVariant?.url}
-                        alt={`${currentImage.label} at ${currentVariant?.shortLabel ?? 'original'} processing`}
-                      />
-                    </TransformComponent>
-                  </>
-                )}
-              </TransformWrapper>
-          </section>
-        ) : null}
-      </section>
+          <span className="study-slider-label">Heavily processed</span>
+
+          <Button className="study-pick" variant="contained" onClick={() => setSelection('mostRealisticLevel')}>
+            Pick Most Realistic
+          </Button>
+
+          <Button className="study-pick" variant="contained" color="secondary" onClick={() => setSelection('highestQualityLevel')}>
+            Pick Highest Quality
+          </Button>
+
+          {!isLastImageOverall ? (
+            <Button className="study-nav" variant="outlined" onClick={goNext}>
+              Next image
+            </Button>
+          ) : null}
+
+          {allImagesGraded ? (
+            <Button className="study-nav" variant="contained" color="success" onClick={finishStudy}>
+              Finish
+            </Button>
+          ) : null}
+        </footer>
+      ) : null}
+
+      {message ? (
+        <div className={`study-toast${toastClosing ? ' study-toast-closing' : ''}`} role="status">
+          <Alert severity={message.severity} variant="filled">{message.text}</Alert>
+        </div>
+      ) : null}
     </main>
   )
 }

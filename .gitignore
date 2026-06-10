@@ -1,1 +1,42 @@
+# ---------------------------------------------------------------------------
+# Security: never commit secrets or stored participant data.
+# These patterns apply repo-wide as defense-in-depth (subprojects may also have
+# their own .gitignore). gitignore does NOT untrack already-committed files —
+# see SECURITY.md if something sensitive was committed in the past.
+# ---------------------------------------------------------------------------
+
+# Environment / secret files (admin seed password, DB path, API keys, etc.).
+# Keep the *.env.example templates, which must contain no real secrets.
+.env
+.env.*
+*.env
+!.env.example
+!*.env.example
+
+# SQLite study databases — contain participant PII (emails, demographics) and
+# their rankings. Must never be disclosed in the repository.
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+data/
+
+# AWS / cloud credential files that occasionally land in a project dir.
+.aws/
+*.pem
+credentials.json
+
+# ---------------------------------------------------------------------------
+# Build artifacts, dependencies, OS/editor cruft
+# ---------------------------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+*.log
+
+.DS_Store
+*.swp
+
+# Large generated image set (not study data, just bulky)
 processed_images
