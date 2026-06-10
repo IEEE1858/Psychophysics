@@ -310,6 +310,47 @@ function listSubmissions() {
     .all();
 }
 
+// Raw rows for the analytics dashboard (issue #24). Aggregation/normalization
+// happens in the route layer (server/stats.js) — study datasets are small, so
+// computing in JS keeps the SQL simple and the stats logic in one place.
+function getRankingRowsForStats() {
+  return db
+    .prepare(
+      `SELECT collection_id, image_id, max_level, most_realistic_level, highest_quality_level
+       FROM image_rankings`
+    )
+    .all();
+}
+
+// Total participants and how many have finished (completed_at set).
+function getParticipantCounts() {
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) AS total,
+              SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completed
+       FROM participants`
+    )
+    .get();
+  return { total: Number(row?.total ?? 0), completed: Number(row?.completed ?? 0) };
+}
+
+// Every ranking recorded for one image, with the participant's email joined in.
+// Backs the shareable per-image detail page (/admin/images/:collection/:image).
+function getImageRankingDetail(collectionId, imageId) {
+  return db
+    .prepare(
+      `SELECT r.id, r.participant_id, p.email,
+              r.max_level, r.furthest_visited_level,
+              r.most_realistic_level, r.highest_quality_level,
+              r.grading_ms, r.re_ranked, r.created_at
+       FROM image_rankings r
+       JOIN participants p ON p.id = r.participant_id
+       WHERE r.collection_id = ? AND r.image_id = ?
+       ORDER BY r.created_at`
+    )
+    .all(String(collectionId), String(imageId));
+}
+
 function getSubmissionDetail(participantId) {
   const participant = db.prepare("SELECT * FROM participants WHERE id = ?").get(participantId);
   if (!participant) {
@@ -332,6 +373,9 @@ module.exports = {
   listAdminUsers,
   listSubmissions,
   getSubmissionDetail,
+  getRankingRowsForStats,
+  getParticipantCounts,
+  getImageRankingDetail,
   createParticipant,
   updateParticipant,
   markParticipantComplete,

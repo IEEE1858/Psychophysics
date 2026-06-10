@@ -837,3 +837,139 @@
   background: rgba(176, 122, 0, 0.16);
   color: #9a6b00;
 }
+
+/* ---- Analytics dashboard (issue #24) ---- */
+.analytics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.analytics-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.analytics-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: rgba(255, 252, 247, 0.84);
+  border: 1px solid rgba(70, 84, 118, 0.12);
+  box-shadow: 0 12px 32px rgba(35, 47, 69, 0.07);
+}
+
+.analytics-stat-value {
+  font-family: 'Fraunces', serif;
+  font-size: 2rem;
+  line-height: 1.1;
+  color: #1d3557;
+}
+
+.analytics-stat-label {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #455168;
+}
+
+.analytics-stat-sub {
+  font-size: 0.76rem;
+  color: #8a93a6;
+}
+
+.analytics-hint {
+  font-size: 0.88rem;
+}
+
+.analytics-plot-card {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 252, 247, 0.84);
+  border: 1px solid rgba(70, 84, 118, 0.12);
+  box-shadow: 0 12px 32px rgba(35, 47, 69, 0.07);
+}
+
+.analytics-histogram-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.analytics-generated {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #8a93a6;
+}
+
+/* ---- Image detail page ---- */
+.analytics-detail-head {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.analytics-detail-thumb {
+  flex-shrink: 0;
+  width: 160px;
+  height: 120px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(239, 241, 245, 0.92);
+}
+
+.analytics-detail-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.analytics-statblocks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.analytics-statblock {
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(70, 84, 118, 0.12);
+  border-top: 3px solid #1d3557;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.analytics-statblock h3 {
+  margin: 0 0 10px;
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
+}
+
+.analytics-statblock dl {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin: 0;
+}
+
+.analytics-statblock dl div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.analytics-statblock dt {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8a93a6;
+}
+
+.analytics-statblock dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1d3557;
+}
