@@ -264,14 +264,6 @@ function App() {
   const canGoBack = position > 0
   const isLastImageOverall = position >= totalImageCount - 1
 
-  // The study is complete once every image in the assigned playlist has at least
-  // one selection (most realistic or favorite).
-  const gradedImageCount = playlist.reduce((sum, item) => {
-    const state = ensureImageState(imageStates[getImageKey(item.collectionId, item.imageId)])
-    return sum + (state.mostRealisticLevel != null || state.favoriteLevel != null ? 1 : 0)
-  }, 0)
-  const allImagesGraded = totalImageCount > 0 && gradedImageCount === totalImageCount
-
   // Every image this participant has ranked across all sessions — prior
   // rankings restored at load plus anything graded since — not just the current
   // playlist. Shown on the completion screen.
@@ -981,11 +973,11 @@ function App() {
                 </Button>
               ) : null}
 
-              {allImagesGraded ? (
-                <Button className="study-nav" variant="contained" color="success" onClick={finishStudy}>
-                  Finish
-                </Button>
-              ) : null}
+              {/* Let participants stop whenever they want, not only once every
+                  image is graded (issue #39). */}
+              <Button className="study-nav" variant="contained" color="success" onClick={finishStudy}>
+                Finish
+              </Button>
             </>
           )}
         </footer>
