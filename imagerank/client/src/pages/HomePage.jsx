@@ -63,8 +63,8 @@ function HomePage() {
             <p className="home-lead">
               This study explores how <strong>sharpening</strong> and <strong>HDR</strong> image
               processing change the way a photo is perceived. You will review the same image
-              rendered at several different levels of processing and choose the version that looks
-              the <strong>highest quality</strong> and the version that looks the{' '}
+              rendered at several different levels of processing and choose the version that is your
+              <strong> favorite</strong> and the version that looks the{' '}
               <strong>most realistic</strong>.
             </p>
             <p className="home-lead">

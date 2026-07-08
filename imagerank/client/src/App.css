@@ -192,7 +192,7 @@
   font-size: 0.85rem;
 }
 
-/* Realism (above) and Quality (below) triangle markers over the slider track. */
+/* Realism (above) and Favorite (below) triangle markers over the slider track. */
 .slider-with-markers {
   position: relative;
   display: flex;
@@ -222,7 +222,7 @@
 }
 
 /* Below the track, pointing up. */
-.slider-marker-quality {
+.slider-marker-favorite {
   bottom: 3px;
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;

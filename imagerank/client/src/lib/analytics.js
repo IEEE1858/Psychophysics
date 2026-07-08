@@ -1,7 +1,7 @@
 // Shared theming + formatting for the admin analytics pages (issue #24).
 
 // Distinct, accessible colors so the two image types read clearly apart on the
-// shared realism-vs-quality scatter and overlaid histograms.
+// shared realism-vs-favorite scatter and overlaid histograms.
 export const COLLECTION_COLORS = {
   sharpness: '#287271', // teal (matches the app's primary accent)
   hdr: '#e76f51', // warm coral

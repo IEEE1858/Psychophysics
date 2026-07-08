@@ -10,10 +10,10 @@ This is a psychophysics research project studying human perception of image shar
 
 The study measures the perceptual effects of **sharpening** and **HDR image processing**. Each participant reviews an image at different levels of processing, then selects two things:
 
-- the image with the **highest quality**, and
+- the image that is their **favorite**, and
 - the image that looks **most realistic**.
 
-A key premise is that the highest-quality and the most-realistic image may *not* be at the same level of processing — so the two selections are recorded independently.
+A key premise is that the favorite and the most-realistic image may *not* be at the same level of processing — so the two selections are recorded independently.
 
 To keep viewing conditions consistent, participants are asked to use a **desktop or laptop computer in indoor lighting conditions**. The `imagerank` app enforces this expectation: its home page blocks participation on mobile devices and directs the visitor to reopen the study on a desktop/laptop.
 
@@ -62,7 +62,7 @@ Backend requires DB env vars: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PA
 The UI walks participants through every image in a collection (Sharpness or HDR). For each image, a slider moves through discrete processing levels. Two key constraints:
 
 - **Exploration gate**: the participant must visit `max(2, ceil(maxLevel × 0.35))` levels before a "Next" decision is accepted (`EXPLORATION_RATIO = 0.35` in `App.jsx`).
-- **Slider markers**: `R` = Most Realistic selection, `Q` = Highest Quality selection. These are saved per-image in `imageStates` (React state, not persisted).
+- **Slider markers**: `R` = Most Realistic selection, `F` = Favorite selection. These are saved per-image in `imageStates` (React state, not persisted).
 
 The backend (`imagerank/server/index.js`) lists S3 objects and parses filenames into structured variants. Filename conventions:
 - Sharpness: `<baseId>_L<NN>_s<sigma>_a<amount>.jpg`

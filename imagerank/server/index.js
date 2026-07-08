@@ -278,7 +278,7 @@ function parseLevel(value) {
 }
 
 // Record one image's ranking: the processing level judged most realistic and
-// highest quality, how far the participant browsed, and how long they spent.
+// favorite, how far the participant browsed, and how long they spent.
 app.post("/api/rankings", (req, res) => {
   const {
     participantId,
@@ -287,7 +287,7 @@ app.post("/api/rankings", (req, res) => {
     maxLevel,
     furthestVisitedLevel,
     mostRealisticLevel,
-    highestQualityLevel,
+    favoriteLevel,
     gradingMs,
     reRank,
   } = req.body || {};
@@ -312,7 +312,7 @@ app.post("/api/rankings", (req, res) => {
       maxLevel: Number(maxLevel),
       furthestVisitedLevel: Number(furthestVisitedLevel),
       mostRealisticLevel: parseLevel(mostRealisticLevel),
-      highestQualityLevel: parseLevel(highestQualityLevel),
+      favoriteLevel: parseLevel(favoriteLevel),
       gradingMs: parseLevel(gradingMs),
       reRank: Boolean(reRank),
     });
@@ -384,7 +384,7 @@ app.get("/api/export.csv", (_req, res) => {
     "ranking_id", "participant_id", "age", "gender", "email", "self_description",
     "vision_status", "vision_details", "color_blind", "country_of_origin",
     "display_type", "lighting", "time_budget_minutes", "collection_id", "image_id", "max_level",
-    "furthest_visited_level", "most_realistic_level", "highest_quality_level",
+    "furthest_visited_level", "most_realistic_level", "favorite_level",
     "grading_ms", "re_ranked", "ranked_at", "participant_created_at", "user_agent",
   ];
 
@@ -434,7 +434,7 @@ app.get("/api/admin/submissions", requireAdmin, (_req, res) => {
 // Processing levels differ per image (max_level varies), so a raw level isn't
 // comparable across images. We report both the raw chosen level and a level
 // *fraction* (level / max_level, 0..1) which normalizes scale for cross-image
-// plots like the realism-vs-quality scatter.
+// plots like the realism-vs-favorite scatter.
 function levelFraction(level, maxLevel) {
   if (level == null || maxLevel == null || maxLevel <= 0) {
     return null;
@@ -445,15 +445,15 @@ function levelFraction(level, maxLevel) {
 // Aggregate every recorded ranking into the shape the analytics dashboard
 // needs: study-wide counts, per-collection summary stats + raw distributions
 // (for box/whisker plots and histograms), and per-image means (for the
-// clickable realism-vs-quality scatter).
+// clickable realism-vs-favorite scatter).
 function buildAnalytics() {
   const rows = getRankingRowsForStats();
   const participants = getParticipantCounts();
 
   const collections = COLLECTIONS.map(({ id, label }) => {
     const collectionRows = rows.filter((row) => row.collection_id === id);
-    const qualityLevels = collectionRows
-      .map((row) => row.highest_quality_level)
+    const favoriteLevels = collectionRows
+      .map((row) => row.favorite_level)
       .filter((value) => value != null);
     const realismLevels = collectionRows
       .map((row) => row.most_realistic_level)
@@ -464,10 +464,10 @@ function buildAnalytics() {
       label,
       rankedCount: collectionRows.length,
       uniqueImages: new Set(collectionRows.map((row) => row.image_id)).size,
-      quality: summarize(qualityLevels),
+      favorite: summarize(favoriteLevels),
       realism: summarize(realismLevels),
       // Raw selected levels — the box/whisker and histogram source data.
-      qualityLevels,
+      favoriteLevels,
       realismLevels,
     };
   });
@@ -482,18 +482,18 @@ function buildAnalytics() {
         collectionId: row.collection_id,
         imageId: row.image_id,
         maxLevel: row.max_level,
-        quality: [],
+        favorite: [],
         realism: [],
-        qualityFrac: [],
+        favoriteFrac: [],
         realismFrac: [],
       };
       imageMap.set(key, entry);
     }
     entry.maxLevel = Math.max(entry.maxLevel, row.max_level);
-    if (row.highest_quality_level != null) {
-      entry.quality.push(row.highest_quality_level);
-      const frac = levelFraction(row.highest_quality_level, row.max_level);
-      if (frac != null) entry.qualityFrac.push(frac);
+    if (row.favorite_level != null) {
+      entry.favorite.push(row.favorite_level);
+      const frac = levelFraction(row.favorite_level, row.max_level);
+      if (frac != null) entry.favoriteFrac.push(frac);
     }
     if (row.most_realistic_level != null) {
       entry.realism.push(row.most_realistic_level);
@@ -503,18 +503,18 @@ function buildAnalytics() {
   }
 
   const images = Array.from(imageMap.values()).map((entry) => {
-    const quality = summarize(entry.quality);
+    const favorite = summarize(entry.favorite);
     const realism = summarize(entry.realism);
-    const qualityFrac = summarize(entry.qualityFrac);
+    const favoriteFrac = summarize(entry.favoriteFrac);
     const realismFrac = summarize(entry.realismFrac);
     return {
       collectionId: entry.collectionId,
       imageId: entry.imageId,
       maxLevel: entry.maxLevel,
-      n: Math.max(quality.n, realism.n),
-      meanQuality: quality.mean,
+      n: Math.max(favorite.n, realism.n),
+      meanFavorite: favorite.mean,
       meanRealism: realism.mean,
-      meanQualityFrac: qualityFrac.mean,
+      meanFavoriteFrac: favoriteFrac.mean,
       meanRealismFrac: realismFrac.mean,
     };
   });
@@ -523,7 +523,7 @@ function buildAnalytics() {
 }
 
 // Study-wide summary: subject counts, per-collection min/max/mean/std for the
-// quality and realism selections, raw distributions, and per-image means.
+// favorite and realism selections, raw distributions, and per-image means.
 app.get("/api/admin/analytics", requireAdmin, (_req, res) => {
   try {
     res.json(buildAnalytics());
@@ -533,7 +533,7 @@ app.get("/api/admin/analytics", requireAdmin, (_req, res) => {
   }
 });
 
-// All rankings for a single image, with quality/realism stats. Backs the
+// All rankings for a single image, with favorite/realism stats. Backs the
 // shareable detail page reached by clicking a scatter point.
 app.get("/api/admin/images/:collectionId/:imageId", requireAdmin, (req, res) => {
   try {
@@ -544,7 +544,7 @@ app.get("/api/admin/images/:collectionId/:imageId", requireAdmin, (req, res) => 
       imageId,
       count: rankings.length,
       maxLevel: rankings.reduce((max, row) => Math.max(max, row.max_level ?? 0), 0),
-      quality: summarize(rankings.map((row) => row.highest_quality_level)),
+      favorite: summarize(rankings.map((row) => row.favorite_level)),
       realism: summarize(rankings.map((row) => row.most_realistic_level)),
       rankings,
     });

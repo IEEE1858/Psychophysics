@@ -10,7 +10,7 @@ import AdminLogin from '../components/AdminLogin'
 import PlotlyChart from '../components/PlotlyChart'
 import './pages.css'
 
-// One min/max/mean/std row for a collection's quality or realism selections.
+// One min/max/mean/std row for a collection's favorite or realism selections.
 function StatRow({ label, stats }) {
   return (
     <tr>
@@ -72,8 +72,8 @@ function AnalyticsView({ onSignOut }) {
       collections.flatMap((collection) => [
         {
           type: 'box',
-          name: `${collection.label} · Quality`,
-          y: collection.qualityLevels,
+          name: `${collection.label} · Favorite`,
+          y: collection.favoriteLevels,
           marker: { color: collectionColor(collection.id) },
           boxmean: 'sd',
           boxpoints: 'outliers',
@@ -101,7 +101,7 @@ function AnalyticsView({ onSignOut }) {
     [],
   )
 
-  // Scatter: one point per image, mean realism (x) vs mean quality (y), as a
+  // Scatter: one point per image, mean realism (x) vs mean favorite (y), as a
   // percentage of each image's max level so the two collections are comparable.
   // customdata carries the route target for the click handler.
   const scatterData = useMemo(
@@ -111,18 +111,18 @@ function AnalyticsView({ onSignOut }) {
           (image) =>
             image.collectionId === collection.id &&
             image.meanRealismFrac != null &&
-            image.meanQualityFrac != null,
+            image.meanFavoriteFrac != null,
         )
         return {
           type: 'scatter',
           mode: 'markers',
           name: collection.label,
           x: points.map((image) => image.meanRealismFrac * 100),
-          y: points.map((image) => image.meanQualityFrac * 100),
+          y: points.map((image) => image.meanFavoriteFrac * 100),
           customdata: points.map((image) => [image.collectionId, image.imageId, image.n]),
           text: points.map((image) => image.imageId),
           hovertemplate:
-            '<b>%{text}</b><br>Realism %{x:.0f}%<br>Quality %{y:.0f}%<br>n = %{customdata[2]}<extra></extra>',
+            '<b>%{text}</b><br>Realism %{x:.0f}%<br>Favorite %{y:.0f}%<br>n = %{customdata[2]}<extra></extra>',
           marker: { color: collectionColor(collection.id), size: 11, opacity: 0.8 },
         }
       }),
@@ -135,7 +135,7 @@ function AnalyticsView({ onSignOut }) {
         showlegend: true,
         legend: { orientation: 'h', y: 1.12, x: 0 },
         xaxis: { title: 'Mean most-realistic level (% of max)', range: [-5, 105], zeroline: false },
-        yaxis: { title: 'Mean highest-quality level (% of max)', range: [-5, 105], zeroline: false },
+        yaxis: { title: 'Mean favorite level (% of max)', range: [-5, 105], zeroline: false },
         margin: { l: 60, r: 16, t: 32, b: 52 },
       }),
     [],
@@ -200,8 +200,8 @@ function AnalyticsView({ onSignOut }) {
                   {collections.map((collection) => [
                     <StatRow
                       key={`${collection.id}-q`}
-                      label={`${collection.label} · Highest quality`}
-                      stats={collection.quality}
+                      label={`${collection.label} · Favorite image`}
+                      stats={collection.favorite}
                     />,
                     <StatRow
                       key={`${collection.id}-r`}
@@ -215,7 +215,7 @@ function AnalyticsView({ onSignOut }) {
           </section>
 
           <section className="analytics-section">
-            <h2 className="admin-detail-subtitle">Realism vs. quality by image</h2>
+            <h2 className="admin-detail-subtitle">Realism vs. favorite by image</h2>
             <p className="home-lead analytics-hint">
               Each point is one image, positioned by its mean selected level (as a percentage of that
               image&apos;s maximum processing). Click a point to open its detail page.
@@ -252,8 +252,8 @@ function AnalyticsView({ onSignOut }) {
                 const histData = [
                   {
                     type: 'histogram',
-                    name: 'Highest quality',
-                    x: collection.qualityLevels,
+                    name: 'Favorite image',
+                    x: collection.favoriteLevels,
                     marker: { color: collectionColor(collection.id) },
                     opacity: 0.75,
                   },
@@ -276,7 +276,7 @@ function AnalyticsView({ onSignOut }) {
                 })
                 return (
                   <div key={collection.id} className="analytics-plot-card">
-                    {collection.qualityLevels.length + collection.realismLevels.length > 0 ? (
+                    {collection.favoriteLevels.length + collection.realismLevels.length > 0 ? (
                       <PlotlyChart data={histData} layout={histLayout} style={{ height: 300 }} />
                     ) : (
                       <Alert severity="info">No {collection.label} data yet.</Alert>

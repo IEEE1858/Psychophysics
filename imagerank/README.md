@@ -26,5 +26,5 @@ The root `dev` command starts:
 
 - Left and right arrow keys move the processing slider by one level.
 - The previous image button is hidden on the first image.
-- Slider markers `R` and `Q` jump back to the saved Most Realistic and Highest Quality selections.
+- Slider markers `R` and `F` jump back to the saved Most Realistic and Favorite selections.
 - A selection is blocked until the participant explores enough of the slider range or reaches the most heavily processed image.
