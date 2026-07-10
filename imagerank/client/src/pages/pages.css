@@ -467,6 +467,45 @@
   text-decoration: underline;
 }
 
+/* Inline text button styled as a link (e.g. toggling sign-in/register). */
+.link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: #1d3557;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
+/* Optional "create an account" block on the demographics form (issue #31). */
+.account-optional {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px dashed rgba(70, 84, 118, 0.28);
+  background: rgba(70, 84, 118, 0.04);
+}
+
+.account-optional h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.account-optional p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(35, 47, 69, 0.75);
+}
+
 /* ---- About the study ---- */
 .about-study {
   display: flex;
