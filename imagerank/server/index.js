@@ -569,7 +569,11 @@ function requireAdmin(req, res, next) {
     }
   }
 
-  res.set("WWW-Authenticate", 'Basic realm="imagerank admin"');
+  // Deliberately omit the `WWW-Authenticate: Basic` header. The admin UI has its
+  // own login form and sends the Basic token via an XHR Authorization header;
+  // returning that challenge header makes the browser pop its *native* credential
+  // dialog on every 401 (twice, once per admin request in flight), competing with
+  // our form (issue #40). A plain 401 lets the app handle auth itself.
   return res.status(401).json({ error: "Authentication required." });
 }
 
@@ -628,7 +632,7 @@ function buildAnalytics() {
   // Per-image means, keyed by collection + image.
   const imageMap = new Map();
   for (const row of rows) {
-    const key = `${row.collection_id} ${row.image_id}`;
+    const key = `${row.collection_id} ${row.image_id}`;
     let entry = imageMap.get(key);
     if (!entry) {
       entry = {
