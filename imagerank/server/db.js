@@ -48,13 +48,22 @@ try {
   // column already renamed (or never existed under the old name)
 }
 
+// Migration for databases created before optional participant accounts (issue
+// #31). The accounts table is created by schema.sql above; this links existing
+// participant rows to an account once they sign in.
+try {
+  db.exec("ALTER TABLE participants ADD COLUMN account_id INTEGER REFERENCES accounts(id)");
+} catch {
+  // column already exists
+}
+
 const insertParticipantStmt = db.prepare(`
   INSERT INTO participants (
-    age, gender, email, self_description, vision_status, vision_details,
+    account_id, age, gender, email, self_description, vision_status, vision_details,
     color_blind, country_of_origin, display_type, lighting, time_budget_minutes,
     user_agent
   ) VALUES (
-    :age, :gender, :email, :selfDescription, :visionStatus, :visionDetails,
+    :accountId, :age, :gender, :email, :selfDescription, :visionStatus, :visionDetails,
     :colorBlind, :countryOfOrigin, :displayType, :lighting, :timeBudgetMinutes,
     :userAgent
   )
@@ -107,8 +116,9 @@ function toIntOrNull(value) {
   return value != null && value !== "" && Number.isFinite(Number(value)) ? Number(value) : null;
 }
 
-function createParticipant(demographics, userAgent) {
+function createParticipant(demographics, userAgent, accountId = null) {
   const result = insertParticipantStmt.run({
+    accountId: accountId == null ? null : Number(accountId),
     age: demographics.age != null && demographics.age !== "" ? Number(demographics.age) : null,
     gender: demographics.gender ?? null,
     email: demographics.email ?? null,
@@ -294,6 +304,111 @@ if (process.env.ADMIN_SEED_USERNAME && process.env.ADMIN_SEED_PASSWORD) {
   ensureAdminUser(process.env.ADMIN_SEED_USERNAME, process.env.ADMIN_SEED_PASSWORD);
 }
 
+// --- Participant accounts (issue #31) ---------------------------------------
+
+// Row shape returned to callers; never includes password_hash.
+function publicAccount(row) {
+  if (!row) {
+    return null;
+  }
+  return {
+    id: row.id,
+    email: row.email,
+    displayName: row.display_name ?? null,
+    hasPassword: Boolean(row.password_hash),
+    hasGoogle: Boolean(row.google_sub),
+  };
+}
+
+function getAccountById(id) {
+  return db.prepare("SELECT * FROM accounts WHERE id = ?").get(Number(id)) ?? null;
+}
+
+function getAccountByEmail(email) {
+  if (!email) {
+    return null;
+  }
+  return db.prepare("SELECT * FROM accounts WHERE email = ? COLLATE NOCASE").get(String(email)) ?? null;
+}
+
+function getAccountByGoogleSub(sub) {
+  if (!sub) {
+    return null;
+  }
+  return db.prepare("SELECT * FROM accounts WHERE google_sub = ?").get(String(sub)) ?? null;
+}
+
+// Create an account. `password` is optional (Google-only accounts have none);
+// `googleSub` is optional (password-only accounts have none). Returns the new
+// account id.
+function createAccount({ email, password = null, googleSub = null, displayName = null }) {
+  const result = db
+    .prepare(
+      "INSERT INTO accounts (email, password_hash, google_sub, display_name) VALUES (?, ?, ?, ?)"
+    )
+    .run(
+      String(email),
+      password ? hashPassword(password) : null,
+      googleSub ? String(googleSub) : null,
+      displayName ?? null
+    );
+  return Number(result.lastInsertRowid);
+}
+
+// Verify an email+password login. Returns the account row on success, else null.
+function verifyAccountPassword(email, password) {
+  if (!email || !password) {
+    return null;
+  }
+  const account = getAccountByEmail(email);
+  if (!account || !account.password_hash || !verifyPassword(password, account.password_hash)) {
+    return null;
+  }
+  return account;
+}
+
+// Link a Google identity to an existing (password) account, so a participant
+// who signed up with a password can later sign in with Google on the same email.
+function attachGoogleToAccount(accountId, googleSub) {
+  db.prepare("UPDATE accounts SET google_sub = ? WHERE id = ? AND google_sub IS NULL").run(
+    String(googleSub),
+    Number(accountId)
+  );
+}
+
+// Adopt every anonymous (unlinked) participant row whose email matches the
+// account's, keying prior anonymous progress to the account (issue #31).
+function linkParticipantsByEmail(accountId, email) {
+  if (!email) {
+    return;
+  }
+  db.prepare(
+    "UPDATE participants SET account_id = ? WHERE account_id IS NULL AND email = ? COLLATE NOCASE"
+  ).run(Number(accountId), String(email));
+}
+
+// Link one specific participant row to an account (the "I'm mid-study and just
+// signed in" case). No-op if it already belongs to a different account.
+function setParticipantAccount(participantId, accountId) {
+  db.prepare(
+    "UPDATE participants SET account_id = ? WHERE id = ? AND (account_id IS NULL OR account_id = ?)"
+  ).run(Number(accountId), Number(participantId), Number(accountId));
+}
+
+// The participant row an account should resume into: prefer an unfinished
+// session, otherwise the most recently active one. Returns the id or null.
+function getLatestParticipantForAccount(accountId) {
+  const row = db
+    .prepare(
+      `SELECT id FROM participants
+       WHERE account_id = ?
+       ORDER BY (completed_at IS NULL) DESC, created_at DESC, id DESC
+       LIMIT 1`
+    )
+    .get(Number(accountId));
+  return row ? Number(row.id) : null;
+}
+
 // --- Admin reporting --------------------------------------------------------
 
 // One row per participant with the aggregates the admin dashboard needs.
@@ -382,6 +497,16 @@ module.exports = {
   adminUserExists,
   createAdminUser,
   listAdminUsers,
+  publicAccount,
+  getAccountById,
+  getAccountByEmail,
+  getAccountByGoogleSub,
+  createAccount,
+  verifyAccountPassword,
+  attachGoogleToAccount,
+  linkParticipantsByEmail,
+  setParticipantAccount,
+  getLatestParticipantForAccount,
   listSubmissions,
   getSubmissionDetail,
   getRankingRowsForStats,

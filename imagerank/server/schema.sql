@@ -5,9 +5,25 @@
 
 PRAGMA foreign_keys = ON;
 
+-- Optional participant accounts (issue #31). Sign-in is optional; anonymous
+-- participation still works. An account is keyed to a unique email and can own
+-- one or more participant rows, which is how a participant who took the study
+-- anonymously and later creates an account with the same email has their prior
+-- progress adopted. Passwords are stored as a salted scrypt hash, same format
+-- as admin_users; google_sub is Google's stable per-user id for OAuth sign-in.
+CREATE TABLE IF NOT EXISTS accounts (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  email         TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  password_hash TEXT,                                 -- NULL for Google-only accounts
+  google_sub    TEXT UNIQUE,                          -- NULL for password-only accounts
+  display_name  TEXT,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- One row per participant, capturing the demographics questionnaire.
 CREATE TABLE IF NOT EXISTS participants (
   id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id         INTEGER REFERENCES accounts(id), -- NULL for anonymous participants (issue #31)
   age                INTEGER,
   gender             TEXT,
   email              TEXT,

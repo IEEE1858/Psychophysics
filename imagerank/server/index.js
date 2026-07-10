@@ -20,7 +20,27 @@ const {
   getRankingRowsForStats,
   getParticipantCounts,
   getImageRankingDetail,
+  publicAccount,
+  getAccountById,
+  getAccountByEmail,
+  getAccountByGoogleSub,
+  createAccount,
+  verifyAccountPassword,
+  attachGoogleToAccount,
+  linkParticipantsByEmail,
+  setParticipantAccount,
+  getLatestParticipantForAccount,
 } = require("./db");
+const {
+  signToken,
+  optionalAuth,
+  requireAuth,
+  googleConfigured,
+  signOAuthState,
+  verifyOAuthState,
+  buildGoogleAuthUrl,
+  exchangeCodeForProfile,
+} = require("./auth");
 const { summarize } = require("./stats");
 
 const app = express();
@@ -257,7 +277,7 @@ app.get("/api/stats/avg-grading-ms", (_req, res) => {
 
 // Create a participant from the demographics questionnaire. Returns the new id,
 // which the client sends back with each image ranking.
-app.post("/api/participants", (req, res) => {
+app.post("/api/participants", optionalAuth, (req, res) => {
   const demographics = req.body || {};
 
   if (!demographics.age && !demographics.email) {
@@ -265,7 +285,10 @@ app.post("/api/participants", (req, res) => {
   }
 
   try {
-    const participantId = createParticipant(demographics, req.get("user-agent"));
+    // If the request carries a valid session, the new participant is owned by
+    // that account (created while signed in). Otherwise it's anonymous.
+    const accountId = req.accountId ?? null;
+    const participantId = createParticipant(demographics, req.get("user-agent"), accountId);
     res.status(201).json({ participantId });
   } catch (error) {
     console.error("Failed to create participant", error);
@@ -396,6 +419,136 @@ app.get("/api/export.csv", (_req, res) => {
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="imagerank-export.csv"');
   res.send(lines.join("\n"));
+});
+
+// --- Participant accounts / sign-in (issue #31) -----------------------------
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 8;
+
+// Build the standard sign-in response: a session token, the safe public account
+// fields, and the participant row this account should resume into (if any).
+function authResponse(account) {
+  return {
+    token: signToken(account.id),
+    account: publicAccount(account),
+    participantId: getLatestParticipantForAccount(account.id),
+  };
+}
+
+// Create an account with an email + password, adopting any prior anonymous
+// participation on that email (issue #31).
+app.post("/api/auth/register", (req, res) => {
+  const email = String(req.body?.email ?? "").trim();
+  const password = String(req.body?.password ?? "");
+
+  if (!EMAIL_RE.test(email)) {
+    return res.status(400).json({ error: "A valid email is required." });
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return res
+      .status(400)
+      .json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` });
+  }
+  if (getAccountByEmail(email)) {
+    return res.status(409).json({ error: "An account with that email already exists." });
+  }
+
+  try {
+    const accountId = createAccount({ email, password });
+    linkParticipantsByEmail(accountId, email);
+    res.status(201).json(authResponse(getAccountById(accountId)));
+  } catch (error) {
+    console.error("Failed to register account", error);
+    res.status(500).json({ error: "Failed to create account." });
+  }
+});
+
+// Email + password sign-in.
+app.post("/api/auth/login", (req, res) => {
+  const email = String(req.body?.email ?? "").trim();
+  const password = String(req.body?.password ?? "");
+
+  const account = verifyAccountPassword(email, password);
+  if (!account) {
+    return res.status(401).json({ error: "Incorrect email or password." });
+  }
+  res.json(authResponse(account));
+});
+
+// Current signed-in account plus the participant it resumes into.
+app.get("/api/auth/me", requireAuth, (req, res) => {
+  const account = getAccountById(req.accountId);
+  if (!account) {
+    return res.status(401).json({ error: "Account no longer exists." });
+  }
+  res.json({
+    account: publicAccount(account),
+    participantId: getLatestParticipantForAccount(account.id),
+  });
+});
+
+// Attach an in-progress anonymous participant (created before sign-in) to the
+// signed-in account, so their current session is saved under the account.
+app.post("/api/auth/link", requireAuth, (req, res) => {
+  const participantId = Number(req.body?.participantId);
+  if (!Number.isFinite(participantId) || !participantExists(participantId)) {
+    return res.status(404).json({ error: "Unknown participantId." });
+  }
+  try {
+    setParticipantAccount(participantId, req.accountId);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Failed to link participant to account", error);
+    res.status(500).json({ error: "Failed to link participant." });
+  }
+});
+
+// Kick off Google OAuth (full-page redirect). A signed state nonce guards the
+// round-trip against CSRF.
+app.get("/api/auth/google/start", (_req, res) => {
+  if (!googleConfigured()) {
+    return res.redirect("/signin?error=google_unavailable");
+  }
+  res.redirect(buildGoogleAuthUrl(signOAuthState()));
+});
+
+// Google redirects back here with an authorization code. Resolve (or create)
+// the account, then hand the client a session token via the URL fragment (kept
+// out of query strings / server logs).
+app.get("/api/auth/google/callback", async (req, res) => {
+  if (req.query.error) {
+    return res.redirect("/signin?error=google_denied");
+  }
+  if (!verifyOAuthState(req.query.state)) {
+    return res.redirect("/signin?error=bad_state");
+  }
+
+  try {
+    const profile = await exchangeCodeForProfile(String(req.query.code || ""));
+
+    let account = getAccountByGoogleSub(profile.sub);
+    if (!account) {
+      account = getAccountByEmail(profile.email);
+      if (account) {
+        // Existing (password) account on this email — link Google to it.
+        attachGoogleToAccount(account.id, profile.sub);
+      } else {
+        const accountId = createAccount({
+          email: profile.email,
+          googleSub: profile.sub,
+          displayName: profile.name,
+        });
+        account = getAccountById(accountId);
+      }
+    }
+
+    linkParticipantsByEmail(account.id, profile.email);
+    res.redirect(`/auth/complete#token=${encodeURIComponent(signToken(account.id))}`);
+  } catch (error) {
+    console.error("Google sign-in failed", error);
+    res.redirect("/signin?error=google_failed");
+  }
 });
 
 // --- Admin dashboard (HTTP Basic auth against admin_users) ------------------

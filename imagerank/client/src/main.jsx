@@ -7,6 +7,8 @@ import HomePage from './pages/HomePage.jsx'
 import PreviewPage from './pages/PreviewPage.jsx'
 import PreviewViewer from './pages/PreviewViewer.jsx'
 import DemographicsPage from './pages/DemographicsPage.jsx'
+import SignInPage from './pages/SignInPage.jsx'
+import AuthCompletePage from './pages/AuthCompletePage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
 import AnalyticsPage from './pages/AnalyticsPage.jsx'
 import ImageDetailPage from './pages/ImageDetailPage.jsx'
@@ -20,6 +22,8 @@ createRoot(document.getElementById('root')).render(
         <Route path="/preview/:collectionId" element={<PreviewPage />} />
         <Route path="/preview/:collectionId/:imageId" element={<PreviewViewer />} />
         <Route path="/demographics" element={<DemographicsPage />} />
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/auth/complete" element={<AuthCompletePage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/analytics" element={<AnalyticsPage />} />
         <Route path="/admin/images/:collectionId/:imageId" element={<ImageDetailPage />} />

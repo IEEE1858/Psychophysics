@@ -7,6 +7,7 @@ import { findCollection, useLibrary } from '../lib/useLibrary'
 import { useIsMobile } from '../lib/useIsMobile'
 import { sampleRandom, thumbnailFor } from '../lib/sample'
 import { hasSession } from '../lib/session'
+import { useAuth } from '../lib/auth'
 import './pages.css'
 
 const EXAMPLE_COUNT = 6
@@ -38,6 +39,7 @@ function HomePage() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const { library, loading, error } = useLibrary()
+  const { account, authed, signOut } = useAuth()
 
   const hdrCollection = findCollection(library, 'hdr')
   const sharpnessCollection = findCollection(library, 'sharpness')
@@ -97,6 +99,22 @@ function HomePage() {
                 >
                   {hasSession() ? 'Resume the Study' : 'Start the Study'}
                 </Button>
+
+                {authed ? (
+                  <p className="cta-note">
+                    Signed in as <strong>{account.email}</strong>.{' '}
+                    <button type="button" className="link-button" onClick={signOut}>
+                      Sign out
+                    </button>
+                  </p>
+                ) : (
+                  <p className="cta-note">
+                    Have an account, or want to continue on another device?{' '}
+                    <Link className="preview-link" to="/signin">
+                      Sign in
+                    </Link>
+                  </p>
+                )}
               </div>
             )}
           </div>

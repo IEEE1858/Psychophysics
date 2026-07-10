@@ -20,7 +20,11 @@ import {
   setParticipantId,
   setStoredDemographics,
 } from '../lib/session'
+import { authHeader, getAuthToken, register } from '../lib/auth'
 import './pages.css'
+
+// Minimum length for the optional account password (matches the server rule).
+const MIN_PASSWORD_LENGTH = 8
 
 // How long the study can run, in minutes. The chosen value sizes how many
 // images the participant is shown (issue #19).
@@ -109,6 +113,9 @@ function DemographicsPage() {
   const [submitAttempted, setSubmitAttempted] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [saving, setSaving] = useState(false)
+  // Optional account creation (issue #31). Blank = continue anonymously.
+  const [accountPassword, setAccountPassword] = useState('')
+  const [accountError, setAccountError] = useState('')
 
   // A returning participant who already has a session and isn't explicitly
   // editing should skip this form and resume the study.
@@ -156,14 +163,23 @@ function DemographicsPage() {
     }
   }
 
+  // Whether the participant opted into creating an account (typed a password)
+  // and isn't already signed in.
+  const wantsAccount = !isEditing && accountPassword.length > 0 && !getAuthToken()
+
   async function handleSubmit(event) {
     event.preventDefault()
     const nextErrors = validate(demographics)
     setErrors(nextErrors)
     setSubmitAttempted(true)
     setSubmitError('')
+    setAccountError('')
 
     if (Object.keys(nextErrors).length > 0) {
+      return
+    }
+    if (wantsAccount && accountPassword.length < MIN_PASSWORD_LENGTH) {
+      setAccountError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
       return
     }
 
@@ -174,9 +190,28 @@ function DemographicsPage() {
         // Update the existing session's demographics.
         await axios.put(`/api/participants/${participantId}`, demographics)
       } else {
+        // Create the optional account first so the participant we create next is
+        // owned by it (the server reads the Bearer token). If the email is taken
+        // we stop here — no participant is created — so the visitor can fix it or
+        // clear the password and continue anonymously.
+        if (wantsAccount) {
+          try {
+            await register(demographics.email.trim(), accountPassword)
+          } catch (registerError) {
+            setAccountError(
+              registerError.response?.data?.error ||
+                'Could not create your account. Please try again.',
+            )
+            setSaving(false)
+            return
+          }
+        }
         // Create the participant record (the persistent session); the returned
-        // id ties the study's image rankings back to these demographics.
-        const response = await axios.post('/api/participants', demographics)
+        // id ties the study's image rankings back to these demographics. When
+        // signed in, authHeader() links the row to the account.
+        const response = await axios.post('/api/participants', demographics, {
+          headers: authHeader(),
+        })
         setParticipantId(response.data.participantId)
       }
       setStoredDemographics(demographics)
@@ -361,6 +396,35 @@ function DemographicsPage() {
               />
             </div>
           </div>
+
+          {!isEditing ? (
+            <div className="account-optional">
+              <h2>Save your progress across devices (optional)</h2>
+              <p>
+                Set a password to create an account tied to the email above, then sign in on
+                another computer to pick up where you left off. Leave this blank to continue
+                without an account. Prefer Google?{' '}
+                <Link className="preview-link" to="/signin">
+                  Sign in with Google
+                </Link>
+                .
+              </p>
+              <TextField
+                type="password"
+                name="accountPassword"
+                label="Create a password (optional)"
+                value={accountPassword}
+                onChange={(event) => {
+                  setAccountPassword(event.target.value)
+                  setAccountError('')
+                }}
+                error={Boolean(accountError)}
+                helperText={accountError || `At least ${MIN_PASSWORD_LENGTH} characters.`}
+                autoComplete="new-password"
+                fullWidth
+              />
+            </div>
+          ) : null}
 
           {submitAttempted && Object.keys(errors).length > 0 ? (
             <Alert severity="error">Please correct the highlighted fields before continuing.</Alert>
