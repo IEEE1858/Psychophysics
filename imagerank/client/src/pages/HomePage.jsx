@@ -12,7 +12,7 @@ import './pages.css'
 
 const EXAMPLE_COUNT = 6
 
-function ExampleGallery({ title, blurb, images, previewTo, previewLabel }) {
+function ExampleGallery({ title, blurb, images, collectionId, previewTo, previewLabel }) {
   return (
     <div className="example-group">
       <div className="example-group-head">
@@ -22,9 +22,15 @@ function ExampleGallery({ title, blurb, images, previewTo, previewLabel }) {
 
       <div className="example-grid">
         {images.map((image) => (
-          <figure key={image.id} className="example-tile">
+          // Each example links to that image's detail viewer (issue #30).
+          <Link
+            key={image.id}
+            className="example-tile"
+            to={`/preview/${collectionId}/${image.id}`}
+            aria-label={`View ${image.label}`}
+          >
             <img src={thumbnailFor(image)} alt={image.label} loading="lazy" />
-          </figure>
+          </Link>
         ))}
       </div>
 
@@ -141,6 +147,7 @@ function HomePage() {
                 title="HDR"
                 blurb="High-dynamic-range tone mapping across processing levels."
                 images={hdrExamples}
+                collectionId="hdr"
                 previewTo="/preview/hdr"
                 previewLabel="Preview HDR images"
               />
@@ -148,6 +155,7 @@ function HomePage() {
                 title="Sharpness"
                 blurb="Unsharp-mask sharpening across processing levels."
                 images={sharpnessExamples}
+                collectionId="sharpness"
                 previewTo="/preview/sharpness"
                 previewLabel="Preview Sharpness images"
               />

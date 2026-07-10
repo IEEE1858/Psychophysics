@@ -440,12 +440,24 @@
 }
 
 .example-tile {
+  display: block;
   margin: 0;
   aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: 12px;
   background: rgba(239, 241, 245, 0.92);
   border: 1px solid rgba(69, 85, 122, 0.1);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+/* Clickable example tiles (issue #30): lift + highlight on hover/focus. */
+.example-tile:hover,
+.example-tile:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(69, 85, 122, 0.35);
+  box-shadow: 0 10px 24px rgba(35, 47, 69, 0.14);
+  outline: none;
 }
 
 .example-tile img {
