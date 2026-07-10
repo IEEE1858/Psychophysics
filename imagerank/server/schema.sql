@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS image_rankings (
   most_realistic_level    INTEGER,                       -- chosen level (nullable if skipped)
   favorite_level          INTEGER,                       -- chosen level (nullable if skipped)
   grading_ms              INTEGER,                        -- time spent grading this image (incl. any re-ranking)
+  idle_ms                 INTEGER,                        -- portion of grading_ms the participant was inactive (issue #28)
   re_ranked               INTEGER NOT NULL DEFAULT 0,     -- 1 if revisited and revised from the /rankings page
   created_at              TEXT NOT NULL DEFAULT (datetime('now')),
   -- A participant grades each image at most once per collection.

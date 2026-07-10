@@ -25,6 +25,10 @@ import './App.css'
 const DEFAULT_TIME_BUDGET_MINUTES = 30
 
 const EXPLORATION_RATIO = 0.35
+// A focused window with no mouse/keyboard/scroll activity for this long is
+// treated as idle (issue #28). Generous enough that a short pause while
+// comparing images isn't miscounted; tune here if it proves too eager.
+const IDLE_THRESHOLD_MS = 10000
 const NEXT_IMAGE_VALIDATION_MESSAGE = 'please move slider to the right to look at other more processed images before deciding.'
 const DEFAULT_VIEWPORT = {
   scale: 1,
@@ -118,6 +122,13 @@ function App() {
   const participantIdRef = useRef(null)
   const gradingStartRef = useRef(0)
   const accumulatedMsRef = useRef({})
+  // Idle tracking (issue #28): idle_ms is the portion of grading time the
+  // participant was inactive — window blurred/hidden, or focused but with no
+  // mouse/keyboard/scroll activity for longer than IDLE_THRESHOLD_MS. It runs in
+  // parallel with the grading clock above and is a subset of grading_ms.
+  const accumulatedIdleMsRef = useRef({})
+  const idleStartRef = useRef(0) // timestamp the current idle segment began; 0 when active
+  const idleTimerRef = useRef(null)
   // True for the brief window around a click that itself raised a new toast, so
   // the dismiss-on-click listener doesn't immediately close that fresh toast.
   const justNotifiedRef = useRef(false)
@@ -301,6 +312,76 @@ function App() {
     gradingStartRef.current = Date.now()
   }, [imageKey])
 
+  // Idle tracking (issue #28). While an image is being graded, accumulate the
+  // time the participant is inactive: a blurred or hidden window is idle
+  // immediately, and a focused window with no mouse/keyboard/scroll/touch
+  // activity for IDLE_THRESHOLD_MS is idle until activity resumes. The open
+  // segment is banked to the current image on teardown (i.e. when the image
+  // changes), so idle_ms lines up with the same image's grading_ms.
+  useEffect(() => {
+    if (!imageKey) {
+      return undefined
+    }
+
+    // Each image starts active; the idle countdown arms below.
+    idleStartRef.current = 0
+
+    function closeIdleSegment() {
+      if (idleStartRef.current) {
+        accumulatedIdleMsRef.current[imageKey] =
+          (accumulatedIdleMsRef.current[imageKey] ?? 0) + (Date.now() - idleStartRef.current)
+        idleStartRef.current = 0
+      }
+    }
+
+    function beginIdle() {
+      if (!idleStartRef.current) {
+        idleStartRef.current = Date.now()
+      }
+    }
+
+    function armIdleTimer() {
+      window.clearTimeout(idleTimerRef.current)
+      idleTimerRef.current = window.setTimeout(beginIdle, IDLE_THRESHOLD_MS)
+    }
+
+    // Any interaction ends an idle stretch and restarts the inactivity timer.
+    function handleActivity() {
+      closeIdleSegment()
+      armIdleTimer()
+    }
+
+    function handleVisibility() {
+      if (document.hidden) {
+        window.clearTimeout(idleTimerRef.current)
+        beginIdle()
+      } else {
+        handleActivity()
+      }
+    }
+
+    function handleBlur() {
+      window.clearTimeout(idleTimerRef.current)
+      beginIdle()
+    }
+
+    const activityEvents = ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart']
+    activityEvents.forEach((type) => window.addEventListener(type, handleActivity, { passive: true }))
+    window.addEventListener('focus', handleActivity)
+    window.addEventListener('blur', handleBlur)
+    document.addEventListener('visibilitychange', handleVisibility)
+    armIdleTimer()
+
+    return () => {
+      window.clearTimeout(idleTimerRef.current)
+      closeIdleSegment()
+      activityEvents.forEach((type) => window.removeEventListener(type, handleActivity))
+      window.removeEventListener('focus', handleActivity)
+      window.removeEventListener('blur', handleBlur)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [imageKey])
+
   // Build the tour steps for the current image; drop the closing "Next image"
   // step on the last image, where that button is replaced by Finish.
   const tourSteps = useMemo(
@@ -322,7 +403,9 @@ function App() {
         return
       }
 
-      const elapsed = Math.max(0, Date.now() - gradingStartRef.current)
+      const now = Date.now()
+      const elapsed = Math.max(0, now - gradingStartRef.current)
+      const idleOpen = idleStartRef.current ? now - idleStartRef.current : 0
       const payload = {
         participantId: Number(participantId),
         collectionId: selectedCollection.id,
@@ -332,6 +415,7 @@ function App() {
         mostRealisticLevel: imageState.mostRealisticLevel,
         favoriteLevel: imageState.favoriteLevel,
         gradingMs: (accumulatedMsRef.current[imageKey] ?? 0) + elapsed,
+        idleMs: (accumulatedIdleMsRef.current[imageKey] ?? 0) + idleOpen,
         // In re-rank mode the server adds this time to the existing total and
         // flags the row; this image was already counted in the study otherwise.
         reRank: isReRank,
@@ -552,6 +636,21 @@ function App() {
     return total
   }
 
+  // Roll any open idle stretch for `key` into its running idle total and return
+  // it (issue #28). Mirrors flushActiveGradingMs: if still idle, the segment
+  // continues from now so later idle time keeps accruing without double-counting.
+  function flushActiveIdleMs(key) {
+    if (!key) {
+      return 0
+    }
+    if (idleStartRef.current) {
+      const now = Date.now()
+      accumulatedIdleMsRef.current[key] = (accumulatedIdleMsRef.current[key] ?? 0) + (now - idleStartRef.current)
+      idleStartRef.current = now
+    }
+    return accumulatedIdleMsRef.current[key] ?? 0
+  }
+
   // Persist the ranking for the image the participant is leaving. Best-effort:
   // failures are logged but never block navigation, and the upsert on the
   // server means re-submitting the same image just overwrites the prior row.
@@ -570,6 +669,7 @@ function App() {
       mostRealisticLevel: imageState.mostRealisticLevel,
       favoriteLevel: imageState.favoriteLevel,
       gradingMs: flushActiveGradingMs(imageKey),
+      idleMs: flushActiveIdleMs(imageKey),
       // In re-rank mode the server adds this session's time to the prior total
       // and marks the row re_ranked (issue #23).
       reRank: isReRank,
