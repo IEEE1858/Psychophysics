@@ -1017,3 +1017,40 @@
 .admin-change-pw-title {
   margin-top: 28px;
 }
+
+/* Image info [i] button + metadata panel (issue #37). */
+.image-info-button {
+  color: #1d3557;
+}
+
+.image-info-list {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+  min-width: 260px;
+}
+
+.image-info-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.image-info-row dt {
+  margin: 0;
+  font-weight: 700;
+  color: rgba(35, 47, 69, 0.72);
+}
+
+.image-info-row dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.image-info-note,
+.image-info-empty {
+  margin: 16px 0 0;
+  font-size: 0.88rem;
+  color: rgba(35, 47, 69, 0.7);
+}

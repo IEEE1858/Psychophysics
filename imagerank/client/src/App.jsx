@@ -19,6 +19,7 @@ import {
 } from './lib/session'
 import { buildPlaylist, DEFAULT_AVG_GRADING_MS } from './lib/playlist'
 import StudyTour from './components/StudyTour'
+import ImageInfoButton from './components/ImageInfo'
 import { buildTourSteps } from './lib/tourSteps'
 import './App.css'
 
@@ -932,6 +933,7 @@ function App() {
               </Button>
             </>
           )}
+          <ImageInfoButton image={currentImage} collectionLabel={selectedCollection?.label} />
           <Button size="small" variant="outlined" onClick={() => transformRef.current?.zoomOut()}>
             Zoom out
           </Button>
