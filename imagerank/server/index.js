@@ -353,6 +353,8 @@ app.post("/api/rankings", (req, res) => {
     favoriteLevel,
     gradingMs,
     idleMs,
+    maxZoomScale,
+    maxZoomPct,
     reRank,
   } = req.body || {};
 
@@ -379,6 +381,8 @@ app.post("/api/rankings", (req, res) => {
       favoriteLevel: parseLevel(favoriteLevel),
       gradingMs: parseLevel(gradingMs),
       idleMs: parseLevel(idleMs),
+      maxZoomScale: parseLevel(maxZoomScale),
+      maxZoomPct: parseLevel(maxZoomPct),
       reRank: Boolean(reRank),
     });
     res.status(201).json({ ok: true });
@@ -450,7 +454,8 @@ app.get("/api/export.csv", (_req, res) => {
     "vision_status", "vision_details", "color_blind", "country_of_origin",
     "display_type", "lighting", "time_budget_minutes", "collection_id", "image_id", "max_level",
     "furthest_visited_level", "most_realistic_level", "favorite_level",
-    "grading_ms", "idle_ms", "re_ranked", "ranked_at", "participant_created_at", "user_agent",
+    "grading_ms", "idle_ms", "max_zoom_scale", "max_zoom_pct", "re_ranked",
+    "ranked_at", "participant_created_at", "user_agent",
   ];
 
   const lines = [columns.join(",")];

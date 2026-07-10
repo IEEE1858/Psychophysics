@@ -64,6 +64,18 @@ try {
   // column already exists
 }
 
+// Migration for databases created before zoom tracking (issue #33).
+try {
+  db.exec("ALTER TABLE image_rankings ADD COLUMN max_zoom_scale REAL");
+} catch {
+  // column already exists
+}
+try {
+  db.exec("ALTER TABLE image_rankings ADD COLUMN max_zoom_pct REAL");
+} catch {
+  // column already exists
+}
+
 const insertParticipantStmt = db.prepare(`
   INSERT INTO participants (
     account_id, age, gender, email, self_description, vision_status, vision_details,
@@ -81,10 +93,10 @@ const insertParticipantStmt = db.prepare(`
 const upsertRankingStmt = db.prepare(`
   INSERT INTO image_rankings (
     participant_id, collection_id, image_id, max_level, furthest_visited_level,
-    most_realistic_level, favorite_level, grading_ms, idle_ms
+    most_realistic_level, favorite_level, grading_ms, idle_ms, max_zoom_scale, max_zoom_pct
   ) VALUES (
     :participantId, :collectionId, :imageId, :maxLevel, :furthestVisitedLevel,
-    :mostRealisticLevel, :favoriteLevel, :gradingMs, :idleMs
+    :mostRealisticLevel, :favoriteLevel, :gradingMs, :idleMs, :maxZoomScale, :maxZoomPct
   )
   ON CONFLICT (participant_id, collection_id, image_id) DO UPDATE SET
     max_level = excluded.max_level,
@@ -93,6 +105,8 @@ const upsertRankingStmt = db.prepare(`
     favorite_level = excluded.favorite_level,
     grading_ms = excluded.grading_ms,
     idle_ms = excluded.idle_ms,
+    max_zoom_scale = excluded.max_zoom_scale,
+    max_zoom_pct = excluded.max_zoom_pct,
     created_at = datetime('now')
 `);
 
@@ -103,10 +117,10 @@ const upsertRankingStmt = db.prepare(`
 const reRankRankingStmt = db.prepare(`
   INSERT INTO image_rankings (
     participant_id, collection_id, image_id, max_level, furthest_visited_level,
-    most_realistic_level, favorite_level, grading_ms, idle_ms, re_ranked
+    most_realistic_level, favorite_level, grading_ms, idle_ms, max_zoom_scale, max_zoom_pct, re_ranked
   ) VALUES (
     :participantId, :collectionId, :imageId, :maxLevel, :furthestVisitedLevel,
-    :mostRealisticLevel, :favoriteLevel, :gradingMs, :idleMs, 1
+    :mostRealisticLevel, :favoriteLevel, :gradingMs, :idleMs, :maxZoomScale, :maxZoomPct, 1
   )
   ON CONFLICT (participant_id, collection_id, image_id) DO UPDATE SET
     max_level = excluded.max_level,
@@ -115,6 +129,8 @@ const reRankRankingStmt = db.prepare(`
     favorite_level = excluded.favorite_level,
     grading_ms = COALESCE(image_rankings.grading_ms, 0) + COALESCE(excluded.grading_ms, 0),
     idle_ms = COALESCE(image_rankings.idle_ms, 0) + COALESCE(excluded.idle_ms, 0),
+    max_zoom_scale = max(COALESCE(image_rankings.max_zoom_scale, 0), COALESCE(excluded.max_zoom_scale, 0)),
+    max_zoom_pct = max(COALESCE(image_rankings.max_zoom_pct, 0), COALESCE(excluded.max_zoom_pct, 0)),
     re_ranked = 1,
     created_at = datetime('now')
 `);
@@ -196,6 +212,8 @@ function recordRanking(ranking) {
     favoriteLevel: ranking.favoriteLevel == null ? null : Number(ranking.favoriteLevel),
     gradingMs: ranking.gradingMs == null ? null : Number(ranking.gradingMs),
     idleMs: ranking.idleMs == null ? null : Number(ranking.idleMs),
+    maxZoomScale: ranking.maxZoomScale == null ? null : Number(ranking.maxZoomScale),
+    maxZoomPct: ranking.maxZoomPct == null ? null : Number(ranking.maxZoomPct),
   });
 }
 
@@ -260,7 +278,8 @@ function exportRankingsFlat() {
          p.vision_details, p.color_blind, p.country_of_origin, p.display_type,
          p.lighting, p.time_budget_minutes,
          r.collection_id, r.image_id, r.max_level, r.furthest_visited_level,
-         r.most_realistic_level, r.favorite_level, r.grading_ms, r.idle_ms, r.re_ranked,
+         r.most_realistic_level, r.favorite_level, r.grading_ms, r.idle_ms,
+         r.max_zoom_scale, r.max_zoom_pct, r.re_ranked,
          r.created_at        AS ranked_at,
          p.created_at        AS participant_created_at,
          p.user_agent
@@ -500,7 +519,7 @@ function getImageRankingDetail(collectionId, imageId) {
       `SELECT r.id, r.participant_id, p.email,
               r.max_level, r.furthest_visited_level,
               r.most_realistic_level, r.favorite_level,
-              r.grading_ms, r.idle_ms, r.re_ranked, r.created_at
+              r.grading_ms, r.idle_ms, r.max_zoom_scale, r.max_zoom_pct, r.re_ranked, r.created_at
        FROM image_rankings r
        JOIN participants p ON p.id = r.participant_id
        WHERE r.collection_id = ? AND r.image_id = ?

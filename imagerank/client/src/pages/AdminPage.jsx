@@ -182,6 +182,7 @@ function SubmissionDetail({ participantId, imageLookup, onBack }) {
                       <span>Time: <strong>{formatDuration(ranking.grading_ms)}</strong></span>
                       <span>Active: <strong>{formatDuration(Math.max(0, (ranking.grading_ms ?? 0) - (ranking.idle_ms ?? 0)))}</strong></span>
                       <span>Idle: <strong>{formatDuration(ranking.idle_ms)}</strong></span>
+                      <span>Max zoom: <strong>{ranking.max_zoom_scale != null ? `${Number(ranking.max_zoom_scale).toFixed(1)}× (${Math.round(ranking.max_zoom_pct ?? 0)}% width)` : '—'}</strong></span>
                     </div>
                   </div>
                 </div>
