@@ -22,6 +22,14 @@ function cap(value) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value
 }
 
+// FiveK license codes (from the sidecar) → the local license copy to link to
+// (issue #41). filesAdobe.txt images use the Adobe license; filesAdobeMIT.txt
+// images use the Adobe–MIT license.
+const LICENSES = {
+  Adobe: { label: 'Adobe Research License', href: '/licenses/LicenseAdobe.txt' },
+  AdobeMIT: { label: 'Adobe–MIT Research License', href: '/licenses/LicenseAdobeMIT.txt' },
+}
+
 // The capture summary plus the scene categorization (issue #37), in display
 // order. Each row is shown only when the source metadata carries that field.
 // Subject / Light / Location come from the MIT-Adobe FiveK dataset; the rest is
@@ -58,6 +66,7 @@ function ImageInfoButton({ image, collectionLabel }) {
   }
 
   const rows = captureRows(image.exif)
+  const license = image.exif?.license ? LICENSES[image.exif.license] : null
 
   return (
     <>
@@ -92,6 +101,16 @@ function ImageInfoButton({ image, collectionLabel }) {
                 <dd>{value}</dd>
               </div>
             ))}
+            {license ? (
+              <div className="image-info-row" key="License">
+                <dt>License</dt>
+                <dd>
+                  <a href={license.href} target="_blank" rel="noopener noreferrer">
+                    {license.label}
+                  </a>
+                </dd>
+              </div>
+            ) : null}
           </dl>
 
           {rows.length === 0 ? (

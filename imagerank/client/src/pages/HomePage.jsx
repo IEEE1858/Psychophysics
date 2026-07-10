@@ -187,6 +187,37 @@ function HomePage() {
             Learn more about IEEE 1858 →
           </a>
         </section>
+
+        <footer className="site-footer">
+          <h2 className="section-title">Image dataset &amp; license</h2>
+          <p className="about-body">
+            Study images are from the{' '}
+            <a
+              className="about-link"
+              href="https://data.csail.mit.edu/graphics/fivek/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              MIT-Adobe FiveK Dataset
+            </a>{' '}
+            (Bychkovsky et al., 2011), used under the{' '}
+            <a href="/licenses/LicenseAdobe.txt" target="_blank" rel="noopener noreferrer">
+              Adobe
+            </a>{' '}
+            and{' '}
+            <a href="/licenses/LicenseAdobeMIT.txt" target="_blank" rel="noopener noreferrer">
+              Adobe–MIT
+            </a>{' '}
+            research licenses. Each image&apos;s applicable license is linked in its
+            information (<span aria-hidden="true">ⓘ</span>) panel.
+          </p>
+          <pre className="citation-bibtex">{`@inproceedings{fivek,
+  author = "Vladimir Bychkovsky and Sylvain Paris and Eric Chan and Fr\\'edo Durand",
+  title = "Learning Photographic Global Tonal Adjustment with a Database of Input / Output Image Pairs",
+  booktitle = "The Twenty-Fourth IEEE Conference on Computer Vision and Pattern Recognition",
+  year = "2011"
+}`}</pre>
+        </footer>
       </section>
     </main>
   )
