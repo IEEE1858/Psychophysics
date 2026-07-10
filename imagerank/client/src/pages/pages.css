@@ -1012,3 +1012,8 @@
   font-size: 1rem;
   color: #1d3557;
 }
+
+/* Spacing above the "Change your password" section in the admin panel. */
+.admin-change-pw-title {
+  margin-top: 28px;
+}

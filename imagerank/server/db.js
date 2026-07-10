@@ -286,6 +286,14 @@ function listAdminUsers() {
   return db.prepare("SELECT id, username, created_at FROM admin_users ORDER BY username").all();
 }
 
+// Change an existing admin's password. Returns true if a row was updated.
+function updateAdminPassword(username, newPassword) {
+  const info = db
+    .prepare("UPDATE admin_users SET password_hash = ? WHERE username = ?")
+    .run(hashPassword(newPassword), username);
+  return info.changes > 0;
+}
+
 function verifyAdmin(username, password) {
   if (!username || !password) {
     return false;
@@ -497,6 +505,7 @@ module.exports = {
   adminUserExists,
   createAdminUser,
   listAdminUsers,
+  updateAdminPassword,
   publicAccount,
   getAccountById,
   getAccountByEmail,

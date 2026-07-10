@@ -15,6 +15,7 @@ const {
   adminUserExists,
   createAdminUser,
   listAdminUsers,
+  updateAdminPassword,
   listSubmissions,
   getSubmissionDetail,
   getRankingRowsForStats,
@@ -745,6 +746,28 @@ app.post("/api/admin/users", requireAdmin, (req, res) => {
   } catch (error) {
     console.error("Failed to create admin user", error);
     res.status(500).json({ error: "Failed to create admin user." });
+  }
+});
+
+// Change the signed-in admin's own password. requireAdmin has already verified
+// the current credentials (sent as Basic auth), so we only need the new one.
+// Returns the username so the client can refresh its stored Basic token.
+app.post("/api/admin/change-password", requireAdmin, (req, res) => {
+  const newPassword = req.body?.newPassword ?? "";
+
+  if (String(newPassword).length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters." });
+  }
+
+  try {
+    const updated = updateAdminPassword(req.adminUsername, newPassword);
+    if (!updated) {
+      return res.status(404).json({ error: "Admin account not found." });
+    }
+    res.json({ ok: true, username: req.adminUsername });
+  } catch (error) {
+    console.error("Failed to change admin password", error);
+    res.status(500).json({ error: "Failed to change password." });
   }
 });
 

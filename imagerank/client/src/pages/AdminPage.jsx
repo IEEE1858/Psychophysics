@@ -192,7 +192,7 @@ function SubmissionDetail({ participantId, imageLookup, onBack }) {
   )
 }
 
-function AdminUsersPanel() {
+function AdminUsersPanel({ signIn }) {
   const [users, setUsers] = useState(null)
   const [loadError, setLoadError] = useState('')
   const [username, setUsername] = useState('')
@@ -201,6 +201,12 @@ function AdminUsersPanel() {
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [reloadToken, setReloadToken] = useState(0)
+  // "Change your own password" form state.
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [pwError, setPwError] = useState('')
+  const [pwSuccess, setPwSuccess] = useState('')
+  const [pwSubmitting, setPwSubmitting] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -242,6 +248,41 @@ function AdminUsersPanel() {
       setFormError(requestError.response?.data?.error ?? 'Failed to create admin user.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleChangePassword(event) {
+    event.preventDefault()
+    setPwError('')
+    setPwSuccess('')
+
+    if (newPassword.length < 8) {
+      setPwError('Password must be at least 8 characters.')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError('Passwords do not match.')
+      return
+    }
+
+    setPwSubmitting(true)
+    try {
+      const response = await axios.post(
+        '/api/admin/change-password',
+        { newPassword },
+        { headers: authHeader() },
+      )
+      // The server verified the *current* password (Basic auth) and returns the
+      // username; refresh the stored Basic token so the session keeps working
+      // with the new password instead of 401-ing on the next request.
+      signIn(btoa(`${response.data.username}:${newPassword}`))
+      setPwSuccess('Your password has been changed.')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (requestError) {
+      setPwError(requestError.response?.data?.error ?? 'Failed to change password.')
+    } finally {
+      setPwSubmitting(false)
     }
   }
 
@@ -291,6 +332,33 @@ function AdminUsersPanel() {
 
       {formError ? <Alert severity="error">{formError}</Alert> : null}
       {success ? <Alert severity="success">{success}</Alert> : null}
+
+      <h2 className="admin-detail-title admin-change-pw-title">Change your password</h2>
+      <form className="admin-add-form" onSubmit={handleChangePassword} noValidate>
+        <TextField
+          label="New password"
+          type="password"
+          value={newPassword}
+          onChange={(event) => setNewPassword(event.target.value)}
+          size="small"
+          autoComplete="new-password"
+          helperText="At least 8 characters"
+        />
+        <TextField
+          label="Confirm new password"
+          type="password"
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          size="small"
+          autoComplete="new-password"
+        />
+        <Button type="submit" variant="contained" disabled={pwSubmitting || !newPassword || !confirmPassword}>
+          {pwSubmitting ? 'Changing…' : 'Change password'}
+        </Button>
+      </form>
+
+      {pwError ? <Alert severity="error">{pwError}</Alert> : null}
+      {pwSuccess ? <Alert severity="success">{pwSuccess}</Alert> : null}
     </section>
   )
 }
@@ -394,7 +462,7 @@ function AdminPage() {
         {error ? <Alert severity="error">{error}</Alert> : null}
 
         {showAdmins ? (
-          <AdminUsersPanel />
+          <AdminUsersPanel signIn={signIn} />
         ) : selectedId != null ? (
           <SubmissionDetail
             key={selectedId}
