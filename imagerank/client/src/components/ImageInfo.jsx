@@ -17,8 +17,15 @@ function InfoGlyph() {
   )
 }
 
-// The standard capture summary (issue #37), in display order. Each row is shown
-// only when the source EXIF actually carries that field.
+// Capitalize the first letter of a dataset category value ("nature" -> "Nature").
+function cap(value) {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value
+}
+
+// The capture summary plus the scene categorization (issue #37), in display
+// order. Each row is shown only when the source metadata carries that field.
+// Subject / Light / Location come from the MIT-Adobe FiveK dataset; the rest is
+// the original photo's EXIF.
 function captureRows(exif) {
   if (!exif) {
     return []
@@ -26,6 +33,9 @@ function captureRows(exif) {
   const camera = [exif.make, exif.model].filter(Boolean).join(' ').trim()
   const dimensions = exif.width && exif.height ? `${exif.width} × ${exif.height}` : null
   return [
+    ['Subject', cap(exif.subject)],
+    ['Light', cap(exif.light)],
+    ['Location', cap(exif.location)],
     ['Camera', camera || null],
     ['Lens', exif.lens],
     ['Focal length', exif.focalLength],
