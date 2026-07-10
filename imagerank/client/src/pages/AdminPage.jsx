@@ -180,6 +180,8 @@ function SubmissionDetail({ participantId, imageLookup, onBack }) {
                       <span>Favorite: <strong>{formatLevel(ranking.favorite_level, ranking.max_level)}</strong></span>
                       <span>Browsed to: <strong>{formatLevel(ranking.furthest_visited_level, ranking.max_level)}</strong></span>
                       <span>Time: <strong>{formatDuration(ranking.grading_ms)}</strong></span>
+                      <span>Active: <strong>{formatDuration(Math.max(0, (ranking.grading_ms ?? 0) - (ranking.idle_ms ?? 0)))}</strong></span>
+                      <span>Idle: <strong>{formatDuration(ranking.idle_ms)}</strong></span>
                     </div>
                   </div>
                 </div>

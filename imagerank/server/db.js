@@ -57,6 +57,13 @@ try {
   // column already exists
 }
 
+// Migration for databases created before idle-time tracking (issue #28).
+try {
+  db.exec("ALTER TABLE image_rankings ADD COLUMN idle_ms INTEGER");
+} catch {
+  // column already exists
+}
+
 const insertParticipantStmt = db.prepare(`
   INSERT INTO participants (
     account_id, age, gender, email, self_description, vision_status, vision_details,
@@ -74,10 +81,10 @@ const insertParticipantStmt = db.prepare(`
 const upsertRankingStmt = db.prepare(`
   INSERT INTO image_rankings (
     participant_id, collection_id, image_id, max_level, furthest_visited_level,
-    most_realistic_level, favorite_level, grading_ms
+    most_realistic_level, favorite_level, grading_ms, idle_ms
   ) VALUES (
     :participantId, :collectionId, :imageId, :maxLevel, :furthestVisitedLevel,
-    :mostRealisticLevel, :favoriteLevel, :gradingMs
+    :mostRealisticLevel, :favoriteLevel, :gradingMs, :idleMs
   )
   ON CONFLICT (participant_id, collection_id, image_id) DO UPDATE SET
     max_level = excluded.max_level,
@@ -85,6 +92,7 @@ const upsertRankingStmt = db.prepare(`
     most_realistic_level = excluded.most_realistic_level,
     favorite_level = excluded.favorite_level,
     grading_ms = excluded.grading_ms,
+    idle_ms = excluded.idle_ms,
     created_at = datetime('now')
 `);
 
@@ -95,10 +103,10 @@ const upsertRankingStmt = db.prepare(`
 const reRankRankingStmt = db.prepare(`
   INSERT INTO image_rankings (
     participant_id, collection_id, image_id, max_level, furthest_visited_level,
-    most_realistic_level, favorite_level, grading_ms, re_ranked
+    most_realistic_level, favorite_level, grading_ms, idle_ms, re_ranked
   ) VALUES (
     :participantId, :collectionId, :imageId, :maxLevel, :furthestVisitedLevel,
-    :mostRealisticLevel, :favoriteLevel, :gradingMs, 1
+    :mostRealisticLevel, :favoriteLevel, :gradingMs, :idleMs, 1
   )
   ON CONFLICT (participant_id, collection_id, image_id) DO UPDATE SET
     max_level = excluded.max_level,
@@ -106,6 +114,7 @@ const reRankRankingStmt = db.prepare(`
     most_realistic_level = excluded.most_realistic_level,
     favorite_level = excluded.favorite_level,
     grading_ms = COALESCE(image_rankings.grading_ms, 0) + COALESCE(excluded.grading_ms, 0),
+    idle_ms = COALESCE(image_rankings.idle_ms, 0) + COALESCE(excluded.idle_ms, 0),
     re_ranked = 1,
     created_at = datetime('now')
 `);
@@ -186,6 +195,7 @@ function recordRanking(ranking) {
     mostRealisticLevel: ranking.mostRealisticLevel == null ? null : Number(ranking.mostRealisticLevel),
     favoriteLevel: ranking.favoriteLevel == null ? null : Number(ranking.favoriteLevel),
     gradingMs: ranking.gradingMs == null ? null : Number(ranking.gradingMs),
+    idleMs: ranking.idleMs == null ? null : Number(ranking.idleMs),
   });
 }
 
@@ -236,7 +246,7 @@ function exportRankingsFlat() {
          p.vision_details, p.color_blind, p.country_of_origin, p.display_type,
          p.lighting, p.time_budget_minutes,
          r.collection_id, r.image_id, r.max_level, r.furthest_visited_level,
-         r.most_realistic_level, r.favorite_level, r.grading_ms, r.re_ranked,
+         r.most_realistic_level, r.favorite_level, r.grading_ms, r.idle_ms, r.re_ranked,
          r.created_at        AS ranked_at,
          p.created_at        AS participant_created_at,
          p.user_agent
@@ -476,7 +486,7 @@ function getImageRankingDetail(collectionId, imageId) {
       `SELECT r.id, r.participant_id, p.email,
               r.max_level, r.furthest_visited_level,
               r.most_realistic_level, r.favorite_level,
-              r.grading_ms, r.re_ranked, r.created_at
+              r.grading_ms, r.idle_ms, r.re_ranked, r.created_at
        FROM image_rankings r
        JOIN participants p ON p.id = r.participant_id
        WHERE r.collection_id = ? AND r.image_id = ?
