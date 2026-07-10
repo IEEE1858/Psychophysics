@@ -1030,9 +1030,11 @@
   margin-top: 28px;
 }
 
-/* Image info [i] button + metadata panel (issue #37). */
+/* Image info [i] button + metadata panel (issue #37). Inherit the toolbar's
+   foreground colour so the icon stays legible on the dark study topbar and the
+   dark preview toolbar (was a fixed navy that vanished on dark backgrounds). */
 .image-info-button {
-  color: #1d3557;
+  color: inherit;
 }
 
 .image-info-list {
