@@ -9,6 +9,7 @@ const {
   recordRanking,
   getParticipantWithRankings,
   getAverageGradingMs,
+  getRankingCountsByCollection,
   exportAll,
   exportRankingsFlat,
   verifyAdmin,
@@ -273,6 +274,17 @@ app.get("/api/stats/avg-grading-ms", (_req, res) => {
   } catch (error) {
     console.error("Failed to compute average grading time", error);
     res.status(500).json({ error: "Failed to compute average grading time." });
+  }
+});
+
+// Rankings recorded per collection, so the client can start a new participant on
+// the least-ranked category and keep the categories balanced (issue #38).
+app.get("/api/stats/collection-counts", (_req, res) => {
+  try {
+    res.json({ counts: getRankingCountsByCollection() });
+  } catch (error) {
+    console.error("Failed to compute collection counts", error);
+    res.status(500).json({ error: "Failed to compute collection counts." });
   }
 });
 
