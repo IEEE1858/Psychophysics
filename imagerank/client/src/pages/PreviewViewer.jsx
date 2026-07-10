@@ -6,6 +6,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Slider from '@mui/material/Slider'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 import { findCollection, useLibrary } from '../lib/useLibrary'
+import ImageInfoButton from '../components/ImageInfo'
 import './pages.css'
 
 // A read-only image viewer for the preview flow. It lets a visitor move through
@@ -108,6 +109,7 @@ function PreviewViewer() {
                     <div className="viewer-stage-toolbar">
                       <span className="viewer-stage-hint">Scroll to zoom · drag to pan</span>
                       <div className="viewer-stage-actions">
+                        <ImageInfoButton image={image} collectionLabel={collection?.label} />
                         <Button size="small" variant="outlined" onClick={() => zoomOut()}>
                           Zoom out
                         </Button>

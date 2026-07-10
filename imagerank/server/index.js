@@ -171,7 +171,29 @@ async function listS3ObjectKeys(prefix) {
   return keys;
 }
 
-async function buildCollection({ id, label, prefix, publicBaseUrl, parser }) {
+// EXIF is stripped from the processed JPEGs, so source-image metadata is
+// supplied out-of-band as a sidecar produced from the original DNGs by
+// src/extract_exif.py (issue #37). Shape: { images: { <baseId>: {…} } }.
+const EXIF_METADATA_URL =
+  process.env.EXIF_METADATA_URL || `${S3_PUBLIC_BASE_URL}/images/metadata/exif.json`;
+
+// Fetch the EXIF sidecar keyed by base image id. Any failure (missing file,
+// bad JSON) degrades gracefully to no metadata rather than breaking the library.
+async function fetchExifMetadata() {
+  try {
+    const response = await fetch(EXIF_METADATA_URL);
+    if (!response.ok) {
+      return {};
+    }
+    const data = await response.json();
+    return data?.images ?? {};
+  } catch (error) {
+    console.error("Failed to fetch EXIF metadata sidecar", error);
+    return {};
+  }
+}
+
+async function buildCollection({ id, label, prefix, publicBaseUrl, parser }, exifByBaseId = {}) {
   const keys = await listS3ObjectKeys(prefix);
 
   const images = new Map();
@@ -205,6 +227,8 @@ async function buildCollection({ id, label, prefix, publicBaseUrl, parser }) {
       image.thumbnailUrl = baseVariant
         ? `${S3_PUBLIC_BASE_URL}/images/thumbnails/${encodeURIComponent(baseVariant.fileName)}`
         : null;
+      // Source-image EXIF summary (issue #37), or null when unavailable.
+      image.exif = exifByBaseId[image.id] ?? null;
       return image;
     })
     .sort((left, right) => left.id.localeCompare(right.id, undefined, { numeric: true }));
@@ -218,9 +242,12 @@ async function buildCollection({ id, label, prefix, publicBaseUrl, parser }) {
 }
 
 async function buildLibrary() {
+  const exifByBaseId = await fetchExifMetadata();
   return {
     generatedAt: new Date().toISOString(),
-    collections: await Promise.all(COLLECTIONS.map((collection) => buildCollection(collection))),
+    collections: await Promise.all(
+      COLLECTIONS.map((collection) => buildCollection(collection, exifByBaseId))
+    ),
   };
 }
 
