@@ -146,10 +146,11 @@ function App() {
 
     async function load() {
       try {
-        const [libraryResponse, participantResponse, statsResponse] = await Promise.all([
+        const [libraryResponse, participantResponse, statsResponse, countsResponse] = await Promise.all([
           axios.get('/api/library'),
           axios.get(`/api/participants/${participantId}`).catch(() => null),
           axios.get('/api/stats/avg-grading-ms').catch(() => null),
+          axios.get('/api/stats/collection-counts').catch(() => null),
         ])
 
         const libraryData = libraryResponse.data
@@ -217,6 +218,7 @@ function App() {
             budgetSeconds: budgetMinutes * 60,
             avgSeconds: avgMs / 1000,
             excludeKeys: rankedKeys,
+            collectionCounts: countsResponse?.data?.counts ?? {},
           })
           setStudyPlaylist(playlistData)
           setStudyPosition(0)
@@ -754,7 +756,10 @@ function App() {
   async function addMoreTime() {
     setAddingMore(true)
     try {
-      const statsResponse = await axios.get('/api/stats/avg-grading-ms').catch(() => null)
+      const [statsResponse, countsResponse] = await Promise.all([
+        axios.get('/api/stats/avg-grading-ms').catch(() => null),
+        axios.get('/api/stats/collection-counts').catch(() => null),
+      ])
       const avgMs = statsResponse?.data?.avgMs || DEFAULT_AVG_GRADING_MS
 
       const excludeKeys = new Set()
@@ -770,6 +775,7 @@ function App() {
         budgetSeconds: moreMinutes * 60,
         avgSeconds: avgMs / 1000,
         excludeKeys,
+        collectionCounts: countsResponse?.data?.counts ?? {},
       })
 
       if (nextPlaylist.length === 0) {

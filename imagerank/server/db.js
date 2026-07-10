@@ -214,6 +214,20 @@ function getAverageGradingMs() {
   };
 }
 
+// Number of recorded rankings per collection, e.g. { hdr: 12, sharpness: 40 }.
+// Used to start each participant on the least-ranked category so data collection
+// stays balanced across categories (issue #38).
+function getRankingCountsByCollection() {
+  const rows = db
+    .prepare("SELECT collection_id, COUNT(*) AS count FROM image_rankings GROUP BY collection_id")
+    .all();
+  const counts = {};
+  for (const row of rows) {
+    counts[row.collection_id] = Number(row.count);
+  }
+  return counts;
+}
+
 function getParticipantWithRankings(participantId) {
   const participant = db.prepare("SELECT * FROM participants WHERE id = ?").get(participantId);
   if (!participant) {
@@ -538,6 +552,7 @@ module.exports = {
   recordRanking,
   getParticipantWithRankings,
   getAverageGradingMs,
+  getRankingCountsByCollection,
   exportAll,
   exportRankingsFlat,
 };
