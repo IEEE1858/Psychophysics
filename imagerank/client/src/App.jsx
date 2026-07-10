@@ -25,7 +25,6 @@ import './App.css'
 
 const DEFAULT_TIME_BUDGET_MINUTES = 30
 
-const EXPLORATION_RATIO = 0.35
 // A focused window with no mouse/keyboard/scroll activity for this long is
 // treated as idle (issue #28). Generous enough that a short pause while
 // comparing images isn't miscounted; tune here if it proves too eager.
@@ -58,16 +57,12 @@ function levelPercent(level, maxLevel) {
   return (level / maxLevel) * 100
 }
 
-function getExplorationThreshold(maxLevel) {
-  return Math.max(2, Math.ceil(maxLevel * EXPLORATION_RATIO))
-}
-
-function hasAdvanceDecision(imageState, maxLevel) {
-  return (
-    imageState.mostRealisticLevel != null
-    || imageState.favoriteLevel != null
-    || imageState.currentLevel === maxLevel
-  )
+// The exploration gate (issues #35/#36): accept advancing once the participant
+// has moved the slider at least one step past the start — no longer a fraction
+// of the range, and no longer requiring a favorite/realistic selection. maxLevel
+// 0 (only the original) has nothing to explore, so it always passes.
+function hasExploredEnough(imageState, maxLevel) {
+  return imageState.furthestVisitedLevel >= 1 || maxLevel === 0
 }
 
 function collectImageUrls(image) {
@@ -107,6 +102,17 @@ function App() {
   const [message, setMessage] = useState(null)
   const [toastClosing, setToastClosing] = useState(false)
   const [viewportTransform, setViewportTransform] = useState(DEFAULT_VIEWPORT)
+  // Max zoom, capped so the image can't exceed 200% of the browser width
+  // (issue #32). Recomputed from the rendered image + window size; 8 is a safe
+  // fallback until the first measurement.
+  const [maxZoomScale, setMaxZoomScale] = useState(8)
+  const stageImageRef = useRef(null)
+  // Peak zoom reached per image (issue #33): { [imageKey]: { scale, pct } }
+  // where pct is the on-screen image width as a percentage of the window width.
+  const peakZoomRef = useRef({})
+  // Tracks which image the viewport transform was last applied for, so zoom is
+  // preserved across levels of one image but reset between images (issue #34).
+  const appliedImageKeyRef = useRef(null)
   const [showLoadingModal, setShowLoadingModal] = useState(false)
   const [isFinished, setIsFinished] = useState(false)
   // "I have more time" controls on the completion screen.
@@ -419,6 +425,8 @@ function App() {
         favoriteLevel: imageState.favoriteLevel,
         gradingMs: (accumulatedMsRef.current[imageKey] ?? 0) + elapsed,
         idleMs: (accumulatedIdleMsRef.current[imageKey] ?? 0) + idleOpen,
+        maxZoomScale: peakZoomRef.current[imageKey]?.scale ?? null,
+        maxZoomPct: peakZoomRef.current[imageKey]?.pct ?? null,
         // In re-rank mode the server adds this time to the existing total and
         // flags the row; this image was already counted in the study otherwise.
         reRank: isReRank,
@@ -502,13 +510,31 @@ function App() {
       return
     }
 
-    transformRef.current.setTransform(
-      viewportTransform.positionX,
-      viewportTransform.positionY,
-      viewportTransform.scale,
-      0,
-    )
-  }, [currentVariant?.url, viewportTransform.positionX, viewportTransform.positionY, viewportTransform.scale])
+    // #34: zoom persists across levels of the same image (for comparison) but
+    // resets when a different image loads.
+    const isNewImage = appliedImageKeyRef.current !== imageKey
+    appliedImageKeyRef.current = imageKey
+    const positionX = isNewImage ? DEFAULT_VIEWPORT.positionX : viewportTransform.positionX
+    const positionY = isNewImage ? DEFAULT_VIEWPORT.positionY : viewportTransform.positionY
+    const scale = isNewImage ? DEFAULT_VIEWPORT.scale : viewportTransform.scale
+    transformRef.current.setTransform(positionX, positionY, scale, 0)
+  }, [currentVariant?.url, imageKey, viewportTransform.positionX, viewportTransform.positionY, viewportTransform.scale])
+
+  // Cap max zoom at 200% of the browser width (issue #32). Recompute from the
+  // rendered image size and window width whenever the image or window changes.
+  useEffect(() => {
+    function recomputeMaxZoom() {
+      const layoutWidth = stageImageRef.current?.offsetWidth
+      if (!layoutWidth) {
+        return
+      }
+      // On-screen image width = layoutWidth × scale; cap it at 2 × window width.
+      setMaxZoomScale(Math.max(1, (2 * window.innerWidth) / layoutWidth))
+    }
+    recomputeMaxZoom()
+    window.addEventListener('resize', recomputeMaxZoom)
+    return () => window.removeEventListener('resize', recomputeMaxZoom)
+  }, [currentVariant?.url])
 
   useEffect(() => {
     function preloadUrl(url) {
@@ -673,6 +699,8 @@ function App() {
       favoriteLevel: imageState.favoriteLevel,
       gradingMs: flushActiveGradingMs(imageKey),
       idleMs: flushActiveIdleMs(imageKey),
+      maxZoomScale: peakZoomRef.current[imageKey]?.scale ?? null,
+      maxZoomPct: peakZoomRef.current[imageKey]?.pct ?? null,
       // In re-rank mode the server adds this session's time to the prior total
       // and marks the row re_ranked (issue #23).
       reRank: isReRank,
@@ -709,11 +737,9 @@ function App() {
       return
     }
 
-    const threshold = getExplorationThreshold(maxLevel)
-    const exploredEnough = imageState.furthestVisitedLevel >= threshold || imageState.currentLevel === maxLevel
-    const madeDecision = hasAdvanceDecision(imageState, maxLevel)
-
-    if (!exploredEnough || !madeDecision) {
+    // #35/#36: only require the slider to have moved at least one step; a
+    // favorite/realistic selection is no longer required to advance.
+    if (!hasExploredEnough(imageState, maxLevel)) {
       notify('error', NEXT_IMAGE_VALIDATION_MESSAGE)
       return
     }
@@ -806,10 +832,7 @@ function App() {
       return
     }
 
-    const threshold = getExplorationThreshold(maxLevel)
-    const exploredEnough = imageState.furthestVisitedLevel >= threshold || imageState.currentLevel === maxLevel
-
-    if (!exploredEnough) {
+    if (!hasExploredEnough(imageState, maxLevel)) {
       notify('error', NEXT_IMAGE_VALIDATION_MESSAGE)
       return
     }
@@ -982,12 +1005,23 @@ function App() {
             ref={transformRef}
             initialScale={DEFAULT_VIEWPORT.scale}
             minScale={1}
-            maxScale={12}
+            maxScale={maxZoomScale}
             centerOnInit
             limitToBounds={false}
             wheel={{ step: 0.12 }}
             doubleClick={{ step: 1.4 }}
             onTransformed={(_, state) => {
+              // Record the peak zoom reached for this image (issue #33): both the
+              // raw scale and the on-screen width as a % of the browser width.
+              if (imageKey) {
+                const layoutWidth = stageImageRef.current?.offsetWidth || 0
+                const pct = layoutWidth ? (layoutWidth * state.scale) / window.innerWidth * 100 : 0
+                const previousPeak = peakZoomRef.current[imageKey] || { scale: 0, pct: 0 }
+                peakZoomRef.current[imageKey] = {
+                  scale: Math.max(previousPeak.scale, state.scale),
+                  pct: Math.max(previousPeak.pct, pct),
+                }
+              }
               setViewportTransform((previousTransform) => {
                 if (
                   previousTransform.scale === state.scale
@@ -1007,6 +1041,7 @@ function App() {
           >
             <TransformComponent wrapperClass="transform-wrapper" contentClass="transform-content">
               <img
+                ref={stageImageRef}
                 className="stage-image"
                 src={currentVariant?.url}
                 alt={`${currentImage.label} at ${currentVariant?.shortLabel ?? 'original'} processing`}

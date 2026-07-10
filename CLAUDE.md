@@ -61,7 +61,7 @@ Backend requires DB env vars: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PA
 
 The UI walks participants through every image in a collection (Sharpness or HDR). For each image, a slider moves through discrete processing levels. Two key constraints:
 
-- **Exploration gate**: the participant must visit `max(2, ceil(maxLevel × 0.35))` levels before a "Next" decision is accepted (`EXPLORATION_RATIO = 0.35` in `App.jsx`).
+- **Exploration gate**: the participant must move the slider at least one level past the start before "Next" is accepted (`hasExploredEnough` in `App.jsx`, issues #35/#36). A favorite/most-realistic selection is *not* required to advance.
 - **Slider markers**: `R` = Most Realistic selection, `F` = Favorite selection. These are saved per-image in `imageStates` (React state, not persisted).
 
 The backend (`imagerank/server/index.js`) lists S3 objects and parses filenames into structured variants. Filename conventions:
