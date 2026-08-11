@@ -37,7 +37,13 @@ CREATE TABLE IF NOT EXISTS participants (
   time_budget_minutes INTEGER,                          -- how long the participant said they could spend
   user_agent         TEXT,
   created_at         TEXT NOT NULL DEFAULT (datetime('now')),
-  completed_at       TEXT                              -- NULL until the study is finished (partial otherwise)
+  completed_at       TEXT,                             -- NULL until the study is finished (partial otherwise)
+  -- "Email me when the results are published" (issue #45). The address is kept
+  -- separately from the demographics email: opting in is a distinct, revocable
+  -- consent, and the participant may want the results at a different address.
+  results_opt_in       INTEGER NOT NULL DEFAULT 0,
+  results_opt_in_email TEXT,
+  results_opt_in_at    TEXT                            -- when they opted in; cleared on opt-out
 );
 
 -- One row per image a participant graded.

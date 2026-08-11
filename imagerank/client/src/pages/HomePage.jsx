@@ -8,6 +8,7 @@ import { useIsMobile } from '../lib/useIsMobile'
 import { sampleRandom, thumbnailFor } from '../lib/sample'
 import { hasSession } from '../lib/session'
 import { useAuth } from '../lib/auth'
+import ShareStudy from '../components/ShareStudy'
 import './pages.css'
 
 const EXAMPLE_COUNT = 6
@@ -195,6 +196,15 @@ function HomePage() {
             Learn more about IEEE 1858 →
           </a>
         </section>
+
+        <ShareStudy
+          title="Help us find more participants"
+          blurb={
+            isMobile
+              ? 'You can take the study on a laptop later — in the meantime, send it to someone who has one:'
+              : 'The study needs many pairs of eyes. Invite people who would enjoy it:'
+          }
+        />
 
         <footer className="site-footer">
           <h2 className="section-title">Image dataset &amp; license</h2>

@@ -76,6 +76,23 @@ try {
   // column already exists
 }
 
+// Migrations for databases created before the results opt-in (issue #45).
+try {
+  db.exec("ALTER TABLE participants ADD COLUMN results_opt_in INTEGER NOT NULL DEFAULT 0");
+} catch {
+  // column already exists
+}
+try {
+  db.exec("ALTER TABLE participants ADD COLUMN results_opt_in_email TEXT");
+} catch {
+  // column already exists
+}
+try {
+  db.exec("ALTER TABLE participants ADD COLUMN results_opt_in_at TEXT");
+} catch {
+  // column already exists
+}
+
 const insertParticipantStmt = db.prepare(`
   INSERT INTO participants (
     account_id, age, gender, email, self_description, vision_status, vision_details,
@@ -198,6 +215,49 @@ function markParticipantComplete(participantId) {
   db.prepare("UPDATE participants SET completed_at = datetime('now') WHERE id = ?").run(
     Number(participantId)
   );
+}
+
+// Record (or withdraw) the participant's request to be emailed when the study
+// results are published (issue #45). Opting out clears both the address and the
+// timestamp, so nothing lingers for someone who changed their mind.
+const setResultsOptInStmt = db.prepare(`
+  UPDATE participants SET
+    results_opt_in = :optIn,
+    results_opt_in_email = :email,
+    results_opt_in_at = CASE WHEN :optIn = 1 THEN datetime('now') ELSE NULL END
+  WHERE id = :id
+`);
+
+function setResultsOptIn(participantId, { optIn, email }) {
+  const info = setResultsOptInStmt.run({
+    id: Number(participantId),
+    optIn: optIn ? 1 : 0,
+    email: optIn && email ? String(email).trim() : null,
+  });
+  return info.changes > 0;
+}
+
+// The mailing list for the published results: one row per address, since a
+// participant may have taken the study more than once (one participant row per
+// session) and the list is for emailing people, not sessions.
+function listResultsInterest() {
+  return db
+    .prepare(
+      `SELECT
+         results_opt_in_email             AS email,
+         COUNT(*)                         AS sessions,
+         SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completed_sessions,
+         MIN(results_opt_in_at)           AS first_opted_in_at,
+         MAX(results_opt_in_at)           AS last_opted_in_at,
+         GROUP_CONCAT(id)                 AS participant_ids
+       FROM participants
+       WHERE results_opt_in = 1
+         AND results_opt_in_email IS NOT NULL
+         AND TRIM(results_opt_in_email) <> ''
+       GROUP BY results_opt_in_email COLLATE NOCASE
+       ORDER BY MAX(results_opt_in_at) DESC`
+    )
+    .all();
 }
 
 function recordRanking(ranking) {
@@ -567,6 +627,8 @@ module.exports = {
   createParticipant,
   updateParticipant,
   markParticipantComplete,
+  setResultsOptIn,
+  listResultsInterest,
   participantExists,
   recordRanking,
   getParticipantWithRankings,

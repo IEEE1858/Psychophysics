@@ -195,6 +195,118 @@ function SubmissionDetail({ participantId, imageLookup, onBack }) {
   )
 }
 
+// Participants who asked to be emailed when the results are published (issue
+// #45), with a CSV download for whatever mailing tool the group uses. The CSV
+// route is admin-only, so it is fetched with the Basic token and handed to the
+// browser as a blob rather than linked directly.
+function ResultsInterestPanel() {
+  const [subscribers, setSubscribers] = useState(null)
+  const [error, setError] = useState('')
+  const [downloading, setDownloading] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    axios
+      .get('/api/admin/results-interest', { headers: authHeader() })
+      .then((response) => {
+        if (active) {
+          setSubscribers(response.data.subscribers)
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setError('Failed to load the results mailing list.')
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  async function downloadCsv() {
+    setDownloading(true)
+    setError('')
+    try {
+      const response = await axios.get('/api/admin/results-interest.csv', {
+        headers: authHeader(),
+        responseType: 'blob',
+      })
+      const href = URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = href
+      link.download = 'imagerank-results-interest.csv'
+      link.click()
+      URL.revokeObjectURL(href)
+    } catch {
+      setError('Failed to download the CSV.')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  const loading = subscribers === null && !error
+
+  return (
+    <section className="admin-results-panel">
+      <div className="admin-results-head">
+        <div>
+          <h2 className="admin-detail-title">Results mailing list</h2>
+          <p className="admin-results-sub">
+            {subscribers ? `${subscribers.length} ${subscribers.length === 1 ? 'address' : 'addresses'}` : '—'} to
+            notify when the study results are published.
+          </p>
+        </div>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={downloadCsv}
+          disabled={downloading || !subscribers?.length}
+        >
+          {downloading ? 'Preparing…' : 'Download CSV'}
+        </Button>
+      </div>
+
+      {error ? <Alert severity="error">{error}</Alert> : null}
+
+      {loading ? (
+        <div className="home-status">
+          <CircularProgress size={24} />
+          <span>Loading mailing list…</span>
+        </div>
+      ) : null}
+
+      {subscribers?.length === 0 ? (
+        <Alert severity="info">Nobody has asked for the results yet.</Alert>
+      ) : null}
+
+      {subscribers?.length ? (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th className="admin-num">Sessions</th>
+                <th className="admin-num">Completed</th>
+                <th className="admin-num">Opted in</th>
+              </tr>
+            </thead>
+            <tbody>
+              {subscribers.map((subscriber) => (
+                <tr key={subscriber.email}>
+                  <td className="admin-email">{subscriber.email}</td>
+                  <td className="admin-num">{subscriber.sessions}</td>
+                  <td className="admin-num">{subscriber.completed_sessions}</td>
+                  <td className="admin-num">{formatDate(subscriber.last_opted_in_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
 function AdminUsersPanel({ signIn }) {
   const [users, setUsers] = useState(null)
   const [loadError, setLoadError] = useState('')
@@ -371,7 +483,9 @@ function AdminPage() {
   const [submissions, setSubmissions] = useState(null)
   const [error, setError] = useState('')
   const [selectedId, setSelectedId] = useState(null)
-  const [showAdmins, setShowAdmins] = useState(false)
+  // Which panel the dashboard is showing: the submissions table (with its
+  // drill-down), the results mailing list, or admin-user management.
+  const [view, setView] = useState('submissions')
   const { library } = useLibrary()
 
   // Map "collectionId:imageId" -> image, for resolving thumbnails and names.
@@ -450,8 +564,19 @@ function AdminPage() {
             <Button component={Link} to="/admin/analytics" variant="contained" size="small">
               Analytics
             </Button>
-            <Button onClick={() => setShowAdmins((value) => !value)} variant="outlined" size="small">
-              {showAdmins ? 'View submissions' : 'Manage admins'}
+            <Button
+              onClick={() => setView((current) => (current === 'results' ? 'submissions' : 'results'))}
+              variant="outlined"
+              size="small"
+            >
+              {view === 'results' ? 'View submissions' : 'Results list'}
+            </Button>
+            <Button
+              onClick={() => setView((current) => (current === 'admins' ? 'submissions' : 'admins'))}
+              variant="outlined"
+              size="small"
+            >
+              {view === 'admins' ? 'View submissions' : 'Manage admins'}
             </Button>
             <Button component={Link} to="/" variant="outlined" size="small">
               Home
@@ -464,8 +589,10 @@ function AdminPage() {
 
         {error ? <Alert severity="error">{error}</Alert> : null}
 
-        {showAdmins ? (
+        {view === 'admins' ? (
           <AdminUsersPanel signIn={signIn} />
+        ) : view === 'results' ? (
+          <ResultsInterestPanel />
         ) : selectedId != null ? (
           <SubmissionDetail
             key={selectedId}
