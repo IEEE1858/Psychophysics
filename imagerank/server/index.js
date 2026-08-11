@@ -5,6 +5,8 @@ const {
   createParticipant,
   updateParticipant,
   markParticipantComplete,
+  setContactPreferences,
+  listContactInterest,
   participantExists,
   recordRanking,
   getParticipantWithRankings,
@@ -47,6 +49,7 @@ const { summarize } = require("./stats");
 
 const app = express();
 const PORT = Number(process.env.PORT || 5001);
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const S3_REGION = "us-east-1";
 const S3_BUCKET = "psychophysics-images";
@@ -432,6 +435,38 @@ app.post("/api/participants/:id/complete", (req, res) => {
   }
 });
 
+// Agree to be contacted about the study results and/or about future studies,
+// or withdraw either (issue #45). Sent from the completion screen; the address
+// is stored apart from the demographics email so each opt-in stays an explicit,
+// revocable choice.
+app.post("/api/participants/:id/contact-preferences", (req, res) => {
+  const id = Number(req.params.id);
+  if (!participantExists(id)) {
+    return res.status(404).json({ error: "Participant not found." });
+  }
+
+  const results = Boolean(req.body?.results);
+  const futureStudies = Boolean(req.body?.futureStudies);
+  const email = String(req.body?.email ?? "").trim();
+
+  if ((results || futureStudies) && !EMAIL_RE.test(email)) {
+    return res.status(400).json({ error: "A valid email is required so we can contact you." });
+  }
+
+  try {
+    setContactPreferences(id, { email, results, futureStudies });
+    res.json({
+      ok: true,
+      results,
+      futureStudies,
+      email: results || futureStudies ? email : null,
+    });
+  } catch (error) {
+    console.error("Failed to save contact preferences", error);
+    res.status(500).json({ error: "Failed to save your preference." });
+  }
+});
+
 // Dump everything as JSON for analysis/export.
 app.get("/api/export", (_req, res) => {
   res.json(exportAll());
@@ -446,6 +481,15 @@ function toCsvValue(value) {
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
+// Render rows (objects keyed by column name) as a CSV document.
+function toCsv(columns, rows) {
+  const lines = [columns.join(",")];
+  for (const row of rows) {
+    lines.push(columns.map((column) => toCsvValue(row[column])).join(","));
+  }
+  return lines.join("\n");
+}
+
 // One CSV row per ranking with the participant's demographics joined in.
 app.get("/api/export.csv", (_req, res) => {
   const rows = exportRankingsFlat();
@@ -458,19 +502,13 @@ app.get("/api/export.csv", (_req, res) => {
     "ranked_at", "participant_created_at", "user_agent",
   ];
 
-  const lines = [columns.join(",")];
-  for (const row of rows) {
-    lines.push(columns.map((column) => toCsvValue(row[column])).join(","));
-  }
-
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="imagerank-export.csv"');
-  res.send(lines.join("\n"));
+  res.send(toCsv(columns, rows));
 });
 
 // --- Participant accounts / sign-in (issue #31) -----------------------------
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 
 // Build the standard sign-in response: a session token, the safe public account
@@ -631,6 +669,40 @@ app.get("/api/admin/me", requireAdmin, (req, res) => {
 
 app.get("/api/admin/submissions", requireAdmin, (_req, res) => {
   res.json({ submissions: listSubmissions() });
+});
+
+// --- Contact list (issue #45) -----------------------------------------------
+
+const CONTACT_LIST_COLUMNS = [
+  "email", "results_opt_in", "future_studies_opt_in", "sessions", "completed_sessions",
+  "first_opted_in_at", "last_opted_in_at", "participant_ids",
+];
+
+// Which consent the caller is asking for: the study results, future studies, or
+// anyone who agreed to either. Anything else falls back to "all".
+function contactInterest(req) {
+  const requested = String(req.query.interest ?? "all");
+  return ["results", "future", "all"].includes(requested) ? requested : "all";
+}
+
+// Participants who agreed to be contacted. Admin-only: unlike the anonymized
+// study data, this is a list of contactable addresses.
+app.get("/api/admin/contact-list", requireAdmin, (req, res) => {
+  try {
+    const contacts = listContactInterest(contactInterest(req));
+    res.json({ count: contacts.length, contacts });
+  } catch (error) {
+    console.error("Failed to list contacts", error);
+    res.status(500).json({ error: "Failed to list contacts." });
+  }
+});
+
+// The same list as a CSV download, ready to paste into a mailing tool.
+app.get("/api/admin/contact-list.csv", requireAdmin, (req, res) => {
+  const interest = contactInterest(req);
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="imagerank-contacts-${interest}.csv"`);
+  res.send(toCsv(CONTACT_LIST_COLUMNS, listContactInterest(interest)));
 });
 
 // --- Analytics (issue #24) --------------------------------------------------

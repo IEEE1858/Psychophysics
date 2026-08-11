@@ -20,6 +20,8 @@ import {
 import { buildPlaylist, DEFAULT_AVG_GRADING_MS } from './lib/playlist'
 import StudyTour from './components/StudyTour'
 import ImageInfoButton from './components/ImageInfo'
+import ContactPrefs from './components/ContactPrefs'
+import ShareStudy from './components/ShareStudy'
 import { buildTourSteps } from './lib/tourSteps'
 import './App.css'
 
@@ -119,6 +121,13 @@ function App() {
   const [moreMinutes, setMoreMinutes] = useState(10)
   const [addingMore, setAddingMore] = useState(false)
   const [noMoreImages, setNoMoreImages] = useState(false)
+  // Seeds the contact opt-ins on the completion screen (issue #45) from
+  // whatever the participant has already told us.
+  const [contactPrefs, setContactPrefs] = useState({
+    results: false,
+    futureStudies: false,
+    email: '',
+  })
   // "Tour mode" (issue #15): a guided walkthrough of the grading interface. It
   // auto-launches the first time a participant reaches the study (tracked in
   // localStorage); the top-bar [?] button replays it on demand. The tour
@@ -167,6 +176,17 @@ function App() {
         // Restore prior rankings so markers, the exploration gate, and the
         // completion check all reflect what the participant already did. Track
         // which images already carry a decision so we never assign them again.
+        const participantRow = participantResponse?.data?.participant
+        setContactPrefs({
+          results: Boolean(participantRow?.results_opt_in),
+          futureStudies: Boolean(participantRow?.future_studies_opt_in),
+          email:
+            participantRow?.contact_email
+            ?? participantRow?.email
+            ?? getStoredDemographics()?.email
+            ?? '',
+        })
+
         const rankings = participantResponse?.data?.rankings ?? []
         const restored = {}
         const rankedKeys = new Set()
@@ -908,6 +928,21 @@ function App() {
               </Button>
             </div>
           )}
+
+          <div className="completion-optin-block">
+            <ContactPrefs
+              participantId={participantIdRef.current}
+              initialResults={contactPrefs.results}
+              initialFutureStudies={contactPrefs.futureStudies}
+              initialEmail={contactPrefs.email}
+            />
+          </div>
+
+          <ShareStudy
+            className="completion-share"
+            title="Know someone with a good eye?"
+            blurb="Every extra participant sharpens the result. Invite someone to take the study:"
+          />
 
           <p className="completion-copy completion-muted">You can also close this tab.</p>
           <a className="completion-home-link" href="/">

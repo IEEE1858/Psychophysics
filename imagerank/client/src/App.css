@@ -511,6 +511,30 @@
   color: #455168;
 }
 
+/* "Email me the results" (issue #45) and the share links (issue #46) sit inside
+   the completion panel, so they take its lighter card treatment rather than the
+   home page's opaque section styling. */
+.completion-optin-block,
+.completion-panel .completion-share {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(67, 87, 133, 0.16);
+  box-shadow: none;
+  text-align: left;
+}
+
+.completion-panel .completion-share .share-title {
+  font-size: 1.15rem;
+}
+
+.completion-panel .completion-share .share-blurb {
+  font-size: 0.92rem;
+}
+
 /* ===== Study page: maximized image area, minimal chrome ===== */
 .study-shell {
   height: 100vh;

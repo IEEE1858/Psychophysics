@@ -195,6 +195,137 @@ function SubmissionDetail({ participantId, imageLookup, onBack }) {
   )
 }
 
+// Participants who agreed to be contacted — about the results of this study, or
+// about taking part in future ones (issue #45) — with a CSV download per list
+// for whatever mailing tool the group uses. The routes are admin-only, so the
+// CSV is fetched with the Basic token and handed to the browser as a blob
+// rather than linked directly.
+const CONTACT_DOWNLOADS = [
+  { interest: 'results', label: 'Results CSV' },
+  { interest: 'future', label: 'Future studies CSV' },
+  { interest: 'all', label: 'All contacts CSV' },
+]
+
+function ContactListPanel() {
+  const [contacts, setContacts] = useState(null)
+  const [error, setError] = useState('')
+  const [downloading, setDownloading] = useState('')
+
+  useEffect(() => {
+    let active = true
+    axios
+      .get('/api/admin/contact-list', { headers: authHeader() })
+      .then((response) => {
+        if (active) {
+          setContacts(response.data.contacts)
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setError('Failed to load the contact list.')
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  async function downloadCsv(interest) {
+    setDownloading(interest)
+    setError('')
+    try {
+      const response = await axios.get(`/api/admin/contact-list.csv?interest=${interest}`, {
+        headers: authHeader(),
+        responseType: 'blob',
+      })
+      const href = URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = href
+      link.download = `imagerank-contacts-${interest}.csv`
+      link.click()
+      URL.revokeObjectURL(href)
+    } catch {
+      setError('Failed to download the CSV.')
+    } finally {
+      setDownloading('')
+    }
+  }
+
+  const loading = contacts === null && !error
+  const resultsCount = (contacts ?? []).filter((contact) => contact.results_opt_in).length
+  const futureCount = (contacts ?? []).filter((contact) => contact.future_studies_opt_in).length
+
+  return (
+    <section className="admin-results-panel">
+      <div className="admin-results-head">
+        <div>
+          <h2 className="admin-detail-title">Contact list</h2>
+          <p className="admin-results-sub">
+            {contacts
+              ? `${resultsCount} to notify about the results, ${futureCount} open to future studies.`
+              : '—'}
+          </p>
+        </div>
+        <div className="admin-header-actions">
+          {CONTACT_DOWNLOADS.map(({ interest, label }) => (
+            <Button
+              key={interest}
+              variant={interest === 'all' ? 'outlined' : 'contained'}
+              size="small"
+              onClick={() => downloadCsv(interest)}
+              disabled={Boolean(downloading) || !contacts?.length}
+            >
+              {downloading === interest ? 'Preparing…' : label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {error ? <Alert severity="error">{error}</Alert> : null}
+
+      {loading ? (
+        <div className="home-status">
+          <CircularProgress size={24} />
+          <span>Loading contact list…</span>
+        </div>
+      ) : null}
+
+      {contacts?.length === 0 ? (
+        <Alert severity="info">Nobody has asked to be contacted yet.</Alert>
+      ) : null}
+
+      {contacts?.length ? (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th className="admin-num">Results</th>
+                <th className="admin-num">Future studies</th>
+                <th className="admin-num">Sessions</th>
+                <th className="admin-num">Completed</th>
+                <th className="admin-num">Opted in</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contacts.map((contact) => (
+                <tr key={contact.email}>
+                  <td className="admin-email">{contact.email}</td>
+                  <td className="admin-num">{contact.results_opt_in ? '✓' : '—'}</td>
+                  <td className="admin-num">{contact.future_studies_opt_in ? '✓' : '—'}</td>
+                  <td className="admin-num">{contact.sessions}</td>
+                  <td className="admin-num">{contact.completed_sessions}</td>
+                  <td className="admin-num">{formatDate(contact.last_opted_in_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
 function AdminUsersPanel({ signIn }) {
   const [users, setUsers] = useState(null)
   const [loadError, setLoadError] = useState('')
@@ -371,7 +502,9 @@ function AdminPage() {
   const [submissions, setSubmissions] = useState(null)
   const [error, setError] = useState('')
   const [selectedId, setSelectedId] = useState(null)
-  const [showAdmins, setShowAdmins] = useState(false)
+  // Which panel the dashboard is showing: the submissions table (with its
+  // drill-down), the results mailing list, or admin-user management.
+  const [view, setView] = useState('submissions')
   const { library } = useLibrary()
 
   // Map "collectionId:imageId" -> image, for resolving thumbnails and names.
@@ -450,8 +583,19 @@ function AdminPage() {
             <Button component={Link} to="/admin/analytics" variant="contained" size="small">
               Analytics
             </Button>
-            <Button onClick={() => setShowAdmins((value) => !value)} variant="outlined" size="small">
-              {showAdmins ? 'View submissions' : 'Manage admins'}
+            <Button
+              onClick={() => setView((current) => (current === 'contacts' ? 'submissions' : 'contacts'))}
+              variant="outlined"
+              size="small"
+            >
+              {view === 'contacts' ? 'View submissions' : 'Contact list'}
+            </Button>
+            <Button
+              onClick={() => setView((current) => (current === 'admins' ? 'submissions' : 'admins'))}
+              variant="outlined"
+              size="small"
+            >
+              {view === 'admins' ? 'View submissions' : 'Manage admins'}
             </Button>
             <Button component={Link} to="/" variant="outlined" size="small">
               Home
@@ -464,8 +608,10 @@ function AdminPage() {
 
         {error ? <Alert severity="error">{error}</Alert> : null}
 
-        {showAdmins ? (
+        {view === 'admins' ? (
           <AdminUsersPanel signIn={signIn} />
+        ) : view === 'contacts' ? (
+          <ContactListPanel />
         ) : selectedId != null ? (
           <SubmissionDetail
             key={selectedId}
