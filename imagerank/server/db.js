@@ -76,19 +76,37 @@ try {
   // column already exists
 }
 
-// Migrations for databases created before the results opt-in (issue #45).
+// Migrations for databases created before the contact opt-ins (issue #45).
+// The address column started life as results_opt_in_email, before the same
+// address came to serve the future-studies opt-in too; the rename is a no-op
+// unless a database was created while that earlier name was in use.
+try {
+  db.exec("ALTER TABLE participants RENAME COLUMN results_opt_in_email TO contact_email");
+} catch {
+  // column already renamed (or never existed under the old name)
+}
+try {
+  db.exec("ALTER TABLE participants ADD COLUMN contact_email TEXT");
+} catch {
+  // column already exists
+}
 try {
   db.exec("ALTER TABLE participants ADD COLUMN results_opt_in INTEGER NOT NULL DEFAULT 0");
 } catch {
   // column already exists
 }
 try {
-  db.exec("ALTER TABLE participants ADD COLUMN results_opt_in_email TEXT");
+  db.exec("ALTER TABLE participants ADD COLUMN results_opt_in_at TEXT");
 } catch {
   // column already exists
 }
 try {
-  db.exec("ALTER TABLE participants ADD COLUMN results_opt_in_at TEXT");
+  db.exec("ALTER TABLE participants ADD COLUMN future_studies_opt_in INTEGER NOT NULL DEFAULT 0");
+} catch {
+  // column already exists
+}
+try {
+  db.exec("ALTER TABLE participants ADD COLUMN future_studies_opt_in_at TEXT");
 } catch {
   // column already exists
 }
@@ -217,45 +235,75 @@ function markParticipantComplete(participantId) {
   );
 }
 
-// Record (or withdraw) the participant's request to be emailed when the study
-// results are published (issue #45). Opting out clears both the address and the
-// timestamp, so nothing lingers for someone who changed their mind.
-const setResultsOptInStmt = db.prepare(`
+// Record (or withdraw) the participant's consent to be contacted about the
+// study results and about future studies (issue #45). Withdrawing clears the
+// matching timestamp, and dropping both clears the address too, so nothing
+// lingers for someone who changed their mind. COALESCE keeps the original
+// opt-in date when they only edit the address later.
+const setContactPreferencesStmt = db.prepare(`
   UPDATE participants SET
-    results_opt_in = :optIn,
-    results_opt_in_email = :email,
-    results_opt_in_at = CASE WHEN :optIn = 1 THEN datetime('now') ELSE NULL END
+    contact_email = :email,
+    results_opt_in = :results,
+    results_opt_in_at = CASE
+      WHEN :results = 1 THEN COALESCE(results_opt_in_at, datetime('now')) ELSE NULL END,
+    future_studies_opt_in = :futureStudies,
+    future_studies_opt_in_at = CASE
+      WHEN :futureStudies = 1 THEN COALESCE(future_studies_opt_in_at, datetime('now')) ELSE NULL END
   WHERE id = :id
 `);
 
-function setResultsOptIn(participantId, { optIn, email }) {
-  const info = setResultsOptInStmt.run({
+function setContactPreferences(participantId, { email, results, futureStudies }) {
+  const anyOptIn = Boolean(results) || Boolean(futureStudies);
+  const info = setContactPreferencesStmt.run({
     id: Number(participantId),
-    optIn: optIn ? 1 : 0,
-    email: optIn && email ? String(email).trim() : null,
+    results: results ? 1 : 0,
+    futureStudies: futureStudies ? 1 : 0,
+    email: anyOptIn && email ? String(email).trim() : null,
   });
   return info.changes > 0;
 }
 
-// The mailing list for the published results: one row per address, since a
-// participant may have taken the study more than once (one participant row per
-// session) and the list is for emailing people, not sessions.
-function listResultsInterest() {
+// Everyone who agreed to be contacted, optionally narrowed to one of the two
+// consents. One row per address, not per participant row: a participant row is
+// a session, one person may take the study more than once, and this list is for
+// emailing people. `interest` is 'results', 'future' or 'all'.
+const CONTACT_INTEREST_FILTERS = {
+  results: "results_opt_in = 1",
+  future: "future_studies_opt_in = 1",
+  all: "(results_opt_in = 1 OR future_studies_opt_in = 1)",
+};
+
+function listContactInterest(interest = "all") {
+  const filter = CONTACT_INTEREST_FILTERS[interest] ?? CONTACT_INTEREST_FILTERS.all;
   return db
     .prepare(
       `SELECT
-         results_opt_in_email             AS email,
-         COUNT(*)                         AS sessions,
+         email,
+         MAX(results_opt_in)        AS results_opt_in,
+         MAX(future_studies_opt_in) AS future_studies_opt_in,
+         COUNT(*)                   AS sessions,
          SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completed_sessions,
-         MIN(results_opt_in_at)           AS first_opted_in_at,
-         MAX(results_opt_in_at)           AS last_opted_in_at,
-         GROUP_CONCAT(id)                 AS participant_ids
-       FROM participants
-       WHERE results_opt_in = 1
-         AND results_opt_in_email IS NOT NULL
-         AND TRIM(results_opt_in_email) <> ''
-       GROUP BY results_opt_in_email COLLATE NOCASE
-       ORDER BY MAX(results_opt_in_at) DESC`
+         MIN(opted_in_at)           AS first_opted_in_at,
+         MAX(opted_in_at)           AS last_opted_in_at,
+         GROUP_CONCAT(id)           AS participant_ids
+       FROM (
+         SELECT
+           id, completed_at, results_opt_in, future_studies_opt_in,
+           contact_email AS email,
+           -- Earliest of the two consents on this row; the two-argument MIN is
+           -- the scalar function, which returns NULL if either side is NULL.
+           CASE
+             WHEN results_opt_in_at IS NULL THEN future_studies_opt_in_at
+             WHEN future_studies_opt_in_at IS NULL THEN results_opt_in_at
+             ELSE MIN(results_opt_in_at, future_studies_opt_in_at)
+           END AS opted_in_at
+         FROM participants
+         WHERE ${filter}
+           AND contact_email IS NOT NULL
+           AND TRIM(contact_email) <> ''
+       )
+       GROUP BY email COLLATE NOCASE
+       ORDER BY MAX(opted_in_at) DESC`
     )
     .all();
 }
@@ -627,8 +675,8 @@ module.exports = {
   createParticipant,
   updateParticipant,
   markParticipantComplete,
-  setResultsOptIn,
-  listResultsInterest,
+  setContactPreferences,
+  listContactInterest,
   participantExists,
   recordRanking,
   getParticipantWithRankings,

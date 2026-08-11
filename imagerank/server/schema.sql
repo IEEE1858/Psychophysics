@@ -38,12 +38,17 @@ CREATE TABLE IF NOT EXISTS participants (
   user_agent         TEXT,
   created_at         TEXT NOT NULL DEFAULT (datetime('now')),
   completed_at       TEXT,                             -- NULL until the study is finished (partial otherwise)
-  -- "Email me when the results are published" (issue #45). The address is kept
-  -- separately from the demographics email: opting in is a distinct, revocable
-  -- consent, and the participant may want the results at a different address.
-  results_opt_in       INTEGER NOT NULL DEFAULT 0,
-  results_opt_in_email TEXT,
-  results_opt_in_at    TEXT                            -- when they opted in; cleared on opt-out
+  -- Consent to be contacted (issue #45): about the results of this study, and
+  -- about taking part in future ones. The address is kept separately from the
+  -- demographics email because these are distinct, revocable permissions, and
+  -- the participant may want to be reached at a different address. One address
+  -- serves both; each opt-in carries its own timestamp and is cleared on
+  -- withdrawal.
+  contact_email            TEXT,
+  results_opt_in           INTEGER NOT NULL DEFAULT 0,
+  results_opt_in_at        TEXT,
+  future_studies_opt_in    INTEGER NOT NULL DEFAULT 0,
+  future_studies_opt_in_at TEXT
 );
 
 -- One row per image a participant graded.

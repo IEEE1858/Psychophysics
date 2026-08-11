@@ -1135,27 +1135,34 @@
   color: #455168;
 }
 
-/* ---- Results opt-in (issue #45) ---- */
-.results-optin {
+/* ---- Contact opt-ins (issue #45) ---- */
+.contact-prefs {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   text-align: left;
 }
 
-.results-optin-row {
+.contact-prefs-title {
+  margin: 0 0 2px;
+  font-weight: 600;
+  color: #2a3550;
+}
+
+.contact-prefs-row {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  margin-top: 6px;
 }
 
-.results-optin-note {
+.contact-prefs-note {
   margin: 0;
   font-size: 0.82rem;
   color: #6a7280;
 }
 
-/* ---- Admin: results mailing list (issue #45) ---- */
+/* ---- Admin: contact list (issue #45) ---- */
 .admin-results-panel {
   display: flex;
   flex-direction: column;

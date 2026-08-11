@@ -5,8 +5,8 @@ const {
   createParticipant,
   updateParticipant,
   markParticipantComplete,
-  setResultsOptIn,
-  listResultsInterest,
+  setContactPreferences,
+  listContactInterest,
   participantExists,
   recordRanking,
   getParticipantWithRankings,
@@ -435,28 +435,34 @@ app.post("/api/participants/:id/complete", (req, res) => {
   }
 });
 
-// Ask to be emailed when the study results are published, or withdraw that
-// request (issue #45). Sent from the completion screen; the address is stored
-// apart from the demographics email so opting in stays an explicit, revocable
-// choice.
-app.post("/api/participants/:id/results-opt-in", (req, res) => {
+// Agree to be contacted about the study results and/or about future studies,
+// or withdraw either (issue #45). Sent from the completion screen; the address
+// is stored apart from the demographics email so each opt-in stays an explicit,
+// revocable choice.
+app.post("/api/participants/:id/contact-preferences", (req, res) => {
   const id = Number(req.params.id);
   if (!participantExists(id)) {
     return res.status(404).json({ error: "Participant not found." });
   }
 
-  const optIn = Boolean(req.body?.optIn);
+  const results = Boolean(req.body?.results);
+  const futureStudies = Boolean(req.body?.futureStudies);
   const email = String(req.body?.email ?? "").trim();
 
-  if (optIn && !EMAIL_RE.test(email)) {
-    return res.status(400).json({ error: "A valid email is required to receive the results." });
+  if ((results || futureStudies) && !EMAIL_RE.test(email)) {
+    return res.status(400).json({ error: "A valid email is required so we can contact you." });
   }
 
   try {
-    setResultsOptIn(id, { optIn, email });
-    res.json({ ok: true, optIn, email: optIn ? email : null });
+    setContactPreferences(id, { email, results, futureStudies });
+    res.json({
+      ok: true,
+      results,
+      futureStudies,
+      email: results || futureStudies ? email : null,
+    });
   } catch (error) {
-    console.error("Failed to save results opt-in", error);
+    console.error("Failed to save contact preferences", error);
     res.status(500).json({ error: "Failed to save your preference." });
   }
 });
@@ -665,30 +671,38 @@ app.get("/api/admin/submissions", requireAdmin, (_req, res) => {
   res.json({ submissions: listSubmissions() });
 });
 
-// --- Results mailing list (issue #45) ---------------------------------------
+// --- Contact list (issue #45) -----------------------------------------------
 
-const RESULTS_INTEREST_COLUMNS = [
-  "email", "sessions", "completed_sessions", "first_opted_in_at", "last_opted_in_at",
-  "participant_ids",
+const CONTACT_LIST_COLUMNS = [
+  "email", "results_opt_in", "future_studies_opt_in", "sessions", "completed_sessions",
+  "first_opted_in_at", "last_opted_in_at", "participant_ids",
 ];
 
-// Participants who asked to hear when the results are published. Admin-only:
-// unlike the anonymized study data, this is a list of contactable addresses.
-app.get("/api/admin/results-interest", requireAdmin, (_req, res) => {
+// Which consent the caller is asking for: the study results, future studies, or
+// anyone who agreed to either. Anything else falls back to "all".
+function contactInterest(req) {
+  const requested = String(req.query.interest ?? "all");
+  return ["results", "future", "all"].includes(requested) ? requested : "all";
+}
+
+// Participants who agreed to be contacted. Admin-only: unlike the anonymized
+// study data, this is a list of contactable addresses.
+app.get("/api/admin/contact-list", requireAdmin, (req, res) => {
   try {
-    const subscribers = listResultsInterest();
-    res.json({ count: subscribers.length, subscribers });
+    const contacts = listContactInterest(contactInterest(req));
+    res.json({ count: contacts.length, contacts });
   } catch (error) {
-    console.error("Failed to list results interest", error);
-    res.status(500).json({ error: "Failed to list results interest." });
+    console.error("Failed to list contacts", error);
+    res.status(500).json({ error: "Failed to list contacts." });
   }
 });
 
 // The same list as a CSV download, ready to paste into a mailing tool.
-app.get("/api/admin/results-interest.csv", requireAdmin, (_req, res) => {
+app.get("/api/admin/contact-list.csv", requireAdmin, (req, res) => {
+  const interest = contactInterest(req);
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", 'attachment; filename="imagerank-results-interest.csv"');
-  res.send(toCsv(RESULTS_INTEREST_COLUMNS, listResultsInterest()));
+  res.setHeader("Content-Disposition", `attachment; filename="imagerank-contacts-${interest}.csv"`);
+  res.send(toCsv(CONTACT_LIST_COLUMNS, listContactInterest(interest)));
 });
 
 // --- Analytics (issue #24) --------------------------------------------------

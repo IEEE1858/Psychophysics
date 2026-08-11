@@ -195,27 +195,34 @@ function SubmissionDetail({ participantId, imageLookup, onBack }) {
   )
 }
 
-// Participants who asked to be emailed when the results are published (issue
-// #45), with a CSV download for whatever mailing tool the group uses. The CSV
-// route is admin-only, so it is fetched with the Basic token and handed to the
-// browser as a blob rather than linked directly.
-function ResultsInterestPanel() {
-  const [subscribers, setSubscribers] = useState(null)
+// Participants who agreed to be contacted — about the results of this study, or
+// about taking part in future ones (issue #45) — with a CSV download per list
+// for whatever mailing tool the group uses. The routes are admin-only, so the
+// CSV is fetched with the Basic token and handed to the browser as a blob
+// rather than linked directly.
+const CONTACT_DOWNLOADS = [
+  { interest: 'results', label: 'Results CSV' },
+  { interest: 'future', label: 'Future studies CSV' },
+  { interest: 'all', label: 'All contacts CSV' },
+]
+
+function ContactListPanel() {
+  const [contacts, setContacts] = useState(null)
   const [error, setError] = useState('')
-  const [downloading, setDownloading] = useState(false)
+  const [downloading, setDownloading] = useState('')
 
   useEffect(() => {
     let active = true
     axios
-      .get('/api/admin/results-interest', { headers: authHeader() })
+      .get('/api/admin/contact-list', { headers: authHeader() })
       .then((response) => {
         if (active) {
-          setSubscribers(response.data.subscribers)
+          setContacts(response.data.contacts)
         }
       })
       .catch(() => {
         if (active) {
-          setError('Failed to load the results mailing list.')
+          setError('Failed to load the contact list.')
         }
       })
     return () => {
@@ -223,47 +230,55 @@ function ResultsInterestPanel() {
     }
   }, [])
 
-  async function downloadCsv() {
-    setDownloading(true)
+  async function downloadCsv(interest) {
+    setDownloading(interest)
     setError('')
     try {
-      const response = await axios.get('/api/admin/results-interest.csv', {
+      const response = await axios.get(`/api/admin/contact-list.csv?interest=${interest}`, {
         headers: authHeader(),
         responseType: 'blob',
       })
       const href = URL.createObjectURL(response.data)
       const link = document.createElement('a')
       link.href = href
-      link.download = 'imagerank-results-interest.csv'
+      link.download = `imagerank-contacts-${interest}.csv`
       link.click()
       URL.revokeObjectURL(href)
     } catch {
       setError('Failed to download the CSV.')
     } finally {
-      setDownloading(false)
+      setDownloading('')
     }
   }
 
-  const loading = subscribers === null && !error
+  const loading = contacts === null && !error
+  const resultsCount = (contacts ?? []).filter((contact) => contact.results_opt_in).length
+  const futureCount = (contacts ?? []).filter((contact) => contact.future_studies_opt_in).length
 
   return (
     <section className="admin-results-panel">
       <div className="admin-results-head">
         <div>
-          <h2 className="admin-detail-title">Results mailing list</h2>
+          <h2 className="admin-detail-title">Contact list</h2>
           <p className="admin-results-sub">
-            {subscribers ? `${subscribers.length} ${subscribers.length === 1 ? 'address' : 'addresses'}` : '—'} to
-            notify when the study results are published.
+            {contacts
+              ? `${resultsCount} to notify about the results, ${futureCount} open to future studies.`
+              : '—'}
           </p>
         </div>
-        <Button
-          variant="contained"
-          size="small"
-          onClick={downloadCsv}
-          disabled={downloading || !subscribers?.length}
-        >
-          {downloading ? 'Preparing…' : 'Download CSV'}
-        </Button>
+        <div className="admin-header-actions">
+          {CONTACT_DOWNLOADS.map(({ interest, label }) => (
+            <Button
+              key={interest}
+              variant={interest === 'all' ? 'outlined' : 'contained'}
+              size="small"
+              onClick={() => downloadCsv(interest)}
+              disabled={Boolean(downloading) || !contacts?.length}
+            >
+              {downloading === interest ? 'Preparing…' : label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {error ? <Alert severity="error">{error}</Alert> : null}
@@ -271,32 +286,36 @@ function ResultsInterestPanel() {
       {loading ? (
         <div className="home-status">
           <CircularProgress size={24} />
-          <span>Loading mailing list…</span>
+          <span>Loading contact list…</span>
         </div>
       ) : null}
 
-      {subscribers?.length === 0 ? (
-        <Alert severity="info">Nobody has asked for the results yet.</Alert>
+      {contacts?.length === 0 ? (
+        <Alert severity="info">Nobody has asked to be contacted yet.</Alert>
       ) : null}
 
-      {subscribers?.length ? (
+      {contacts?.length ? (
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
               <tr>
                 <th>Email</th>
+                <th className="admin-num">Results</th>
+                <th className="admin-num">Future studies</th>
                 <th className="admin-num">Sessions</th>
                 <th className="admin-num">Completed</th>
                 <th className="admin-num">Opted in</th>
               </tr>
             </thead>
             <tbody>
-              {subscribers.map((subscriber) => (
-                <tr key={subscriber.email}>
-                  <td className="admin-email">{subscriber.email}</td>
-                  <td className="admin-num">{subscriber.sessions}</td>
-                  <td className="admin-num">{subscriber.completed_sessions}</td>
-                  <td className="admin-num">{formatDate(subscriber.last_opted_in_at)}</td>
+              {contacts.map((contact) => (
+                <tr key={contact.email}>
+                  <td className="admin-email">{contact.email}</td>
+                  <td className="admin-num">{contact.results_opt_in ? '✓' : '—'}</td>
+                  <td className="admin-num">{contact.future_studies_opt_in ? '✓' : '—'}</td>
+                  <td className="admin-num">{contact.sessions}</td>
+                  <td className="admin-num">{contact.completed_sessions}</td>
+                  <td className="admin-num">{formatDate(contact.last_opted_in_at)}</td>
                 </tr>
               ))}
             </tbody>
@@ -565,11 +584,11 @@ function AdminPage() {
               Analytics
             </Button>
             <Button
-              onClick={() => setView((current) => (current === 'results' ? 'submissions' : 'results'))}
+              onClick={() => setView((current) => (current === 'contacts' ? 'submissions' : 'contacts'))}
               variant="outlined"
               size="small"
             >
-              {view === 'results' ? 'View submissions' : 'Results list'}
+              {view === 'contacts' ? 'View submissions' : 'Contact list'}
             </Button>
             <Button
               onClick={() => setView((current) => (current === 'admins' ? 'submissions' : 'admins'))}
@@ -591,8 +610,8 @@ function AdminPage() {
 
         {view === 'admins' ? (
           <AdminUsersPanel signIn={signIn} />
-        ) : view === 'results' ? (
-          <ResultsInterestPanel />
+        ) : view === 'contacts' ? (
+          <ContactListPanel />
         ) : selectedId != null ? (
           <SubmissionDetail
             key={selectedId}
