@@ -20,16 +20,16 @@ const CANONICAL_URL = 'https://imagerank.imatest.com'
 // once (there is no central Mastodon share endpoint to post to).
 const MASTODON_INSTANCE_KEY = 'mastodonInstance'
 
-const SHARE_TITLE = 'Which photo do you like best — and which one looks real?'
+const SHARE_TITLE = 'Which photo do you like best, and which one looks real?'
 const SHARE_TEXT =
-  'Which photo do you like best — and which one looks real? They are often not the same image. ' +
+  'Which photo do you like best, and which one looks real? They are often not the same image. ' +
   'The IEEE 1858 imaging standards group is measuring that gap, and needs people to look at ' +
   'photos and choose. 15–45 minutes on a laptop, no expertise required.'
 
 // X counts every URL as 23 characters against its 280-character limit, which
 // leaves the full text with no room for the sharer to add a word of their own.
 const SHORT_SHARE_TEXT =
-  'Which photo do you like best — and which one looks real? Often not the same image. ' +
+  'Which photo do you like best, and which one looks real? Often not the same image. ' +
   'The IEEE 1858 imaging standards group is measuring that gap. 15–45 minutes on a laptop, ' +
   'no expertise needed.'
 
@@ -188,7 +188,7 @@ function ShareStudy({
             )
           }
         >
-          X
+          Twitter
         </Button>
         <Button
           variant="outlined"
