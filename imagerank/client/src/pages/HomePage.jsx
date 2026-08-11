@@ -80,6 +80,15 @@ function HomePage() {
               These two choices need not be the same. The most realistic image is not always the
               one that looks the most polished, and that tension is exactly what we are measuring.
             </p>
+
+            {/* Desktop only: on a phone the gate alert beside this already says the
+                same thing, at more length. */}
+            {isMobile ? null : (
+              <p className="hero-viewing-note">
+                For consistent results, please take the study on a desktop or laptop computer in
+                indoor lighting conditions.
+              </p>
+            )}
           </div>
 
           <div className="home-hero-aside">
@@ -103,10 +112,6 @@ function HomePage() {
                 </Alert>
               ) : (
                 <div className="cta-block">
-                  <p className="cta-note">
-                    For consistent results, please take the study on a desktop or laptop computer in
-                    indoor lighting conditions.
-                  </p>
                   <Button
                     variant="contained"
                     size="large"

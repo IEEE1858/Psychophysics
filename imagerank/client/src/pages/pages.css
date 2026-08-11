@@ -344,7 +344,11 @@
 /* ---- Hero / intro ---- */
 .home-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+  /* Even split: the right column carries the featured image, so it needs far more
+     room than a call to action alone. Narrowing the text column past this buys
+     very little image width and costs real page height, because the text simply
+     wraps taller. */
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 1fr);
   align-items: center;
   gap: 32px;
   padding: 28px 32px;
@@ -363,11 +367,7 @@
   gap: 12px;
 }
 
-/* Featured image sits above the call to action in the hero's right-hand column.
-   The hero's height is set by the text column, which leaves this column with
-   vertical slack; sizing the image by width alone would overflow that slack and
-   push the whole page down. Instead it is capped by height and allowed to shrink,
-   so it fills the spare room without making the hero any taller than the text. */
+/* Featured image sits above the call to action in the hero's right-hand column. */
 .home-hero-aside {
   display: flex;
   flex-direction: column;
@@ -377,15 +377,28 @@
 }
 
 .home-hero-feature {
-  /* Capped by width, not height: the image is a fixed 2.25:1, so a height cap
-     would letterbox it inside a wider box instead of shrinking it. 264px is the
-     widest that still fits the column's spare vertical room. */
+  /* Capped by width, never height: the image is a fixed 2.25:1, so a height cap
+     letterboxes it inside a wider box instead of shrinking it. It fills the
+     column, which is what bounds its size. */
   width: 100%;
-  max-width: 264px;
   height: auto;
   border-radius: 12px;
   border: 1px solid rgba(67, 87, 133, 0.18);
   box-shadow: 0 8px 22px rgba(39, 50, 74, 0.16);
+}
+
+/* Viewing conditions matter to the data, so this sits with the intro text where
+   it will actually be read, rather than tucked beside the button. */
+.hero-viewing-note {
+  margin: 4px 0 0;
+  max-width: 70ch;
+  font-weight: 700;
+  font-style: italic;
+  /* Manrope ships no italic face, and :root sets font-synthesis: none (it has real
+     weights, so faux-bold is never wanted). Allow synthesis of the slant only, or
+     font-style: italic renders upright here. The 700 weight is still a real face. */
+  font-synthesis: style;
+  color: #3b4658;
 }
 
 .home-hero-cta {
