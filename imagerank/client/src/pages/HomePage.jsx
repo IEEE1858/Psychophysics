@@ -77,53 +77,63 @@ function HomePage() {
               <strong>most realistic</strong>.
             </p>
             <p className="home-lead">
-              These two choices need not be the same — the most realistic image is not always the
+              These two choices need not be the same. The most realistic image is not always the
               one that looks the most polished, and that tension is exactly what we are measuring.
             </p>
           </div>
 
-          <div className="home-hero-cta">
-            {isMobile ? (
-              <Alert severity="info" className="mobile-gate">
-                <strong>Please switch to a desktop or laptop computer.</strong>
-                <span>
-                  Accurate viewing requires a larger screen in indoor lighting conditions. Open this
-                  page (<code>imagerank.imatest.com</code>) on your desktop or laptop to take part in
-                  the study.
-                </span>
-              </Alert>
-            ) : (
-              <div className="cta-block">
-                <p className="cta-note">
-                  For consistent results, please take the study on a desktop or laptop computer in
-                  indoor lighting conditions.
-                </p>
-                <Button
-                  variant="contained"
-                  size="large"
-                  className="cta-button"
-                  onClick={() => navigate(hasSession() ? '/study' : '/demographics')}
-                >
-                  {hasSession() ? 'Resume the Study' : 'Start the Study'}
-                </Button>
+          <div className="home-hero-aside">
+            <img
+              className="home-hero-feature"
+              src="/imageRankFeature.jpg"
+              width="960"
+              height="426"
+              alt="A sunflower and a graffiti underpass, each shown at three increasing levels of HDR processing."
+            />
 
-                {authed ? (
+            <div className="home-hero-cta">
+              {isMobile ? (
+                <Alert severity="info" className="mobile-gate">
+                  <strong>Please switch to a desktop or laptop computer.</strong>
+                  <span>
+                    Accurate viewing requires a larger screen in indoor lighting conditions. Open
+                    this page (<code>imagerank.imatest.com</code>) on your desktop or laptop to take
+                    part in the study.
+                  </span>
+                </Alert>
+              ) : (
+                <div className="cta-block">
                   <p className="cta-note">
-                    Signed in as <strong>{account.email}</strong>.{' '}
-                    <button type="button" className="link-button" onClick={signOut}>
-                      Sign out
-                    </button>
+                    For consistent results, please take the study on a desktop or laptop computer in
+                    indoor lighting conditions.
                   </p>
-                ) : (
-                  <p className="cta-note">
-                    Have an account, or want to continue on another device?{' '}
-                    <Link className="preview-link" to="/signin">
-                      Sign in
-                    </Link>
-                  </p>
-                )}
-              </div>
-            )}
+                  <Button
+                    variant="contained"
+                    size="large"
+                    className="cta-button"
+                    onClick={() => navigate(hasSession() ? '/study' : '/demographics')}
+                  >
+                    {hasSession() ? 'Resume the Study' : 'Start the Study'}
+                  </Button>
+
+                  {authed ? (
+                    <p className="cta-note">
+                      Signed in as <strong>{account.email}</strong>.{' '}
+                      <button type="button" className="link-button" onClick={signOut}>
+                        Sign out
+                      </button>
+                    </p>
+                  ) : (
+                    <p className="cta-note">
+                      Have an account, or want to continue on another device?{' '}
+                      <Link className="preview-link" to="/signin">
+                        Sign in
+                      </Link>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -176,7 +186,7 @@ function HomePage() {
             >
               IEEE 1858 Camera Perceptual Image Quality
             </a>{' '}
-            working group — a group of imaging engineers and researchers who develop open
+            working group, a group of imaging engineers and researchers who develop open
             standards for measuring how good a camera&apos;s photos really look to people.
           </p>
           <p className="about-body">
@@ -201,7 +211,7 @@ function HomePage() {
           title="Help us find more participants"
           blurb={
             isMobile
-              ? 'You can take the study on a laptop later — in the meantime, send it to someone who has one:'
+              ? 'You can take the study on a laptop later. In the meantime, send it to someone who has one:'
               : 'The study needs many pairs of eyes. Invite people who would enjoy it:'
           }
         />
