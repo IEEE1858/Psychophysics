@@ -39,7 +39,62 @@ Requires AWS credentials (env or `~/.aws/`) with `s3:ListBucket` on the test-ima
 - **Bucket:** `psychophysics-images` (region: `us-east-1`)
 - **Public base URL:** `https://psychophysics-images.s3.us-east-1.amazonaws.com`
 
-**Deploy:** `rsync` or `scp` changes to `root@atlas:/vhosts/psychophysics/imagerank/`, then restart the server process running `/root/.nvm/versions/node/v26.3.0/bin/node index.js`. Deploy the client build (`npm run build` → `client/dist/`) alongside the server.
+### Deploying imagerank to production
+
+Production host is `hkoren@atlas` (`hkoren` has passwordless sudo; the app itself runs as
+the unprivileged `imagerank` user). Apache terminates TLS for
+`imagerank.imatest.com` and:
+- serves the SPA from `DocumentRoot /vhosts/psychophysics/imagerank/client/dist`
+  (`FallbackResource /index.html`), and
+- reverse-proxies `/api` and `/images` to the Node API on `127.0.0.1:5001`.
+
+The API is a systemd unit, **not** a bare `node` process:
+- **Unit:** `imagerank-api.service` (`Restart=always`, so it comes back on its own)
+- **Node:** `/usr/local/lib/nodejs/v26.3.0/bin/node index.js`
+- **Env:** `EnvironmentFile=/etc/imagerank/imagerank.env` (AWS creds, `DB_PATH`,
+  admin seed, Google OAuth). There is no `.env` in the server directory.
+- **DB:** SQLite at `/var/lib/imagerank/psychophysics.db` — the only writable path
+  the hardened unit is granted (`ReadWritePaths=/var/lib/imagerank`).
+
+Steps:
+
+```bash
+# 1. Build the client locally
+cd imagerank/client && npm ci && npm run build
+
+# 2. Push server sources (never overwrite node_modules, data/, or .env)
+cd imagerank
+rsync -av --delete --exclude node_modules --exclude data --exclude .env \
+  server/ hkoren@atlas:/vhosts/psychophysics/imagerank/server/
+
+# 3. Refresh server deps on the host (native modules must build there)
+ssh hkoren@atlas 'cd /vhosts/psychophysics/imagerank/server && \
+  PATH=/usr/local/lib/nodejs/v26.3.0/bin:$PATH npm install'
+
+# 4. Back up the DB, then restart so migrations run
+ssh hkoren@atlas 'sudo systemctl stop imagerank-api && \
+  sudo cp /var/lib/imagerank/psychophysics.db{,-wal,-shm} /var/lib/imagerank/backups/ && \
+  sudo systemctl start imagerank-api'
+
+# 5. Publish the client build
+rsync -av --delete client/dist/ hkoren@atlas:/vhosts/psychophysics/imagerank/client/dist/
+```
+
+Notes:
+- **Schema changes need no manual migration.** `server/db.js` runs idempotent
+  `ALTER TABLE`s in `try/catch` at startup, so restarting the service migrates the
+  live DB. `schema.sql` uses `CREATE TABLE IF NOT EXISTS` and will *not* add columns
+  to an existing database on its own.
+- **Always back up before restarting**, since startup mutates the schema. Copy the
+  `-wal` and `-shm` files too: the DB runs in WAL mode and is not checkpointed on
+  shutdown, so the main `.db` alone can be missing recent writes.
+- Run `npm install` (not `--omit=dev`) on the host: `sharp` is a devDependency but
+  `make-thumbnails.js` needs it there.
+- Deploy the server *before* the client so the new SPA never calls API endpoints
+  that aren't live yet.
+- Verify with `systemctl status imagerank-api`,
+  `journalctl -u imagerank-api -n 50`, and a request to
+  `https://imagerank.imatest.com/api/library`.
 
 ### webapp (PostgreSQL-backed)
 
