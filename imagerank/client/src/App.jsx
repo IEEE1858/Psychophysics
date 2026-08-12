@@ -115,7 +115,10 @@ function App() {
   // Tracks which image the viewport transform was last applied for, so zoom is
   // preserved across levels of one image but reset between images (issue #34).
   const appliedImageKeyRef = useRef(null)
-  const [showLoadingModal, setShowLoadingModal] = useState(false)
+  // The variant url the loading modal has finished covering. Visibility is derived
+  // from this rather than stored, so the modal never needs assigning during render
+  // or synchronously from an effect (see the loading effect below).
+  const [clearedModalUrl, setClearedModalUrl] = useState(null)
   const [isFinished, setIsFinished] = useState(false)
   // "I have more time" controls on the completion screen.
   const [moreMinutes, setMoreMinutes] = useState(10)
@@ -297,6 +300,15 @@ function App() {
   const imageKey = currentImage && selectedCollection ? getImageKey(selectedCollection.id, currentImage.id) : ''
   const imageState = ensureImageState(imageStates[imageKey])
   const currentVariant = currentImage?.variants.find((variant) => variant.level === imageState.currentLevel) ?? currentImage?.variants[0] ?? null
+  const currentVariantUrl = currentVariant?.url ?? null
+  // Derived, not stored. The set of loaded urls is a ref because preloading must
+  // not re-render the study, so it is read here to keep an already-cached variant
+  // from showing the modal at all; `clearedModalUrl` covers the case where the
+  // image finished loading while the modal was up.
+  const showLoadingModal =
+    currentVariantUrl != null &&
+    clearedModalUrl !== currentVariantUrl &&
+    !loadedImageUrlsRef.current.has(currentVariantUrl)
   const maxLevel = currentImage?.maxLevel ?? 0
   // Navigation flows through the assigned playlist, so the top-bar label reads
   // "<collection> image X of <total>".
@@ -316,22 +328,10 @@ function App() {
     [imageStates],
   )
 
-  useEffect(() => {
-    if (!currentImage || !imageKey) {
-      return
-    }
-
-    setImageStates((previousStates) => {
-      if (previousStates[imageKey]) {
-        return previousStates
-      }
-
-      return {
-        ...previousStates,
-        [imageKey]: ensureImageState({}),
-      }
-    })
-  }, [currentImage, imageKey])
+  // No effect seeds imageStates[imageKey]: every read runs through
+  // ensureImageState and every write derives from ensureImageState(previous), so a
+  // missing entry and a default-seeded one are indistinguishable. Seeding one here
+  // only cost an extra render per image.
 
   // Start the grading clock fresh whenever a different image becomes active.
   useEffect(() => {
@@ -608,33 +608,30 @@ function App() {
     })
   }, [currentImage, selectedCollection, playlist, position, collections])
 
+  // Watch for the current variant's image to finish loading, then clear the modal
+  // after a short grace period so it does not flicker out mid-decode. Only the
+  // grace-period timeout assigns state; visibility itself is derived above, which
+  // matters because this effect re-runs on every slider move. Assigning it here
+  // instead would cost an extra render each time, and deferring the "already
+  // cached" case to a frame later would flash the modal on every level change.
   useEffect(() => {
-    const url = currentVariant?.url
-
-    if (!url) {
-      setShowLoadingModal(false)
+    if (!currentVariantUrl || loadedImageUrlsRef.current.has(currentVariantUrl)) {
       return undefined
     }
-
-    if (loadedImageUrlsRef.current.has(url)) {
-      setShowLoadingModal(false)
-      return undefined
-    }
-
-    setShowLoadingModal(true)
 
     let dismissed = false
     let rafId
+    let timeoutId
 
     function tick() {
       if (dismissed) {
         return
       }
 
-      if (loadedImageUrlsRef.current.has(url)) {
-        setTimeout(() => {
+      if (loadedImageUrlsRef.current.has(currentVariantUrl)) {
+        timeoutId = setTimeout(() => {
           if (!dismissed) {
-            setShowLoadingModal(false)
+            setClearedModalUrl(currentVariantUrl)
           }
         }, 200)
         return
@@ -650,8 +647,11 @@ function App() {
       if (rafId != null) {
         cancelAnimationFrame(rafId)
       }
+      if (timeoutId != null) {
+        clearTimeout(timeoutId)
+      }
     }
-  }, [currentVariant?.url, imageKey])
+  }, [currentVariantUrl])
 
   function updateSliderLevel(level) {
     if (!imageKey) {
