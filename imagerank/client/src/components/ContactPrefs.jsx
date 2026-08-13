@@ -5,6 +5,7 @@ import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import TextField from '@mui/material/TextField'
+import { useT } from '../lib/i18n'
 import '../pages/pages.css'
 
 // "Stay in touch" (issue #45), shown on the study completion screen: an opt-in
@@ -14,17 +15,17 @@ import '../pages/pages.css'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function describe({ results, futureStudies }) {
+function describe({ results, futureStudies }, t) {
   if (results && futureStudies) {
-    return 'Thank you — we will email you about the results and about future studies.'
+    return t('contact.savedBoth')
   }
   if (results) {
-    return 'Thank you — we will email you when the results are published.'
+    return t('contact.savedResults')
   }
   if (futureStudies) {
-    return 'Thank you — we will email you about future studies.'
+    return t('contact.savedFuture')
   }
-  return 'Removed. We will not email you.'
+  return t('contact.savedNone')
 }
 
 function ContactPrefs({
@@ -33,6 +34,7 @@ function ContactPrefs({
   initialFutureStudies = false,
   initialEmail = '',
 }) {
+  const t = useT()
   const [results, setResults] = useState(Boolean(initialResults))
   const [futureStudies, setFutureStudies] = useState(Boolean(initialFutureStudies))
   const [email, setEmail] = useState(initialEmail ?? '')
@@ -65,9 +67,9 @@ function ContactPrefs({
     try {
       await axios.post(`/api/participants/${participantId}/contact-preferences`, payload)
       setSaved({ ...next, email: payload.email })
-      setNotice(describe(next))
+      setNotice(describe(next, t))
     } catch (requestError) {
-      setError(requestError.response?.data?.error ?? 'Failed to save your preference.')
+      setError(requestError.response?.data?.error ?? t('contact.errorSave'))
       // Put the boxes back where the server still has them, so the form keeps
       // telling the truth about what was recorded.
       setResults(saved.results)
@@ -94,7 +96,7 @@ function ContactPrefs({
   function handleSubmit(event) {
     event.preventDefault()
     if (!EMAIL_RE.test(email.trim())) {
-      setError('Please enter a valid email address.')
+      setError(t('contact.errorEmail'))
       return
     }
     save({ results, futureStudies })
@@ -102,7 +104,7 @@ function ContactPrefs({
 
   return (
     <form className="contact-prefs" onSubmit={handleSubmit} noValidate>
-      <p className="contact-prefs-title">Would you like to hear from us?</p>
+      <p className="contact-prefs-title">{t('contact.title')}</p>
 
       <FormControlLabel
         control={
@@ -112,7 +114,7 @@ function ContactPrefs({
             disabled={saving}
           />
         }
-        label="Email me when the results of this study are published"
+        label={t('contact.results')}
       />
       <FormControlLabel
         control={
@@ -122,14 +124,14 @@ function ContactPrefs({
             disabled={saving}
           />
         }
-        label="Contact me to participate in future studies"
+        label={t('contact.futureStudies')}
       />
 
       {anyChecked ? (
         <>
           <div className="contact-prefs-row">
             <TextField
-              label="Email address"
+              label={t('contact.emailLabel')}
               type="email"
               size="small"
               value={email}
@@ -138,7 +140,7 @@ function ContactPrefs({
               fullWidth
             />
             <Button type="submit" variant="contained" disabled={saving || !email.trim() || !dirty}>
-              {saving ? 'Saving…' : saved.results || saved.futureStudies ? 'Update' : 'Save'}
+              {saving ? t('contact.saving') : saved.results || saved.futureStudies ? t('contact.update') : t('contact.save')}
             </Button>
           </div>
           <p className="contact-prefs-note">

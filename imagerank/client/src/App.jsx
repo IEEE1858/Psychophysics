@@ -885,35 +885,37 @@ function App() {
     return (
       <main className="app-shell">
         <section className="completion-panel">
-          <p className="eyebrow">Study complete</p>
-          <h1 className="completion-title">Thank you!</h1>
+          <p className="eyebrow">{t('done.eyebrow')}</p>
+          <h1 className="completion-title">{t('done.title')}</h1>
           <p className="completion-copy">
+            {/* Counted separately because a language may need a different sentence
+                for one image than for many, which a plural suffix cannot express. */}
             {totalRankedCount > 0
-              ? `Your responses for all ${totalRankedCount} ${totalRankedCount === 1 ? 'image' : 'images'} you have ranked have been recorded. `
-              : 'Your responses have been recorded. '}
-            We appreciate the time you took to take part in this study.
+              ? t(totalRankedCount === 1 ? 'done.recordedOne' : 'done.recordedMany', {
+                  count: totalRankedCount,
+                })
+              : t('done.recordedNone')}{' '}
+            {t('done.thanks')}
           </p>
 
           {totalRankedCount > 0 ? (
             <div className="completion-review-block">
               <Button variant="outlined" onClick={() => navigate('/rankings')}>
-                Review your ranked images
+                {t('done.reviewRanked')}
               </Button>
             </div>
           ) : null}
 
           {noMoreImages ? (
-            <p className="completion-copy completion-muted">
-              You have now reviewed every image available in the study. Thank you for being so thorough!
-            </p>
+            <p className="completion-copy completion-muted">{t('done.noneLeft')}</p>
           ) : (
             <div className="more-time-block">
-              <p className="completion-copy">
-                Have a little more time? We can show you more images you haven&apos;t seen yet.
-              </p>
+              <p className="completion-copy">{t('done.moreTimePrompt')}</p>
               <div className="more-time-control">
                 <span id="more-time-label" className="more-time-label">
-                  {moreMinutes} more {moreMinutes === 1 ? 'minute' : 'minutes'}
+                  {t(moreMinutes === 1 ? 'done.moreMinuteOne' : 'done.moreMinuteMany', {
+                    count: moreMinutes,
+                  })}
                 </span>
                 <Slider
                   aria-labelledby="more-time-label"
@@ -923,12 +925,12 @@ function App() {
                   max={30}
                   step={1}
                   valueLabelDisplay="auto"
-                  valueLabelFormat={(value) => `${value} min`}
+                  valueLabelFormat={(value) => t('done.minutesShort', { value })}
                   disabled={addingMore}
                 />
               </div>
               <Button variant="contained" onClick={addMoreTime} disabled={addingMore}>
-                {addingMore ? 'Loading more images…' : 'Review more images'}
+                {addingMore ? t('done.loadingMore') : t('done.reviewMore')}
               </Button>
             </div>
           )}
@@ -944,13 +946,13 @@ function App() {
 
           <ShareStudy
             className="completion-share"
-            title="Know someone with a good eye?"
-            blurb="Every extra participant sharpens the result. Invite someone to take the study:"
+            title={t('done.shareTitle')}
+            blurb={t('done.shareBlurb')}
           />
 
-          <p className="completion-copy completion-muted">You can also close this tab.</p>
+          <p className="completion-copy completion-muted">{t('done.closeTab')}</p>
           <a className="completion-home-link" href="/">
-            Return to the home page
+            {t('done.returnHome')}
           </a>
         </section>
       </main>
