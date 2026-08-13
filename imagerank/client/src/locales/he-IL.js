@@ -73,6 +73,9 @@ export default {
   'share.twitter': 'Twitter',
   'share.bluesky': 'Bluesky',
   'share.mastodon': 'Mastodon',
+  'share.linkedin': 'LinkedIn',
+  'share.whatsapp': 'WhatsApp',
+  'share.reddit': 'Reddit',
   'share.copyLink': 'העתקת קישור',
   'share.copied': 'הקישור הועתק: {url}',
   'share.copyManually': 'העתיקו קישור זה: {url}',
@@ -104,10 +107,6 @@ export default {
   'demo.country': 'ארץ מקור',
   'demo.displayType': 'איזה סוג מסך?',
   'demo.lighting': 'איזה סוג תאורה?',
-  'demo.timeBudget': 'כמה זמן יש לכם לבחון תמונות?',
-  'demo.timeBudgetHelp':
-    'נציג בערך כמה תמונות שנכנסות בזמן הזה. תמיד אפשר לעצור מוקדם יותר או לבקש עוד בסוף.',
-  'demo.minutesShort': '{value} דק׳',
 
   'demo.gender.female': 'אישה',
   'demo.gender.male': 'גבר',

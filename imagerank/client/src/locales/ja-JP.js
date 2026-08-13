@@ -67,6 +67,9 @@ export default {
   'share.twitter': 'Twitter',
   'share.bluesky': 'Bluesky',
   'share.mastodon': 'Mastodon',
+  'share.linkedin': 'LinkedIn',
+  'share.whatsapp': 'WhatsApp',
+  'share.reddit': 'Reddit',
   'share.copyLink': 'リンクをコピー',
   'share.copied': 'リンクをコピーしました：{url}',
   'share.copyManually': 'このリンクをコピーしてください：{url}',
@@ -99,10 +102,6 @@ export default {
   'demo.country': '出身国',
   'demo.displayType': 'ディスプレイの種類',
   'demo.lighting': '照明の種類',
-  'demo.timeBudget': '画像の確認にどれくらい時間をかけられますか。',
-  'demo.timeBudgetHelp':
-    'その時間に収まる程度の枚数をお見せします。途中でやめることも、最後に追加を希望することもできます。',
-  'demo.minutesShort': '{value}分',
 
   'demo.gender.female': '女性',
   'demo.gender.male': '男性',

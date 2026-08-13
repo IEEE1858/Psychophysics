@@ -68,6 +68,9 @@ export default {
   'share.twitter': 'Twitter',
   'share.bluesky': 'Bluesky',
   'share.mastodon': 'Mastodon',
+  'share.linkedin': 'LinkedIn',
+  'share.whatsapp': 'WhatsApp',
+  'share.reddit': 'Reddit',
   'share.copyLink': 'लिंक कॉपी करें',
   'share.copied': 'लिंक कॉपी हो गया: {url}',
   'share.copyManually': 'यह लिंक कॉपी करें: {url}',
@@ -100,10 +103,6 @@ export default {
   'demo.country': 'मूल देश',
   'demo.displayType': 'किस प्रकार की स्क्रीन?',
   'demo.lighting': 'किस प्रकार की रोशनी?',
-  'demo.timeBudget': 'तस्वीरें देखने के लिए आपके पास कितना समय है?',
-  'demo.timeBudgetHelp':
-    'हम लगभग उतनी ही तस्वीरें दिखाएँगे जितनी इस समय में आ जाएँ। आप कभी भी पहले रोक सकते हैं या अंत में और माँग सकते हैं।',
-  'demo.minutesShort': '{value} मिनट',
 
   'demo.gender.female': 'महिला',
   'demo.gender.male': 'पुरुष',

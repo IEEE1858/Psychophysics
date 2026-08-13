@@ -8,9 +8,7 @@ import FormHelperText from '@mui/material/FormHelperText'
 import InputLabel from '@mui/material/InputLabel'
 import MenuItem from '@mui/material/MenuItem'
 import Select from '@mui/material/Select'
-import Slider from '@mui/material/Slider'
 import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import { localizedCountries } from '../lib/countries'
 import { useI18n, useTx } from '../lib/i18n'
 import LanguageSwitcher from '../components/LanguageSwitcher'
@@ -28,11 +26,11 @@ import './pages.css'
 // Minimum length for the optional account password (matches the server rule).
 const MIN_PASSWORD_LENGTH = 8
 
-// How long the study can run, in minutes. The chosen value sizes how many
-// images the participant is shown (issue #19).
-const TIME_BUDGET_MIN = 15
-const TIME_BUDGET_MAX = 45
-const TIME_BUDGET_DEFAULT = 30
+// How long the study is assumed to run, in minutes, which sizes how many images the
+// participant is shown (issue #19). Participants are no longer asked (issue #51), so
+// this is an assumption we make on their behalf rather than an answer they gave — see
+// the note where it is submitted.
+const ASSUMED_TIME_BUDGET_MINUTES = 20
 
 const INITIAL_DEMOGRAPHICS = {
   age: '',
@@ -45,7 +43,11 @@ const INITIAL_DEMOGRAPHICS = {
   countryOfOrigin: '',
   displayType: '',
   lighting: '',
-  timeBudgetMinutes: TIME_BUDGET_DEFAULT,
+  // Recorded as 20 for every participant. Kept in the payload rather than dropped so
+  // time_budget_minutes stays populated for the playlist sizing that reads it, but be
+  // aware when analysing: for rows created from this point on it is a constant we
+  // chose, not something the participant told us.
+  timeBudgetMinutes: ASSUMED_TIME_BUDGET_MINUTES,
 }
 
 // Every field except visionDetails is always required; visionDetails is only
@@ -404,23 +406,6 @@ function DemographicsPage() {
               ]}
             />
 
-            <div className="form-full time-budget-field">
-              <Typography component="label" id="time-budget-label" className="time-budget-label">
-                {t('demo.timeBudget')}
-              </Typography>
-              <p className="time-budget-help">{t('demo.timeBudgetHelp')}</p>
-              <Slider
-                aria-labelledby="time-budget-label"
-                value={Number(demographics.timeBudgetMinutes) || TIME_BUDGET_DEFAULT}
-                onChange={(_, value) => updateField('timeBudgetMinutes', value)}
-                min={TIME_BUDGET_MIN}
-                max={TIME_BUDGET_MAX}
-                step={5}
-                marks
-                valueLabelDisplay="on"
-                valueLabelFormat={(value) => t('demo.minutesShort', { value })}
-              />
-            </div>
           </div>
 
           {!isEditing && EMAIL_RE.test(demographics.email.trim()) ? (

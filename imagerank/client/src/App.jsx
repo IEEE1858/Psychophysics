@@ -27,7 +27,9 @@ import { buildTourSteps } from './lib/tourSteps'
 import { useT } from './lib/i18n'
 import './App.css'
 
-const DEFAULT_TIME_BUDGET_MINUTES = 30
+// Matches the assumption made in the demographics form, where participants are no
+// longer asked how long they have (issue #51).
+const DEFAULT_TIME_BUDGET_MINUTES = 20
 
 // A focused window with no mouse/keyboard/scroll activity for this long is
 // treated as idle (issue #28). Generous enough that a short pause while

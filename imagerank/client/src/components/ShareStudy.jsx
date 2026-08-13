@@ -103,6 +103,35 @@ function MastodonGlyph() {
   )
 }
 
+function LinkedInGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="3" y="3" width="18" height="18" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M7.5 10v7M7.5 7.2v.1M11.5 17v-4a2.2 2.2 0 0 1 4.4 0v4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function WhatsAppGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M20.5 11.7a8.4 8.4 0 0 1-12.4 7.4L3.6 20.4l1.3-4.4A8.4 8.4 0 1 1 20.5 11.7z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M9 8.7c-.5.6-.6 1.6.4 3 1 1.4 2.1 2 2.9 2.2.6.2 1.3 0 1.6-.6l-1.5-1-.8.5c-.6-.3-1.4-1.1-1.7-1.8l.5-.6z" fill="currentColor" />
+    </svg>
+  )
+}
+
+function RedditGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <ellipse cx="12" cy="13.6" rx="8" ry="5.6" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="19.4" cy="6.6" r="1.7" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M12 8V5.4l5.9-1.1" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M9.4 13.2v.1M14.6 13.2v.1M9.6 16c1.4.9 3.4.9 4.8 0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function LinkGlyph() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -206,6 +235,37 @@ function ShareStudy({ title, blurb, className = '' }) {
           onClick={() => setMastodonOpen(true)}
         >
           {t('share.mastodon')}
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<LinkedInGlyph />}
+          // LinkedIn takes only the url and builds its own preview from the page's
+          // og: tags, so there is no text parameter to localize here.
+          onClick={() => openShare(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`)}
+        >
+          {t('share.linkedin')}
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<WhatsAppGlyph />}
+          onClick={() => openShare(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`)}
+        >
+          {t('share.whatsapp')}
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<RedditGlyph />}
+          // Reddit wants a separate title; the body is the linked page itself.
+          onClick={() =>
+            openShare(
+              `https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(t('share.subject'))}`,
+            )
+          }
+        >
+          {t('share.reddit')}
         </Button>
         <Button variant="outlined" size="small" startIcon={<LinkGlyph />} onClick={copyLink}>
           {t('share.copyLink')}
