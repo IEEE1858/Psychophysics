@@ -164,7 +164,5 @@ export default {
 
   'share.subject': 'Quale foto preferisci e quale sembra reale?',
   'share.text':
-    'Quale foto preferisci e quale sembra reale? Spesso non sono la stessa immagine. Il gruppo di standard per l’imaging IEEE 1858 sta misurando questa differenza e cerca persone che guardino le foto e scelgano. Da 15 a 45 minuti su un portatile, non serve alcuna competenza.',
-  'share.textShort':
-    'Quale foto preferisci e quale sembra reale? Spesso non sono la stessa immagine. Il gruppo di standard per l’imaging IEEE 1858 sta misurando questa differenza. Da 15 a 45 minuti su un portatile, senza competenze richieste.',
+    'Quale foto preferisci e quale sembra reale? Spesso non sono la stessa immagine. I ricercatori di IEEE Camera Perceptual Image Quality stanno misurando questa differenza e cercano persone che guardino le foto e scelgano. Non serve alcuna competenza.',
 }

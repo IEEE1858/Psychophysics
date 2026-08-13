@@ -167,7 +167,5 @@ export default {
 
   'share.subject': 'Quelle photo préférez-vous, et laquelle paraît réelle ?',
   'share.text':
-    'Quelle photo préférez-vous, et laquelle paraît réelle ? Ce n’est souvent pas la même image. Le groupe de normalisation en imagerie IEEE 1858 mesure cet écart et cherche des personnes pour regarder des photos et choisir. De 15 à 45 minutes sur un ordinateur portable, aucune expertise requise.',
-  'share.textShort':
-    'Quelle photo préférez-vous, et laquelle paraît réelle ? Souvent pas la même image. Le groupe de normalisation en imagerie IEEE 1858 mesure cet écart. De 15 à 45 minutes sur un ordinateur portable, aucune expertise requise.',
+    'Quelle photo préférez-vous, et laquelle paraît réelle ? Ce n’est souvent pas la même image. Les chercheurs d’IEEE Camera Perceptual Image Quality mesurent cet écart et ont besoin de personnes pour regarder des photos et choisir. Aucune expertise requise.',
 }

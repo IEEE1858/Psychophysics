@@ -188,7 +188,5 @@ export default {
   // The post text itself, so a shared link arrives written in the sharer's language.
   'share.subject': 'Which photo do you like best, and which one looks real?',
   'share.text':
-    'Which photo do you like best, and which one looks real? They are often not the same image. The IEEE 1858 imaging standards group is measuring that gap, and needs people to look at photos and choose. 15–45 minutes on a laptop, no expertise required.',
-  'share.textShort':
-    'Which photo do you like best, and which one looks real? Often not the same image. The IEEE 1858 imaging standards group is measuring that gap. 15–45 minutes on a laptop, no expertise needed.',
+    'Which photo do you like best, and which one looks real? They are often not the same image. IEEE Camera Perceptual Image Quality researchers are measuring that gap, and need people to look at photos and choose. No expertise required.',
 }

@@ -21,11 +21,15 @@ const CANONICAL_URL = 'https://imagerank.imatest.com'
 // once (there is no central Mastodon share endpoint to post to).
 const MASTODON_INSTANCE_KEY = 'mastodonInstance'
 
-// The post text now lives in the locale files, so a shared link is pitched in the
-// sharer's language (keys share.subject / share.text / share.textShort). X counts
-// every URL as 23 characters against its 280-character limit, which is why there is
-// a shorter variant: the full text would leave the sharer no room to add a word of
-// their own. Translators need to keep that variant short for the same reason.
+// The post text lives in the locale files, so a shared link is pitched in the
+// sharer's language (keys share.subject / share.text).
+//
+// One text serves every platform, including X. X counts every URL as 23 characters
+// against its 280-character limit, so a translation has to stay under 257 to leave
+// the sharer room; the longest of the twelve currently sits at 256. A separate
+// shortened variant used to exist for X and is no longer needed — if a future
+// rewording pushes a locale past that budget, shorten that locale rather than
+// reintroducing a second string to keep in sync.
 
 function studyUrl() {
   const origin = window.location.origin
@@ -126,7 +130,6 @@ function ShareStudy({ title, blurb, className = '' }) {
   // recruit opens the study already reading the language they were pitched in.
   const url = withLanguageParam(studyUrl(), language)
   const shareText = t('share.text')
-  const shortShareText = t('share.textShort')
   const message = `${shareText}\n\n${url}`
 
   function openShare(target) {
@@ -182,7 +185,7 @@ function ShareStudy({ title, blurb, className = '' }) {
           startIcon={<XGlyph />}
           onClick={() =>
             openShare(
-              `https://x.com/intent/post?text=${encodeURIComponent(shortShareText)}&url=${encodeURIComponent(url)}`,
+              `https://x.com/intent/post?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`,
             )
           }
         >
