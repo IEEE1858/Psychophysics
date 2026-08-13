@@ -48,6 +48,13 @@ const {
 const { summarize } = require("./stats");
 
 const app = express();
+
+// In production Apache terminates TLS and reverse-proxies to us on 127.0.0.1, so the
+// socket address is always the loopback. Trusting the loopback hop makes req.ip read
+// the client address from X-Forwarded-For, which Apache's mod_proxy sets. Only the
+// loopback is trusted: a wider setting would let a client forge its own address by
+// sending the header itself.
+app.set("trust proxy", "loopback");
 const PORT = Number(process.env.PORT || 5001);
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -331,7 +338,15 @@ app.post("/api/participants", optionalAuth, (req, res) => {
     // If the request carries a valid session, the new participant is owned by
     // that account (created while signed in). Otherwise it's anonymous.
     const accountId = req.accountId ?? null;
-    const participantId = createParticipant(demographics, req.get("user-agent"), accountId);
+    // A participant with no email is a guest: no account, no password, so the
+    // request address is the only handle on them. See the trust-proxy note above —
+    // without it this would record the loopback address of Apache for everyone.
+    const participantId = createParticipant(
+      demographics,
+      req.get("user-agent"),
+      accountId,
+      req.ip,
+    );
     res.status(201).json({ participantId });
   } catch (error) {
     console.error("Failed to create participant", error);

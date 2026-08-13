@@ -423,7 +423,7 @@ function DemographicsPage() {
             </div>
           </div>
 
-          {!isEditing ? (
+          {!isEditing && EMAIL_RE.test(demographics.email.trim()) ? (
             <div className="account-optional">
               <h2>{t('demo.account.title')}</h2>
               <p>
