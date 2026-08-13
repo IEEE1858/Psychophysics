@@ -367,24 +367,55 @@
   gap: 12px;
 }
 
-/* The globe sits on the eyebrow line so it is visible without competing with the
-   headline or pushing the hero taller (issue #50). */
-.eyebrow-row {
+/* Language picker, pinned to the top right of the page above the content (issue
+   #50). It sits outside the hero card: inside it, on the eyebrow line, it landed at
+   the right edge of the *text column*, which reads as mid-page and was missed. */
+.site-topbar {
   display: flex;
+  justify-content: flex-end;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: -4px;
+  margin-bottom: -18px;
 }
 
-.language-button {
-  color: #7a5f29;
-  border: 1px solid rgba(122, 95, 41, 0.34);
-  padding: 5px;
+/* RTL locales mirror the whole document, which puts "top right" on the left. That
+   is correct: it is the start of the line in the reader's direction. */
+/* Doubled class to outrank MuiButton-root, which uppercases labels. A language's
+   own name is a proper noun and should not be shouted, and several of these scripts
+   have no case at all. */
+.language-button.language-button {
+  gap: 2px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
-.language-button:hover {
-  background: rgba(122, 95, 41, 0.1);
+.language-button.language-button-light {
+  color: #6c5a34;
+  border: 1px solid rgba(122, 95, 41, 0.32);
+  background: rgba(255, 252, 247, 0.72);
+}
+
+.language-button.language-button-light:hover {
+  background: rgba(255, 252, 247, 0.95);
+  border-color: rgba(122, 95, 41, 0.5);
+}
+
+/* On the study screen's dark toolbar. */
+.language-button.language-button-dark {
+  color: #f4efe4;
+  border: 1px solid rgba(244, 239, 228, 0.4);
+}
+
+.language-button.language-button-dark:hover {
+  background: rgba(244, 239, 228, 0.14);
+  border-color: rgba(244, 239, 228, 0.65);
+}
+
+.language-button-text {
+  line-height: 1.2;
 }
 
 /* Featured image sits above the call to action in the hero's right-hand column. */

@@ -4,7 +4,7 @@ export default {
   'lang.choose': 'Sprache auswählen',
 
   'home.eyebrow': 'IEEE 1858 · Psychophysik-Studie',
-  'home.title': 'Image Rank',
+  'home.title': 'Fotobewertung',
   'home.lead1':
     'Diese Studie untersucht, wie {sharpening} und {hdr}-Bildverarbeitung die Wahrnehmung eines Fotos verändern. Sie sehen dasselbe Bild in mehreren Verarbeitungsstufen und wählen die Version, die Ihre {favorite} ist, sowie die Version, die am {mostRealistic} wirkt.',
   'home.lead1.sharpening': 'Schärfung',

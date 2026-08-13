@@ -4,7 +4,7 @@ export default {
   'lang.choose': '언어 선택',
 
   'home.eyebrow': 'IEEE 1858 · 심리물리학 연구',
-  'home.title': 'Image Rank',
+  'home.title': '사진 평가',
   'home.lead1':
     '이 연구는 {sharpening}과 {hdr} 이미지 처리가 사진을 인식하는 방식을 어떻게 바꾸는지 살펴봅니다. 같은 이미지를 여러 처리 단계로 보여 드리니, {favorite} 버전과 가장 {mostRealistic} 보이는 버전을 선택해 주세요.',
   'home.lead1.sharpening': '샤프닝',

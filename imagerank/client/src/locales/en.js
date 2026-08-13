@@ -17,6 +17,8 @@ export default {
 
   // ---- Home: hero ----
   'home.eyebrow': 'IEEE 1858 · Psychophysics Study',
+  // Translators: "image" here means a *photograph*, not a likeness or reputation,
+  // and "rank" means ordering/rating them, not a military rank.
   'home.title': 'Image Rank',
   'home.lead1':
     'This study explores how {sharpening} and {hdr} image processing change the way a photo is perceived. You will review the same image rendered at several different levels of processing and choose the version that is your {favorite} and the version that looks the {mostRealistic}.',

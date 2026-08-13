@@ -4,7 +4,7 @@ export default {
   'lang.choose': 'Scegli una lingua',
 
   'home.eyebrow': 'IEEE 1858 · Studio di psicofisica',
-  'home.title': 'Image Rank',
+  'home.title': 'Classifica delle foto',
   'home.lead1':
     'Questo studio esplora come la {sharpening} e l’elaborazione {hdr} cambino il modo in cui una foto viene percepita. Esaminerai la stessa immagine elaborata a diversi livelli e sceglierai la versione che è la tua {favorite} e quella che sembra la {mostRealistic}.',
   'home.lead1.sharpening': 'nitidezza',

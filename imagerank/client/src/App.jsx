@@ -22,6 +22,7 @@ import StudyTour from './components/StudyTour'
 import ImageInfoButton from './components/ImageInfo'
 import ContactPrefs from './components/ContactPrefs'
 import ShareStudy from './components/ShareStudy'
+import LanguageSwitcher from './components/LanguageSwitcher'
 import { buildTourSteps } from './lib/tourSteps'
 import { useT } from './lib/i18n'
 import './App.css'
@@ -1017,6 +1018,7 @@ function App() {
           >
             {t('study.topbar.resetView')}
           </Button>
+          <LanguageSwitcher variant="dark" />
         </div>
       </header>
 

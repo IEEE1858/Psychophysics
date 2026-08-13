@@ -4,7 +4,7 @@ export default {
   'lang.choose': '言語を選択',
 
   'home.eyebrow': 'IEEE 1858 · 心理物理学研究',
-  'home.title': 'Image Rank',
+  'home.title': '写真の評価',
   'home.lead1':
     'この研究では、{sharpening}と{hdr}処理が写真の見え方をどのように変えるかを調べます。同じ画像をいくつかの処理レベルで表示しますので、{favorite}バージョンと、最も{mostRealistic}見えるバージョンを選んでください。',
   'home.lead1.sharpening': 'シャープニング',

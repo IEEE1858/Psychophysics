@@ -4,7 +4,7 @@ export default {
   'lang.choose': 'भाषा चुनें',
 
   'home.eyebrow': 'IEEE 1858 · मनोभौतिकी अध्ययन',
-  'home.title': 'Image Rank',
+  'home.title': 'फ़ोटो रैंकिंग',
   'home.lead1':
     'यह अध्ययन पड़ताल करता है कि {sharpening} और {hdr} इमेज प्रोसेसिंग किसी तस्वीर को देखने के अनुभव को कैसे बदलती है। आप एक ही तस्वीर को प्रोसेसिंग के कई स्तरों पर देखेंगे और वह संस्करण चुनेंगे जो आपका {favorite} है, तथा वह जो सबसे {mostRealistic} लगता है।',
   'home.lead1.sharpening': 'शार्पनिंग',
