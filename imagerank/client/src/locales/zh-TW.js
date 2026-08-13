@@ -4,7 +4,7 @@ export default {
   'lang.choose': '選擇語言',
 
   'home.eyebrow': 'IEEE 1858 · 心理物理學研究',
-  'home.title': 'Image Rank',
+  'home.title': '照片評級',
   'home.lead1':
     '本研究探討{sharpening}與{hdr}影像處理如何改變人們對照片的感受。您將看到同一張影像在多個處理級別下的效果，並選出您{favorite}的版本，以及看起來{mostRealistic}的版本。',
   'home.lead1.sharpening': '銳利化',

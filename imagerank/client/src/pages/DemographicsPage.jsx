@@ -13,6 +13,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { localizedCountries } from '../lib/countries'
 import { useI18n, useTx } from '../lib/i18n'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 import {
   demographicsFromServer,
   getParticipantId,
@@ -239,6 +240,10 @@ function DemographicsPage() {
   return (
     <main className="page-shell">
       <section className="page-panel">
+        <div className="site-topbar">
+          <LanguageSwitcher />
+        </div>
+
         <header className="preview-header">
           <Link className="back-link" to={isEditing ? '/study' : '/'}>
             {isEditing ? t('demo.backToStudy') : t('demo.back')}

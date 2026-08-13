@@ -71,12 +71,13 @@ function HomePage() {
   return (
     <main className="page-shell">
       <section className="page-panel">
+        <div className="site-topbar">
+          <LanguageSwitcher />
+        </div>
+
         <header className="home-hero">
           <div className="home-hero-text">
-            <div className="eyebrow-row">
-              <p className="eyebrow">{t('home.eyebrow')}</p>
-              <LanguageSwitcher />
-            </div>
+            <p className="eyebrow">{t('home.eyebrow')}</p>
             <h1>{t('home.title')}</h1>
             <p className="home-lead">
               {tx('home.lead1', {

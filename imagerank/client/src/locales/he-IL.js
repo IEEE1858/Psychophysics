@@ -10,7 +10,7 @@ export default {
   'lang.choose': 'בחירת שפה',
 
   'home.eyebrow': 'IEEE 1858 · מחקר פסיכופיזיקה',
-  'home.title': 'Image Rank',
+  'home.title': 'דירוג תמונות',
   'home.lead1':
     'מחקר זה בודק כיצד {sharpening} ועיבוד תמונה בשיטת {hdr} משנים את האופן שבו נתפסת תמונה. תראו את אותה תמונה בכמה רמות עיבוד שונות, ותבחרו את הגרסה {favorite} ואת הגרסה שנראית {mostRealistic}.',
   'home.lead1.sharpening': 'חידוד',
