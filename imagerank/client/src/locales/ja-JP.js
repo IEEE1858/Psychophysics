@@ -53,6 +53,10 @@ export default {
   'home.footer.adobe': 'Adobe',
   'home.footer.adobeMit': 'Adobe–MIT',
 
+  'privacy.title': 'プライバシーポリシー',
+  'privacy.eyebrow': 'データの取り扱いについて',
+  'privacy.link': 'プライバシーポリシー',
+  'privacy.englishOnly': '現時点でこのポリシーは英語版のみです。効力を持つのは英語の本文です。',
   'share.title': '参加者探しにご協力ください',
   'share.blurb': '参加者が多いほど、結果はよくなります。この研究を広めてください：',
   'share.blurb.home': 'この研究には多くの目が必要です。楽しんでくれそうな方を招待してください：',

@@ -53,6 +53,10 @@ export default {
   'home.footer.adobe': 'Adobe',
   'home.footer.adobeMit': 'Adobe–MIT',
 
+  'privacy.title': '개인정보 처리방침',
+  'privacy.eyebrow': '데이터를 다루는 방식',
+  'privacy.link': '개인정보 처리방침',
+  'privacy.englishOnly': '현재 이 방침은 영어로만 제공됩니다. 효력을 갖는 것은 영어 원문입니다.',
   'share.title': '참가자를 찾는 데 도움을 주세요',
   'share.blurb': '참여하는 사람이 많을수록 결과가 좋아집니다. 이 연구를 전해 주세요:',
   'share.blurb.home': '이 연구에는 많은 시선이 필요합니다. 관심 있을 분들을 초대해 주세요:',

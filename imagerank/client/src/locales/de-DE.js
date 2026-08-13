@@ -55,6 +55,10 @@ export default {
   'home.footer.adobe': 'Adobe',
   'home.footer.adobeMit': 'Adobe–MIT',
 
+  'privacy.title': 'Datenschutzerklärung',
+  'privacy.eyebrow': 'Wie wir mit Ihren Daten umgehen',
+  'privacy.link': 'Datenschutzerklärung',
+  'privacy.englishOnly': 'Diese Erklärung liegt derzeit nur auf Englisch vor. Maßgeblich ist der englische Text.',
   'share.title': 'Helfen Sie uns, weitere Teilnehmende zu finden',
   'share.blurb':
     'Je mehr Menschen teilnehmen, desto besser die Ergebnisse. Geben Sie die Studie weiter:',

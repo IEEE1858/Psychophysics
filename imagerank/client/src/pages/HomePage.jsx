@@ -244,6 +244,11 @@ function HomePage() {
               icon: <span aria-hidden="true">ⓘ</span>,
             })}
           </p>
+          <p className="about-body">
+            <Link className="preview-link" to="/privacy">
+              {t('privacy.link')}
+            </Link>
+          </p>
           <pre className="citation-bibtex">{`@inproceedings{fivek,
   author = "Vladimir Bychkovsky and Sylvain Paris and Eric Chan and Fr\\'edo Durand",
   title = "Learning Photographic Global Tonal Adjustment with a Database of Input / Output Image Pairs",

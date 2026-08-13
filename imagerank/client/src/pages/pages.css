@@ -1287,3 +1287,20 @@
   font-size: 0.9rem;
   color: #455168;
 }
+
+/* Privacy policy: a long read, so it gets a narrower measure than the marketing
+   copy and a little air between sections. */
+.privacy-body {
+  max-width: 74ch;
+}
+
+.privacy-body .section-title {
+  margin-top: 22px;
+  font-size: 1.2rem;
+}
+
+.privacy-note {
+  font-style: italic;
+  font-synthesis: style;
+  color: #5c6478;
+}

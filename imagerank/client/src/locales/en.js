@@ -75,6 +75,10 @@ export default {
   'home.footer.adobeMit': 'Adobe–MIT',
 
   // ---- Sharing ----
+  'privacy.title': 'Privacy policy',
+  'privacy.eyebrow': 'How we handle your data',
+  'privacy.link': 'Privacy policy',
+  'privacy.englishOnly': 'This policy is available in English only for now. The English text is the version that governs.',
   'share.title': 'Help us find more participants',
   'share.blurb': 'The more people who take part, the better the results. Pass the study on:',
   'share.blurb.home': 'The study needs many pairs of eyes. Invite people who would enjoy it:',
