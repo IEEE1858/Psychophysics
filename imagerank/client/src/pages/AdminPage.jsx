@@ -59,6 +59,7 @@ function SubmissionsTable({ submissions, onSelect }) {
         <thead>
           <tr>
             <th rowSpan={2}>Email</th>
+            <th rowSpan={2}>Address</th>
             <th rowSpan={2}>Status</th>
             <th rowSpan={2}>Started</th>
             <th rowSpan={2}>Total time</th>
@@ -78,6 +79,7 @@ function SubmissionsTable({ submissions, onSelect }) {
           {submissions.map((submission) => (
             <tr key={submission.id} className="admin-row" onClick={() => onSelect(submission.id)}>
               <td className="admin-email">{submission.email ?? '—'}</td>
+              <td className="admin-email">{submission.ip_address ?? '—'}</td>
               <td>
                 <span className={submission.completed_at ? 'admin-status admin-status-complete' : 'admin-status admin-status-partial'}>
                   {submission.completed_at ? 'Complete' : 'Partial'}

@@ -64,6 +64,14 @@ try {
   // column already exists
 }
 
+// Migration for databases created before guest participants were identified by
+// address rather than email.
+try {
+  db.exec("ALTER TABLE participants ADD COLUMN ip_address TEXT");
+} catch {
+  // column already exists
+}
+
 // Migration for databases created before zoom tracking (issue #33).
 try {
   db.exec("ALTER TABLE image_rankings ADD COLUMN max_zoom_scale REAL");
@@ -115,11 +123,11 @@ const insertParticipantStmt = db.prepare(`
   INSERT INTO participants (
     account_id, age, gender, email, self_description, vision_status, vision_details,
     color_blind, country_of_origin, display_type, lighting, time_budget_minutes,
-    user_agent
+    user_agent, ip_address
   ) VALUES (
     :accountId, :age, :gender, :email, :selfDescription, :visionStatus, :visionDetails,
     :colorBlind, :countryOfOrigin, :displayType, :lighting, :timeBudgetMinutes,
-    :userAgent
+    :userAgent, :ipAddress
   )
 `);
 
@@ -176,7 +184,7 @@ function toIntOrNull(value) {
   return value != null && value !== "" && Number.isFinite(Number(value)) ? Number(value) : null;
 }
 
-function createParticipant(demographics, userAgent, accountId = null) {
+function createParticipant(demographics, userAgent, accountId = null, ipAddress = null) {
   const result = insertParticipantStmt.run({
     accountId: accountId == null ? null : Number(accountId),
     age: demographics.age != null && demographics.age !== "" ? Number(demographics.age) : null,
@@ -191,6 +199,7 @@ function createParticipant(demographics, userAgent, accountId = null) {
     lighting: demographics.lighting ?? null,
     timeBudgetMinutes: toIntOrNull(demographics.timeBudgetMinutes),
     userAgent: userAgent ?? null,
+    ipAddress: ipAddress ?? null,
   });
 
   return Number(result.lastInsertRowid);
@@ -578,6 +587,7 @@ function listSubmissions() {
       `SELECT
          p.id,
          p.email,
+         p.ip_address,
          p.created_at AS started_at,
          p.completed_at,
          COALESCE(SUM(r.grading_ms), 0) AS total_test_time_ms,

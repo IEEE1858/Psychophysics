@@ -36,6 +36,10 @@ CREATE TABLE IF NOT EXISTS participants (
   lighting           TEXT,
   time_budget_minutes INTEGER,                          -- how long the participant said they could spend
   user_agent         TEXT,
+  -- How a guest participant is identified (no email, so no account). Note this is
+  -- personal data in most jurisdictions, and it is a weak identifier: NAT and mobile
+  -- carriers put many people behind one address, so it groups rather than identifies.
+  ip_address         TEXT,
   created_at         TEXT NOT NULL DEFAULT (datetime('now')),
   completed_at       TEXT,                             -- NULL until the study is finished (partial otherwise)
   -- Consent to be contacted (issue #45): about the results of this study, and
