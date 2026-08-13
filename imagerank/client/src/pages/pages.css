@@ -367,6 +367,26 @@
   gap: 12px;
 }
 
+/* The globe sits on the eyebrow line so it is visible without competing with the
+   headline or pushing the hero taller (issue #50). */
+.eyebrow-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: -4px;
+}
+
+.language-button {
+  color: #7a5f29;
+  border: 1px solid rgba(122, 95, 41, 0.34);
+  padding: 5px;
+}
+
+.language-button:hover {
+  background: rgba(122, 95, 41, 0.1);
+}
+
 /* Featured image sits above the call to action in the hero's right-hand column. */
 .home-hero-aside {
   display: flex;

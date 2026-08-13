@@ -9,11 +9,15 @@ import { sampleRandom, thumbnailFor } from '../lib/sample'
 import { hasSession } from '../lib/session'
 import { useAuth } from '../lib/auth'
 import ShareStudy from '../components/ShareStudy'
+import LanguageSwitcher from '../components/LanguageSwitcher'
+import { useI18n, useT, useTx } from '../lib/i18n'
 import './pages.css'
 
 const EXAMPLE_COUNT = 6
 
 function ExampleGallery({ title, blurb, images, collectionId, previewTo, previewLabel }) {
+  const t = useT()
+
   return (
     <div className="example-group">
       <div className="example-group-head">
@@ -28,7 +32,7 @@ function ExampleGallery({ title, blurb, images, collectionId, previewTo, preview
             key={image.id}
             className="example-tile"
             to={`/preview/${collectionId}/${image.id}`}
-            aria-label={`View ${image.label}`}
+            aria-label={t('home.examples.view', { label: image.label })}
           >
             <img src={thumbnailFor(image)} alt={image.label} loading="lazy" />
           </Link>
@@ -47,6 +51,8 @@ function HomePage() {
   const isMobile = useIsMobile()
   const { library, loading, error } = useLibrary()
   const { account, authed, signOut } = useAuth()
+  const { t } = useI18n()
+  const tx = useTx()
 
   const hdrCollection = findCollection(library, 'hdr')
   const sharpnessCollection = findCollection(library, 'sharpness')
@@ -67,28 +73,24 @@ function HomePage() {
       <section className="page-panel">
         <header className="home-hero">
           <div className="home-hero-text">
-            <p className="eyebrow">IEEE 1858 · Psychophysics Study</p>
-            <h1>Image Rank</h1>
+            <div className="eyebrow-row">
+              <p className="eyebrow">{t('home.eyebrow')}</p>
+              <LanguageSwitcher />
+            </div>
+            <h1>{t('home.title')}</h1>
             <p className="home-lead">
-              This study explores how <strong>sharpening</strong> and <strong>HDR</strong> image
-              processing change the way a photo is perceived. You will review the same image
-              rendered at several different levels of processing and choose the version that is your
-              <strong> favorite</strong> and the version that looks the{' '}
-              <strong>most realistic</strong>.
+              {tx('home.lead1', {
+                sharpening: <strong>{t('home.lead1.sharpening')}</strong>,
+                hdr: <strong>{t('home.lead1.hdr')}</strong>,
+                favorite: <strong>{t('home.lead1.favorite')}</strong>,
+                mostRealistic: <strong>{t('home.lead1.mostRealistic')}</strong>,
+              })}
             </p>
-            <p className="home-lead">
-              These two choices need not be the same. The most realistic image is not always the
-              one that looks the most polished, and that tension is exactly what we are measuring.
-            </p>
+            <p className="home-lead">{t('home.lead2')}</p>
 
             {/* Desktop only: on a phone the gate alert beside this already says the
                 same thing, at more length. */}
-            {isMobile ? null : (
-              <p className="hero-viewing-note">
-                For consistent results, please take the study on a desktop or laptop computer in
-                indoor lighting conditions.
-              </p>
-            )}
+            {isMobile ? null : <p className="hero-viewing-note">{t('home.viewingNote')}</p>}
           </div>
 
           <div className="home-hero-aside">
@@ -103,11 +105,9 @@ function HomePage() {
             <div className="home-hero-cta">
               {isMobile ? (
                 <Alert severity="info" className="mobile-gate">
-                  <strong>Please switch to a desktop or laptop computer.</strong>
+                  <strong>{t('home.mobile.title')}</strong>
                   <span>
-                    Accurate viewing requires a larger screen in indoor lighting conditions. Open
-                    this page (<code>imagerank.imatest.com</code>) on your desktop or laptop to take
-                    part in the study.
+                    {tx('home.mobile.body', { url: <code>imagerank.imatest.com</code> })}
                   </span>
                 </Alert>
               ) : (
@@ -118,22 +118,29 @@ function HomePage() {
                     className="cta-button"
                     onClick={() => navigate(hasSession() ? '/study' : '/demographics')}
                   >
-                    {hasSession() ? 'Resume the Study' : 'Start the Study'}
+                    {hasSession() ? t('home.cta.resume') : t('home.cta.start')}
                   </Button>
 
                   {authed ? (
                     <p className="cta-note">
-                      Signed in as <strong>{account.email}</strong>.{' '}
-                      <button type="button" className="link-button" onClick={signOut}>
-                        Sign out
-                      </button>
+                      {tx('home.cta.signedInAs', {
+                        email: <strong>{account.email}</strong>,
+                        signOut: (
+                          <button type="button" className="link-button" onClick={signOut}>
+                            {t('home.cta.signOut')}
+                          </button>
+                        ),
+                      })}
                     </p>
                   ) : (
                     <p className="cta-note">
-                      Have an account, or want to continue on another device?{' '}
-                      <Link className="preview-link" to="/signin">
-                        Sign in
-                      </Link>
+                      {tx('home.cta.haveAccount', {
+                        signIn: (
+                          <Link className="preview-link" to="/signin">
+                            {t('home.cta.signIn')}
+                          </Link>
+                        ),
+                      })}
                     </p>
                   )}
                 </div>
@@ -143,15 +150,13 @@ function HomePage() {
         </header>
 
         <section className="examples">
-          <h2 className="section-title">Example Images</h2>
-          <p className="section-subtitle">
-            A sample of the images you will rank. Browse the full set before you begin.
-          </p>
+          <h2 className="section-title">{t('home.examples.title')}</h2>
+          <p className="section-subtitle">{t('home.examples.subtitle')}</p>
 
           {loading ? (
             <div className="home-status">
               <CircularProgress size={28} />
-              <span>Loading example images…</span>
+              <span>{t('home.examples.loading')}</span>
             </div>
           ) : null}
 
@@ -160,89 +165,83 @@ function HomePage() {
           {!loading && !error ? (
             <div className="examples-columns">
               <ExampleGallery
-                title="HDR"
-                blurb="High-dynamic-range tone mapping across processing levels."
+                title={t('home.examples.hdr.title')}
+                blurb={t('home.examples.hdr.blurb')}
                 images={hdrExamples}
                 collectionId="hdr"
                 previewTo="/preview/hdr"
-                previewLabel="Preview HDR images"
+                previewLabel={t('home.examples.hdr.preview')}
               />
               <ExampleGallery
-                title="Sharpness"
-                blurb="Unsharp-mask sharpening across processing levels."
+                title={t('home.examples.sharpness.title')}
+                blurb={t('home.examples.sharpness.blurb')}
                 images={sharpnessExamples}
                 collectionId="sharpness"
                 previewTo="/preview/sharpness"
-                previewLabel="Preview Sharpness images"
+                previewLabel={t('home.examples.sharpness.preview')}
               />
             </div>
           ) : null}
         </section>
 
         <section className="about-study">
-          <h2 className="section-title">Who is conducting this study?</h2>
+          <h2 className="section-title">{t('home.about.title')}</h2>
           <p className="about-body">
-            This study is run by the{' '}
-            <a
-              className="about-link"
-              href="https://sagroups.ieee.org/1858/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              IEEE 1858 Camera Perceptual Image Quality
-            </a>{' '}
-            working group, a group of imaging engineers and researchers who develop open
-            standards for measuring how good a camera&apos;s photos really look to people.
+            {tx('home.about.body1', {
+              link: (
+                <a
+                  className="about-link"
+                  href="https://sagroups.ieee.org/1858/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('home.about.linkText')}
+                </a>
+              ),
+            })}
           </p>
-          <p className="about-body">
-            Phone and camera quality has long been described with numbers like megapixels, but
-            those numbers don&apos;t always match what our eyes actually notice. Since publishing
-            its first standard in 2016 (with updated versions in 2023 and another in development),
-            the group has worked to measure image quality the way real viewers perceive it, so that
-            cameras from different makers can be compared fairly. Your choices in this study help
-            connect those measurements to genuine human perception.
-          </p>
+          <p className="about-body">{t('home.about.body2')}</p>
           <a
             className="preview-link"
             href="https://sagroups.ieee.org/1858/"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Learn more about IEEE 1858 →
+            {t('home.about.learnMore')}
           </a>
         </section>
 
         <ShareStudy
-          title="Help us find more participants"
-          blurb={
-            isMobile
-              ? 'You can take the study on a laptop later. In the meantime, send it to someone who has one:'
-              : 'The study needs many pairs of eyes. Invite people who would enjoy it:'
-          }
+          title={t('share.title')}
+          blurb={isMobile ? t('share.blurb.mobile') : t('share.blurb.home')}
         />
 
         <footer className="site-footer">
-          <h2 className="section-title">Image dataset &amp; license</h2>
+          <h2 className="section-title">{t('home.footer.title')}</h2>
           <p className="about-body">
-            Study images are from the{' '}
-            <a
-              className="about-link"
-              href="https://data.csail.mit.edu/graphics/fivek/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              MIT-Adobe FiveK Dataset
-            </a>{' '}
-            (Bychkovsky et al., 2011), used under the{' '}
-            <a href="/licenses/LicenseAdobe.txt" target="_blank" rel="noopener noreferrer">
-              Adobe
-            </a>{' '}
-            and{' '}
-            <a href="/licenses/LicenseAdobeMIT.txt" target="_blank" rel="noopener noreferrer">
-              Adobe–MIT
-            </a>{' '}
-            research licenses. Each image&apos;s applicable license is linked in its
-            information (<span aria-hidden="true">ⓘ</span>) panel.
+            {tx('home.footer.body', {
+              dataset: (
+                <a
+                  className="about-link"
+                  href="https://data.csail.mit.edu/graphics/fivek/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('home.footer.dataset')}
+                </a>
+              ),
+              adobe: (
+                <a href="/licenses/LicenseAdobe.txt" target="_blank" rel="noopener noreferrer">
+                  {t('home.footer.adobe')}
+                </a>
+              ),
+              adobeMit: (
+                <a href="/licenses/LicenseAdobeMIT.txt" target="_blank" rel="noopener noreferrer">
+                  {t('home.footer.adobeMit')}
+                </a>
+              ),
+              icon: <span aria-hidden="true">ⓘ</span>,
+            })}
           </p>
           <pre className="citation-bibtex">{`@inproceedings{fivek,
   author = "Vladimir Bychkovsky and Sylvain Paris and Eric Chan and Fr\\'edo Durand",
