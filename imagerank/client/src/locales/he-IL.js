@@ -59,6 +59,10 @@ export default {
   'home.footer.adobe': 'Adobe',
   'home.footer.adobeMit': 'Adobe–MIT',
 
+  'privacy.title': 'מדיניות פרטיות',
+  'privacy.eyebrow': 'איך אנחנו מטפלים בנתונים שלכם',
+  'privacy.link': 'מדיניות פרטיות',
+  'privacy.englishOnly': 'בשלב זה המדיניות זמינה באנגלית בלבד. הנוסח האנגלי הוא הקובע.',
   'share.title': 'עזרו לנו למצוא משתתפים נוספים',
   'share.blurb': 'כמה שיותר אנשים משתתפים, כך התוצאות טובות יותר. העבירו את המחקר הלאה:',
   'share.blurb.home': 'המחקר זקוק להרבה עיניים. הזמינו אנשים שייהנו ממנו:',

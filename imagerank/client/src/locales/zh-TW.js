@@ -52,6 +52,10 @@ export default {
   'home.footer.adobe': 'Adobe',
   'home.footer.adobeMit': 'Adobe–MIT',
 
+  'privacy.title': '隱私政策',
+  'privacy.eyebrow': '我們如何處理你的資料',
+  'privacy.link': '隱私政策',
+  'privacy.englishOnly': '目前本政策僅提供英文版。以英文文本為準。',
   'share.title': '協助我們尋找更多參與者',
   'share.blurb': '參與的人越多，結果越可靠。請將本研究分享出去：',
   'share.blurb.home': '本研究需要許多人的眼睛。邀請可能感興趣的朋友：',

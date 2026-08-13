@@ -55,6 +55,10 @@ export default {
   'home.footer.adobe': 'Adobe',
   'home.footer.adobeMit': 'Adobe–MIT',
 
+  'privacy.title': 'Politique de confidentialité',
+  'privacy.eyebrow': 'Comment nous traitons vos données',
+  'privacy.link': 'Politique de confidentialité',
+  'privacy.englishOnly': 'Cette politique n’est pour l’instant disponible qu’en anglais. C’est le texte anglais qui fait foi.',
   'share.title': 'Aidez-nous à trouver d’autres participants',
   'share.blurb':
     'Plus il y a de participants, meilleurs sont les résultats. Faites circuler l’étude :',
