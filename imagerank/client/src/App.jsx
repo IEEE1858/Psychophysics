@@ -23,6 +23,7 @@ import ImageInfoButton from './components/ImageInfo'
 import ContactPrefs from './components/ContactPrefs'
 import ShareStudy from './components/ShareStudy'
 import { buildTourSteps } from './lib/tourSteps'
+import { useT } from './lib/i18n'
 import './App.css'
 
 const DEFAULT_TIME_BUDGET_MINUTES = 30
@@ -31,7 +32,6 @@ const DEFAULT_TIME_BUDGET_MINUTES = 30
 // treated as idle (issue #28). Generous enough that a short pause while
 // comparing images isn't miscounted; tune here if it proves too eager.
 const IDLE_THRESHOLD_MS = 10000
-const NEXT_IMAGE_VALIDATION_MESSAGE = 'please move slider to the right to look at other more processed images before deciding.'
 const DEFAULT_VIEWPORT = {
   scale: 1,
   positionX: 0,
@@ -72,6 +72,7 @@ function collectImageUrls(image) {
 }
 
 function App() {
+  const t = useT()
   const theme = useTheme()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -760,7 +761,7 @@ function App() {
     // #35/#36: only require the slider to have moved at least one step; a
     // favorite/realistic selection is no longer required to advance.
     if (!hasExploredEnough(imageState, maxLevel)) {
-      notify('error', NEXT_IMAGE_VALIDATION_MESSAGE)
+      notify('error', t('study.exploreMore'))
       return
     }
 
@@ -853,7 +854,7 @@ function App() {
     }
 
     if (!hasExploredEnough(imageState, maxLevel)) {
-      notify('error', NEXT_IMAGE_VALIDATION_MESSAGE)
+      notify('error', t('study.exploreMore'))
       return
     }
 
@@ -956,20 +957,28 @@ function App() {
   return (
     <main className="study-shell">
       <header className="study-topbar">
-        <span className="study-brand">IEEE 1858 CPIQ Image Rank</span>
+        <span className="study-brand">{t('study.topbar.title')}</span>
 
         <span className="study-center">
           {loading || loadError || !currentImage
             ? ''
             : isReRank
-              ? `Re-ranking: ${selectedCollection.label} — ${currentImage.label}`
-              : `${selectedCollection.label} image ${position + 1} of ${totalImageCount}: ${currentImage.label}`}
+              ? t('study.topbar.reranking', {
+                  collection: selectedCollection.label,
+                  image: currentImage.label,
+                })
+              : t('study.topbar.progress', {
+                  collection: selectedCollection.label,
+                  position: position + 1,
+                  total: totalImageCount,
+                  image: currentImage.label,
+                })}
         </span>
 
         <div className="study-zoom">
           {isReRank ? (
             <Button size="small" variant="outlined" onClick={() => navigate('/rankings')}>
-              Rankings
+              {t('study.topbar.rankings')}
             </Button>
           ) : (
             <>
@@ -977,26 +986,26 @@ function App() {
                 size="small"
                 variant="outlined"
                 className="study-help"
-                aria-label="Show the guided tour"
-                title="Show the guided tour"
+                aria-label={t('study.topbar.help')}
+                title={t('study.topbar.help')}
                 onClick={() => setRunTour(true)}
               >
                 ?
               </Button>
               <Button size="small" variant="outlined" onClick={() => navigate('/rankings')}>
-                Rankings
+                {t('study.topbar.rankings')}
               </Button>
               <Button size="small" variant="outlined" className="study-edit-demographics" onClick={editDemographics}>
-                Edit demographics
+                {t('study.topbar.editDemographics')}
               </Button>
             </>
           )}
           <ImageInfoButton image={currentImage} collectionLabel={selectedCollection?.label} />
           <Button size="small" variant="outlined" onClick={() => transformRef.current?.zoomOut()}>
-            Zoom out
+            {t('study.topbar.zoomOut')}
           </Button>
           <Button size="small" variant="outlined" data-tour="zoom" onClick={() => transformRef.current?.zoomIn()}>
-            Zoom in
+            {t('study.topbar.zoomIn')}
           </Button>
           <Button
             size="small"
@@ -1006,7 +1015,7 @@ function App() {
               setViewportTransform(DEFAULT_VIEWPORT)
             }}
           >
-            Reset view
+            {t('study.topbar.resetView')}
           </Button>
         </div>
       </header>
@@ -1014,7 +1023,7 @@ function App() {
       {loading ? (
         <div className="study-status">
           <CircularProgress size={32} />
-          <span>Loading image library…</span>
+          <span>{t('study.loadingLibrary')}</span>
         </div>
       ) : null}
 
@@ -1029,7 +1038,7 @@ function App() {
           {showLoadingModal ? (
             <div className="image-loading-overlay" role="dialog" aria-modal="true" aria-label="Loading image">
               <div className="loading-modal">
-                <h2 className="loading-modal-title">Loading image</h2>
+                <h2 className="loading-modal-title">{t('study.loading.title')}</h2>
                 <p className="loading-modal-image">{currentImage?.label} — {currentVariant?.shortLabel}</p>
                 <CircularProgress size={36} />
               </div>
@@ -1090,11 +1099,11 @@ function App() {
         <footer className="study-bottombar">
           {canGoBack ? (
             <Button className="study-nav" size="small" variant="outlined" onClick={goPrev}>
-              Previous
+              {t('study.previous')}
             </Button>
           ) : null}
 
-          <span className="study-slider-label">Unprocessed</span>
+          <span className="study-slider-label">{t('study.slider.unprocessed')}</span>
 
           <div className="slider-with-markers study-slider" data-tour="slider">
             {imageState.mostRealisticLevel != null ? (
@@ -1104,7 +1113,7 @@ function App() {
                   left: `${levelPercent(imageState.mostRealisticLevel, maxLevel)}%`,
                   borderTopColor: theme.palette.primary.main,
                 }}
-                aria-label={`Most realistic at level ${imageState.mostRealisticLevel}`}
+                aria-label={t('study.marker.realisticAt', { level: imageState.mostRealisticLevel })}
               />
             ) : null}
 
@@ -1114,7 +1123,7 @@ function App() {
               step={1}
               value={imageState.currentLevel}
               onChange={(_, value) => updateSliderLevel(Array.isArray(value) ? value[0] : value)}
-              aria-label="Processing level"
+              aria-label={t('study.slider.aria')}
             />
 
             {imageState.favoriteLevel != null ? (
@@ -1124,37 +1133,37 @@ function App() {
                   left: `${levelPercent(imageState.favoriteLevel, maxLevel)}%`,
                   borderBottomColor: theme.palette.secondary.main,
                 }}
-                aria-label={`Favorite image at level ${imageState.favoriteLevel}`}
+                aria-label={t('study.marker.favoriteAt', { level: imageState.favoriteLevel })}
               />
             ) : null}
           </div>
 
-          <span className="study-slider-label">Heavily processed</span>
+          <span className="study-slider-label">{t('study.slider.heavilyProcessed')}</span>
 
           <Button className="study-pick" data-tour="pick-realistic" variant="contained" onClick={() => setSelection('mostRealisticLevel')}>
-            Pick Most Realistic
+            {t('study.pickMostRealistic')}
           </Button>
 
           <Button className="study-pick" data-tour="pick-favorite" variant="contained" color="secondary" onClick={() => setSelection('favoriteLevel')}>
-            Pick Favorite Image
+            {t('study.pickFavorite')}
           </Button>
 
           {isReRank ? (
             <Button className="study-nav" variant="contained" color="success" onClick={saveReRank}>
-              Save changes
+              {t('study.saveChanges')}
             </Button>
           ) : (
             <>
               {!isLastImageOverall ? (
                 <Button className="study-nav" data-tour="next" variant="outlined" onClick={goNext}>
-                  Next image
+                  {t('study.nextImage')}
                 </Button>
               ) : null}
 
               {/* Let participants stop whenever they want, not only once every
                   image is graded (issue #39). */}
               <Button className="study-nav" variant="contained" color="success" onClick={finishStudy}>
-                Finish
+                {t('study.finish')}
               </Button>
             </>
           )}
