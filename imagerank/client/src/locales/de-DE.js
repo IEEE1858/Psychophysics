@@ -71,6 +71,9 @@ export default {
   'share.twitter': 'Twitter',
   'share.bluesky': 'Bluesky',
   'share.mastodon': 'Mastodon',
+  'share.linkedin': 'LinkedIn',
+  'share.whatsapp': 'WhatsApp',
+  'share.reddit': 'Reddit',
   'share.copyLink': 'Link kopieren',
   'share.copied': 'Link kopiert: {url}',
   'share.copyManually': 'Kopieren Sie diesen Link: {url}',
@@ -103,10 +106,6 @@ export default {
   'demo.country': 'Herkunftsland',
   'demo.displayType': 'Welche Art von Bildschirm?',
   'demo.lighting': 'Welche Art von Beleuchtung?',
-  'demo.timeBudget': 'Wie viel Zeit haben Sie zum Betrachten der Bilder?',
-  'demo.timeBudgetHelp':
-    'Wir zeigen Ihnen etwa so viele Bilder, wie in diese Zeit passen. Sie können jederzeit früher aufhören oder am Ende mehr anfordern.',
-  'demo.minutesShort': '{value} Min.',
 
   'demo.gender.female': 'Weiblich',
   'demo.gender.male': 'Männlich',

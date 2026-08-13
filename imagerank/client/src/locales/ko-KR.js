@@ -67,6 +67,9 @@ export default {
   'share.twitter': 'Twitter',
   'share.bluesky': 'Bluesky',
   'share.mastodon': 'Mastodon',
+  'share.linkedin': 'LinkedIn',
+  'share.whatsapp': 'WhatsApp',
+  'share.reddit': 'Reddit',
   'share.copyLink': '링크 복사',
   'share.copied': '링크가 복사되었습니다: {url}',
   'share.copyManually': '이 링크를 복사하세요: {url}',
@@ -98,10 +101,6 @@ export default {
   'demo.country': '출신 국가',
   'demo.displayType': '어떤 종류의 화면입니까?',
   'demo.lighting': '어떤 조명입니까?',
-  'demo.timeBudget': '이미지를 살펴볼 시간이 얼마나 있습니까?',
-  'demo.timeBudgetHelp':
-    '그 시간에 맞는 정도의 이미지를 보여 드립니다. 언제든 먼저 끝낼 수 있고, 마지막에 더 요청할 수도 있습니다.',
-  'demo.minutesShort': '{value}분',
 
   'demo.gender.female': '여성',
   'demo.gender.male': '남성',

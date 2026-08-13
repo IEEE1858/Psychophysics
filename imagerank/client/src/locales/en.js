@@ -89,6 +89,9 @@ export default {
   'share.twitter': 'Twitter',
   'share.bluesky': 'Bluesky',
   'share.mastodon': 'Mastodon',
+  'share.linkedin': 'LinkedIn',
+  'share.whatsapp': 'WhatsApp',
+  'share.reddit': 'Reddit',
   'share.copyLink': 'Copy link',
   'share.copied': 'Link copied: {url}',
   'share.copyManually': 'Copy this link: {url}',
@@ -121,10 +124,6 @@ export default {
   'demo.country': 'Country of origin',
   'demo.displayType': 'What kind of display?',
   'demo.lighting': 'What kind of lighting?',
-  'demo.timeBudget': 'How much time do you have to review images?',
-  'demo.timeBudgetHelp':
-    'We will show you about as many images as fit in this time. You can always stop early or ask for more at the end.',
-  'demo.minutesShort': '{value} min',
 
   // Dropdown labels are translated; the values stored in the database stay English.
   'demo.gender.female': 'Female',

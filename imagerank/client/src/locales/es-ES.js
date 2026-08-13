@@ -68,6 +68,9 @@ export default {
   'share.twitter': 'Twitter',
   'share.bluesky': 'Bluesky',
   'share.mastodon': 'Mastodon',
+  'share.linkedin': 'LinkedIn',
+  'share.whatsapp': 'WhatsApp',
+  'share.reddit': 'Reddit',
   'share.copyLink': 'Copiar enlace',
   'share.copied': 'Enlace copiado: {url}',
   'share.copyManually': 'Copia este enlace: {url}',
@@ -100,10 +103,6 @@ export default {
   'demo.country': 'País de origen',
   'demo.displayType': '¿Qué tipo de pantalla?',
   'demo.lighting': '¿Qué tipo de iluminación?',
-  'demo.timeBudget': '¿Cuánto tiempo tienes para revisar imágenes?',
-  'demo.timeBudgetHelp':
-    'Te mostraremos aproximadamente tantas imágenes como quepan en ese tiempo. Siempre puedes parar antes o pedir más al final.',
-  'demo.minutesShort': '{value} min',
 
   'demo.gender.female': 'Mujer',
   'demo.gender.male': 'Hombre',
