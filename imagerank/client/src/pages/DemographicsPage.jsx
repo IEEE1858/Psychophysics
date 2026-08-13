@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import Alert from '@mui/material/Alert'
@@ -11,7 +11,8 @@ import Select from '@mui/material/Select'
 import Slider from '@mui/material/Slider'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { COUNTRIES } from '../lib/countries'
+import { localizedCountries } from '../lib/countries'
+import { useI18n, useTx } from '../lib/i18n'
 import {
   demographicsFromServer,
   getParticipantId,
@@ -60,21 +61,24 @@ const REQUIRED_FIELDS = [
   'lighting',
 ]
 
+// Returns translation *keys* rather than sentences, so validation can stay a plain
+// function outside the component while the messages still follow the participant's
+// language.
 function validate(demographics) {
   const errors = {}
 
   for (const field of REQUIRED_FIELDS) {
     if (!String(demographics[field]).trim()) {
-      errors[field] = 'Required'
+      errors[field] = 'demo.error.required'
     }
   }
 
   if (demographics.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(demographics.email)) {
-    errors.email = 'Enter a valid email address'
+    errors.email = 'demo.error.email'
   }
 
   if (demographics.visionStatus === 'Yes' && !demographics.visionDetails.trim()) {
-    errors.visionDetails = 'Please provide details about your vision'
+    errors.visionDetails = 'demo.error.visionDetails'
   }
 
   return errors
@@ -102,8 +106,14 @@ function SelectField({ label, name, value, onChange, error, options, full }) {
 
 function DemographicsPage() {
   const navigate = useNavigate()
+  const { language, t } = useI18n()
+  const tx = useTx()
   const [searchParams] = useSearchParams()
   const isEditing = searchParams.get('edit') === '1'
+
+  // 240 countries localized and re-collated; only worth redoing when the language
+  // changes, not on every keystroke in the form.
+  const countryOptions = useMemo(() => localizedCountries(language), [language])
 
   // In edit mode, prefill from whatever the participant previously entered.
   const [demographics, setDemographics] = useState(
@@ -179,7 +189,7 @@ function DemographicsPage() {
       return
     }
     if (wantsAccount && accountPassword.length < MIN_PASSWORD_LENGTH) {
-      setAccountError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
+      setAccountError(t('demo.error.password', { min: MIN_PASSWORD_LENGTH }))
       return
     }
 
@@ -199,8 +209,7 @@ function DemographicsPage() {
             await register(demographics.email.trim(), accountPassword)
           } catch (registerError) {
             setAccountError(
-              registerError.response?.data?.error ||
-                'Could not create your account. Please try again.',
+              registerError.response?.data?.error || t('demo.error.account'),
             )
             setSaving(false)
             return
@@ -219,7 +228,7 @@ function DemographicsPage() {
       navigate('/study')
     } catch (error) {
       console.error('Failed to save demographics', error)
-      setSubmitError('We could not save your responses. Please check your connection and try again.')
+      setSubmitError(t('demo.error.save'))
     } finally {
       setSaving(false)
     }
@@ -232,14 +241,11 @@ function DemographicsPage() {
       <section className="page-panel">
         <header className="preview-header">
           <Link className="back-link" to={isEditing ? '/study' : '/'}>
-            {isEditing ? '← Back to the study' : '← Back to home'}
+            {isEditing ? t('demo.backToStudy') : t('demo.back')}
           </Link>
-          <p className="eyebrow">{isEditing ? 'Edit your details' : 'Before you begin'}</p>
-          <h1>About you</h1>
-          <p className="home-lead">
-            A few questions about you and your viewing setup. This helps us interpret the results.
-            All fields are required.
-          </p>
+          <p className="eyebrow">{isEditing ? t('demo.eyebrow.edit') : t('demo.eyebrow.before')}</p>
+          <h1>{t('demo.title')}</h1>
+          <p className="home-lead">{t('demo.lead')}</p>
         </header>
 
         <form className="form-card" onSubmit={handleSubmit} noValidate>
@@ -247,81 +253,81 @@ function DemographicsPage() {
             <TextField
               type="number"
               name="age"
-              label="Age"
+              label={t('demo.age')}
               value={demographics.age}
               onChange={handleChange}
               error={Boolean(errors.age)}
-              helperText={errors.age}
+              helperText={errors.age ? t(errors.age) : ''}
               fullWidth
               slotProps={{ htmlInput: { min: 0, max: 120 } }}
             />
 
             <SelectField
-              label="Gender"
+              label={t('demo.gender')}
               name="gender"
               value={demographics.gender}
               onChange={handleChange}
-              error={errors.gender}
+              error={errors.gender ? t(errors.gender) : ''}
               options={[
-                { value: 'Female', label: 'Female' },
-                { value: 'Male', label: 'Male' },
-                { value: 'Non-binary', label: 'Non-binary' },
-                { value: 'Prefer not to say', label: 'Prefer not to say' },
+                { value: 'Female', label: t('demo.gender.female') },
+                { value: 'Male', label: t('demo.gender.male') },
+                { value: 'Non-binary', label: t('demo.gender.nonBinary') },
+                { value: 'Prefer not to say', label: t('demo.gender.preferNotToSay') },
               ]}
             />
 
             <TextField
               type="email"
               name="email"
-              label="Email"
-              placeholder="you@example.com"
+              label={t('demo.email')}
+              placeholder={t('demo.emailPlaceholder')}
               value={demographics.email}
               onChange={handleChange}
               error={Boolean(errors.email)}
-              helperText={errors.email}
+              helperText={errors.email ? t(errors.email) : ''}
               fullWidth
               className="form-full"
             />
 
             <SelectField
-              label="How would you describe yourself?"
+              label={t('demo.selfDescription')}
               name="selfDescription"
               value={demographics.selfDescription}
               onChange={handleChange}
-              error={errors.selfDescription}
+              error={errors.selfDescription ? t(errors.selfDescription) : ''}
               full
               options={[
-                { value: 'Regular person', label: 'Regular person' },
-                { value: 'Photographer / Imaging Expert', label: 'Photographer / Imaging Expert' },
+                { value: 'Regular person', label: t('demo.self.regular') },
+                { value: 'Photographer / Imaging Expert', label: t('demo.self.expert') },
               ]}
             />
 
             <SelectField
-              label="Is your vision degraded?"
+              label={t('demo.visionStatus')}
               name="visionStatus"
               value={demographics.visionStatus}
               onChange={handleChange}
-              error={errors.visionStatus}
+              error={errors.visionStatus ? t(errors.visionStatus) : ''}
               full
               options={[
-                { value: 'No - Ordinary vision', label: 'No - Ordinary vision' },
+                { value: 'No - Ordinary vision', label: t('demo.vision.ordinary') },
                 {
                   value: 'No because of correction with glasses/contact lenses/surgery',
-                  label: 'No because of correction with glasses/contact lenses/surgery',
+                  label: t('demo.vision.corrected'),
                 },
-                { value: 'Yes', label: 'Yes, provide details' },
+                { value: 'Yes', label: t('demo.vision.yesDetails') },
               ]}
             />
 
             {isVisionYes ? (
               <TextField
                 name="visionDetails"
-                label="Vision details"
-                placeholder="Provide details about your vision."
+                label={t('demo.visionDetails')}
+                placeholder={t('demo.visionDetailsPlaceholder')}
                 value={demographics.visionDetails}
                 onChange={handleChange}
                 error={Boolean(errors.visionDetails)}
-                helperText={errors.visionDetails}
+                helperText={errors.visionDetails ? t(errors.visionDetails) : ''}
                 fullWidth
                 multiline
                 minRows={3}
@@ -330,59 +336,61 @@ function DemographicsPage() {
             ) : null}
 
             <SelectField
-              label="Color blindness?"
+              label={t('demo.colorBlind')}
               name="colorBlind"
               value={demographics.colorBlind}
               onChange={handleChange}
-              error={errors.colorBlind}
+              error={errors.colorBlind ? t(errors.colorBlind) : ''}
               options={[
-                { value: 'No', label: 'No' },
-                { value: 'Yes', label: 'Yes' },
+                { value: 'No', label: t('demo.no') },
+                { value: 'Yes', label: t('demo.yes') },
               ]}
             />
 
             <SelectField
-              label="Country of origin"
+              label={t('demo.country')}
               name="countryOfOrigin"
               value={demographics.countryOfOrigin}
               onChange={handleChange}
-              error={errors.countryOfOrigin}
-              options={COUNTRIES.map((country) => ({ value: country, label: country }))}
+              error={errors.countryOfOrigin ? t(errors.countryOfOrigin) : ''}
+              // Localized labels, English values: the name written to the database
+              // stays canonical so responses stay comparable across languages.
+              options={countryOptions}
             />
 
             <SelectField
-              label="What kind of display?"
+              label={t('demo.displayType')}
               name="displayType"
               value={demographics.displayType}
               onChange={handleChange}
-              error={errors.displayType}
+              error={errors.displayType ? t(errors.displayType) : ''}
               options={[
-                { value: 'Laptop', label: 'Laptop' },
-                { value: 'External Monitor', label: 'External Monitor' },
+                { value: 'Laptop', label: t('demo.display.laptop') },
+                { value: 'External Monitor', label: t('demo.display.monitor') },
               ]}
             />
 
             <SelectField
-              label="What kind of lighting?"
+              label={t('demo.lighting')}
               name="lighting"
               value={demographics.lighting}
               onChange={handleChange}
-              error={errors.lighting}
+              error={errors.lighting ? t(errors.lighting) : ''}
               options={[
-                { value: 'Dim Light', label: 'Dim Light' },
-                { value: 'Normal Indoor Lighting', label: 'Normal Indoor Lighting' },
-                { value: 'Outdoor Lighting (not recommended)', label: 'Outdoor Lighting (not recommended)' },
+                { value: 'Dim Light', label: t('demo.lighting.dim') },
+                { value: 'Normal Indoor Lighting', label: t('demo.lighting.indoor') },
+                {
+                  value: 'Outdoor Lighting (not recommended)',
+                  label: t('demo.lighting.outdoor'),
+                },
               ]}
             />
 
             <div className="form-full time-budget-field">
               <Typography component="label" id="time-budget-label" className="time-budget-label">
-                How much time do you have to review images?
+                {t('demo.timeBudget')}
               </Typography>
-              <p className="time-budget-help">
-                We will show you about as many images as fit in this time — you can always stop early
-                or ask for more at the end.
-              </p>
+              <p className="time-budget-help">{t('demo.timeBudgetHelp')}</p>
               <Slider
                 aria-labelledby="time-budget-label"
                 value={Number(demographics.timeBudgetMinutes) || TIME_BUDGET_DEFAULT}
@@ -392,34 +400,34 @@ function DemographicsPage() {
                 step={5}
                 marks
                 valueLabelDisplay="on"
-                valueLabelFormat={(value) => `${value} min`}
+                valueLabelFormat={(value) => t('demo.minutesShort', { value })}
               />
             </div>
           </div>
 
           {!isEditing ? (
             <div className="account-optional">
-              <h2>Save your progress across devices (optional)</h2>
+              <h2>{t('demo.account.title')}</h2>
               <p>
-                Set a password to create an account tied to the email above, then sign in on
-                another computer to pick up where you left off. Leave this blank to continue
-                without an account. Prefer Google?{' '}
-                <Link className="preview-link" to="/signin">
-                  Sign in with Google
-                </Link>
-                .
+                {tx('demo.account.body', {
+                  googleLink: (
+                    <Link className="preview-link" to="/signin">
+                      {t('demo.account.google')}
+                    </Link>
+                  ),
+                })}
               </p>
               <TextField
                 type="password"
                 name="accountPassword"
-                label="Create a password (optional)"
+                label={t('demo.password')}
                 value={accountPassword}
                 onChange={(event) => {
                   setAccountPassword(event.target.value)
                   setAccountError('')
                 }}
                 error={Boolean(accountError)}
-                helperText={accountError || `At least ${MIN_PASSWORD_LENGTH} characters.`}
+                helperText={accountError || t('demo.passwordHelp', { min: MIN_PASSWORD_LENGTH })}
                 autoComplete="new-password"
                 fullWidth
               />
@@ -427,17 +435,17 @@ function DemographicsPage() {
           ) : null}
 
           {submitAttempted && Object.keys(errors).length > 0 ? (
-            <Alert severity="error">Please correct the highlighted fields before continuing.</Alert>
+            <Alert severity="error">{t('demo.error.fix')}</Alert>
           ) : null}
 
           {submitError ? <Alert severity="error">{submitError}</Alert> : null}
 
           <div className="form-actions">
             <Button component={Link} to={isEditing ? '/study' : '/'} variant="outlined" disabled={saving}>
-              {isEditing ? 'Cancel' : 'Back to home'}
+              {isEditing ? t('demo.cancel') : t('demo.backHome')}
             </Button>
             <Button type="submit" variant="contained" size="large" className="cta-button" disabled={saving}>
-              {saving ? 'Saving…' : isEditing ? 'Save and return to study' : 'Continue to the study'}
+              {saving ? t('demo.saving') : isEditing ? t('demo.saveReturn') : t('demo.submit')}
             </Button>
           </div>
         </form>

@@ -1,0 +1,173 @@
+// French. Keys omitted here fall back to English (see lib/i18n.jsx).
+export default {
+  'lang.label': 'Langue',
+  'lang.choose': 'Choisir une langue',
+
+  'home.eyebrow': 'IEEE 1858 · Étude de psychophysique',
+  'home.title': 'Image Rank',
+  'home.lead1':
+    'Cette étude examine comment l’{sharpening} et le traitement {hdr} modifient la perception d’une photo. Vous examinerez la même image rendue à plusieurs niveaux de traitement, puis choisirez la version qui est votre {favorite} et celle qui paraît la {mostRealistic}.',
+  'home.lead1.sharpening': 'accentuation',
+  'home.lead1.hdr': 'HDR',
+  'home.lead1.favorite': 'préférée',
+  'home.lead1.mostRealistic': 'plus réaliste',
+  'home.lead2':
+    'Ces deux choix n’ont pas à coïncider. L’image la plus réaliste n’est pas toujours celle qui paraît la plus soignée, et c’est précisément cette tension que nous mesurons.',
+  'home.viewingNote':
+    'Pour des résultats cohérents, veuillez réaliser l’étude sur un ordinateur de bureau ou portable, sous un éclairage intérieur.',
+
+  'home.cta.start': 'Commencer l’étude',
+  'home.cta.resume': 'Reprendre l’étude',
+  'home.cta.signedInAs': 'Connecté en tant que {email}. {signOut}',
+  'home.cta.signOut': 'Se déconnecter',
+  'home.cta.haveAccount':
+    'Vous avez un compte ou souhaitez continuer sur un autre appareil ? {signIn}',
+  'home.cta.signIn': 'Se connecter',
+
+  'home.mobile.title': 'Veuillez passer à un ordinateur de bureau ou portable.',
+  'home.mobile.body':
+    'Une visualisation fidèle nécessite un écran plus grand sous un éclairage intérieur. Ouvrez cette page ({url}) sur votre ordinateur de bureau ou portable pour participer à l’étude.',
+
+  'home.examples.title': 'Images d’exemple',
+  'home.examples.subtitle':
+    'Un échantillon des images que vous allez classer. Parcourez l’ensemble complet avant de commencer.',
+  'home.examples.loading': 'Chargement des images d’exemple…',
+  'home.examples.hdr.title': 'HDR',
+  'home.examples.hdr.blurb': 'Mappage tonal à grande plage dynamique sur plusieurs niveaux de traitement.',
+  'home.examples.hdr.preview': 'Voir les images HDR',
+  'home.examples.sharpness.title': 'Netteté',
+  'home.examples.sharpness.blurb': 'Accentuation par masque flou sur plusieurs niveaux de traitement.',
+  'home.examples.sharpness.preview': 'Voir les images de netteté',
+  'home.examples.view': 'Voir {label}',
+
+  'home.about.title': 'Qui réalise cette étude ?',
+  'home.about.body1':
+    'Cette étude est menée par le groupe de travail {link}, composé d’ingénieurs et de chercheurs en imagerie qui élaborent des normes ouvertes pour mesurer la qualité réellement perçue des photos d’un appareil.',
+  'home.about.linkText': 'IEEE 1858 Camera Perceptual Image Quality',
+  'home.about.body2':
+    'La qualité des téléphones et des appareils photo a longtemps été décrite par des chiffres comme les mégapixels, mais ces chiffres ne correspondent pas toujours à ce que notre œil remarque réellement. Depuis la publication de sa première norme en 2016 (avec des versions mises à jour en 2023 et une autre en cours d’élaboration), le groupe s’attache à mesurer la qualité d’image telle que la perçoivent de véritables observateurs, afin que les appareils de différents fabricants puissent être comparés équitablement. Vos choix dans cette étude aident à relier ces mesures à la perception humaine réelle.',
+  'home.about.learnMore': 'En savoir plus sur IEEE 1858 →',
+
+  'home.footer.title': 'Jeu d’images et licence',
+  'home.footer.body':
+    'Les images de l’étude proviennent du {dataset} (Bychkovsky et al., 2011), utilisé sous les licences de recherche {adobe} et {adobeMit}. La licence applicable à chaque image est indiquée dans son panneau d’information ({icon}).',
+  'home.footer.dataset': 'MIT-Adobe FiveK Dataset',
+  'home.footer.adobe': 'Adobe',
+  'home.footer.adobeMit': 'Adobe–MIT',
+
+  'share.title': 'Aidez-nous à trouver d’autres participants',
+  'share.blurb':
+    'Plus il y a de participants, meilleurs sont les résultats. Faites circuler l’étude :',
+  'share.blurb.home':
+    'L’étude a besoin de nombreux regards. Invitez les personnes que cela intéresserait :',
+  'share.blurb.mobile':
+    'Vous pourrez faire l’étude sur un ordinateur portable plus tard. En attendant, envoyez-la à quelqu’un qui en possède un :',
+  'share.email': 'E-mail',
+  'share.facebook': 'Facebook',
+  'share.twitter': 'Twitter',
+  'share.bluesky': 'Bluesky',
+  'share.mastodon': 'Mastodon',
+  'share.copyLink': 'Copier le lien',
+  'share.copied': 'Lien copié : {url}',
+  'share.copyManually': 'Copiez ce lien : {url}',
+  'share.mastodon.dialogTitle': 'Partager sur Mastodon',
+  'share.mastodon.instanceLabel': 'Instance Mastodon',
+  'share.mastodon.placeholder': 'mastodon.social',
+  'share.mastodon.help':
+    'Indiquez le serveur sur lequel vous avez un compte. Nous le retiendrons pour la prochaine fois.',
+  'share.mastodon.cancel': 'Annuler',
+  'share.mastodon.confirm': 'Continuer',
+
+  'demo.back': '← Retour à l’accueil',
+  'demo.backToStudy': '← Retour à l’étude',
+  'demo.eyebrow.before': 'Avant de commencer',
+  'demo.eyebrow.edit': 'Modifier vos informations',
+  'demo.title': 'À propos de vous',
+  'demo.lead':
+    'Quelques questions sur vous et votre configuration d’affichage. Cela nous aide à interpréter les résultats. Tous les champs sont obligatoires.',
+  'demo.age': 'Âge',
+  'demo.gender': 'Genre',
+  'demo.email': 'E-mail',
+  'demo.emailPlaceholder': 'vous@exemple.com',
+  'demo.selfDescription': 'Comment vous décririez-vous ?',
+  'demo.visionStatus': 'Votre vision est-elle altérée ?',
+  'demo.visionDetails': 'Détails sur la vision',
+  'demo.visionDetailsPlaceholder': 'Précisez les détails concernant votre vision.',
+  'demo.colorBlind': 'Daltonisme ?',
+  'demo.country': 'Pays d’origine',
+  'demo.displayType': 'Quel type d’écran ?',
+  'demo.lighting': 'Quel type d’éclairage ?',
+  'demo.timeBudget': 'Combien de temps avez-vous pour examiner des images ?',
+  'demo.timeBudgetHelp':
+    'Nous vous montrerons à peu près autant d’images que ce temps le permet. Vous pouvez toujours arrêter plus tôt ou en demander davantage à la fin.',
+  'demo.minutesShort': '{value} min',
+
+  'demo.gender.female': 'Femme',
+  'demo.gender.male': 'Homme',
+  'demo.gender.nonBinary': 'Non binaire',
+  'demo.gender.preferNotToSay': 'Je préfère ne pas répondre',
+  'demo.self.regular': 'Personne ordinaire',
+  'demo.self.expert': 'Photographe / expert en imagerie',
+  'demo.vision.ordinary': 'Non, vision normale',
+  'demo.vision.corrected': 'Non, grâce à des lunettes/lentilles/une chirurgie',
+  'demo.vision.yesDetails': 'Oui, préciser',
+  'demo.yes': 'Oui',
+  'demo.no': 'Non',
+  'demo.display.laptop': 'Ordinateur portable',
+  'demo.display.monitor': 'Écran externe',
+  'demo.lighting.dim': 'Lumière faible',
+  'demo.lighting.indoor': 'Éclairage intérieur normal',
+  'demo.lighting.outdoor': 'Éclairage extérieur (non recommandé)',
+
+  'demo.account.title': 'Enregistrez votre progression entre appareils (facultatif)',
+  'demo.account.body':
+    'Définissez un mot de passe pour créer un compte lié à l’adresse ci-dessus, puis connectez-vous sur un autre ordinateur pour reprendre où vous en étiez. Laissez ce champ vide pour continuer sans compte. Vous préférez Google ? {googleLink}.',
+  'demo.account.google': 'Se connecter avec Google',
+  'demo.password': 'Créer un mot de passe (facultatif)',
+  'demo.passwordHelp': 'Au moins {min} caractères.',
+
+  'demo.error.required': 'Obligatoire',
+  'demo.error.email': 'Saisissez une adresse e-mail valide',
+  'demo.error.visionDetails': 'Veuillez préciser les détails concernant votre vision',
+  'demo.error.fix': 'Veuillez corriger les champs signalés avant de continuer.',
+
+  'demo.error.password': 'Le mot de passe doit comporter au moins {min} caractères.',
+  'demo.error.account': 'Impossible de créer votre compte. Veuillez réessayer.',
+  'demo.error.save': 'Impossible d’enregistrer vos réponses. Vérifiez votre connexion et réessayez.',
+  'demo.cancel': 'Annuler',
+  'demo.backHome': 'Retour à l’accueil',
+  'demo.saving': 'Enregistrement…',
+  'demo.saveReturn': 'Enregistrer et revenir à l’étude',
+  'demo.submit': 'Continuer vers l’étude',
+
+  'study.topbar.title': 'IEEE 1858 CPIQ Image Rank',
+  'study.topbar.progress': '{collection} : image {position} sur {total} : {image}',
+  'study.topbar.reranking': 'Réévaluation : {collection} — {image}',
+  'study.slider.aria': 'Niveau de traitement',
+  'study.marker.realisticAt': 'La plus réaliste au niveau {level}',
+  'study.marker.favoriteAt': 'Image préférée au niveau {level}',
+  'study.loadingLibrary': 'Chargement de la bibliothèque d’images…',
+  'study.exploreMore': 'déplacez le curseur vers la droite pour voir d’autres images plus traitées avant de décider.',
+  'study.topbar.help': 'Revoir le guide',
+  'study.topbar.rankings': 'Classements',
+  'study.topbar.editDemographics': 'Modifier mes informations',
+  'study.topbar.imageInfo': 'Informations sur l’image',
+  'study.topbar.zoomOut': 'Zoom arrière',
+  'study.topbar.zoomIn': 'Zoom avant',
+  'study.topbar.resetView': 'Réinitialiser la vue',
+  'study.slider.unprocessed': 'Non traitée',
+  'study.slider.heavilyProcessed': 'Fortement traitée',
+  'study.pickMostRealistic': 'Choisir la plus réaliste',
+  'study.pickFavorite': 'Choisir ma préférée',
+  'study.previous': 'Précédent',
+  'study.nextImage': 'Image suivante',
+  'study.saveChanges': 'Enregistrer',
+  'study.finish': 'Terminer',
+  'study.loading.title': 'Chargement de l’image',
+
+  'share.subject': 'Quelle photo préférez-vous, et laquelle paraît réelle ?',
+  'share.text':
+    'Quelle photo préférez-vous, et laquelle paraît réelle ? Ce n’est souvent pas la même image. Le groupe de normalisation en imagerie IEEE 1858 mesure cet écart et cherche des personnes pour regarder des photos et choisir. De 15 à 45 minutes sur un ordinateur portable, aucune expertise requise.',
+  'share.textShort':
+    'Quelle photo préférez-vous, et laquelle paraît réelle ? Souvent pas la même image. Le groupe de normalisation en imagerie IEEE 1858 mesure cet écart. De 15 à 45 minutes sur un ordinateur portable, aucune expertise requise.',
+}

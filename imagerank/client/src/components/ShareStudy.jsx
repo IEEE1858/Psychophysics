@@ -5,6 +5,7 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import TextField from '@mui/material/TextField'
+import { useI18n, withLanguageParam } from '../lib/i18n'
 import '../pages/pages.css'
 
 // "Help us find more participants" (issue #46): share links for the study, on
@@ -20,18 +21,11 @@ const CANONICAL_URL = 'https://imagerank.imatest.com'
 // once (there is no central Mastodon share endpoint to post to).
 const MASTODON_INSTANCE_KEY = 'mastodonInstance'
 
-const SHARE_TITLE = 'Which photo do you like best, and which one looks real?'
-const SHARE_TEXT =
-  'Which photo do you like best, and which one looks real? They are often not the same image. ' +
-  'The IEEE 1858 imaging standards group is measuring that gap, and needs people to look at ' +
-  'photos and choose. 15–45 minutes on a laptop, no expertise required.'
-
-// X counts every URL as 23 characters against its 280-character limit, which
-// leaves the full text with no room for the sharer to add a word of their own.
-const SHORT_SHARE_TEXT =
-  'Which photo do you like best, and which one looks real? Often not the same image. ' +
-  'The IEEE 1858 imaging standards group is measuring that gap. 15–45 minutes on a laptop, ' +
-  'no expertise needed.'
+// The post text now lives in the locale files, so a shared link is pitched in the
+// sharer's language (keys share.subject / share.text / share.textShort). X counts
+// every URL as 23 characters against its 280-character limit, which is why there is
+// a shorter variant: the full text would leave the sharer no room to add a word of
+// their own. Translators need to keep that variant short for the same reason.
 
 function studyUrl() {
   const origin = window.location.origin
@@ -119,17 +113,21 @@ function LinkGlyph() {
   )
 }
 
-function ShareStudy({
-  title = 'Help us find more participants',
-  blurb = 'The more people who take part, the better the results. Pass the study on:',
-  className = '',
-}) {
+function ShareStudy({ title, blurb, className = '' }) {
+  const { language, t } = useI18n()
   const [mastodonOpen, setMastodonOpen] = useState(false)
   const [instance, setInstance] = useState(() => localStorage.getItem(MASTODON_INSTANCE_KEY) ?? '')
   const [status, setStatus] = useState('')
 
-  const url = studyUrl()
-  const message = `${SHARE_TEXT}\n\n${url}`
+  const heading = title ?? t('share.title')
+  const description = blurb ?? t('share.blurb')
+
+  // Both the post text and the link carry the sharer's language (issue #50), so a
+  // recruit opens the study already reading the language they were pitched in.
+  const url = withLanguageParam(studyUrl(), language)
+  const shareText = t('share.text')
+  const shortShareText = t('share.textShort')
+  const message = `${shareText}\n\n${url}`
 
   function openShare(target) {
     window.open(target, '_blank', 'noopener,noreferrer')
@@ -148,27 +146,27 @@ function ShareStudy({
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(url)
-      setStatus(`Link copied: ${url}`)
+      setStatus(t('share.copied', { url }))
     } catch {
       // Clipboard access can be blocked (permissions, insecure context) — show
       // the link so it can still be copied by hand.
-      setStatus(`Copy this link: ${url}`)
+      setStatus(t('share.copyManually', { url }))
     }
   }
 
   return (
     <section className={`share-block ${className}`.trim()}>
-      <h2 className="share-title">{title}</h2>
-      <p className="share-blurb">{blurb}</p>
+      <h2 className="share-title">{heading}</h2>
+      <p className="share-blurb">{description}</p>
 
       <div className="share-buttons">
         <Button
           variant="outlined"
           size="small"
           startIcon={<EmailGlyph />}
-          href={`mailto:?subject=${encodeURIComponent(SHARE_TITLE)}&body=${encodeURIComponent(message)}`}
+          href={`mailto:?subject=${encodeURIComponent(t('share.subject'))}&body=${encodeURIComponent(message)}`}
         >
-          Email
+          {t('share.email')}
         </Button>
         <Button
           variant="outlined"
@@ -176,7 +174,7 @@ function ShareStudy({
           startIcon={<FacebookGlyph />}
           onClick={() => openShare(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`)}
         >
-          Facebook
+          {t('share.facebook')}
         </Button>
         <Button
           variant="outlined"
@@ -184,11 +182,11 @@ function ShareStudy({
           startIcon={<XGlyph />}
           onClick={() =>
             openShare(
-              `https://x.com/intent/post?text=${encodeURIComponent(SHORT_SHARE_TEXT)}&url=${encodeURIComponent(url)}`,
+              `https://x.com/intent/post?text=${encodeURIComponent(shortShareText)}&url=${encodeURIComponent(url)}`,
             )
           }
         >
-          Twitter
+          {t('share.twitter')}
         </Button>
         <Button
           variant="outlined"
@@ -196,7 +194,7 @@ function ShareStudy({
           startIcon={<BlueskyGlyph />}
           onClick={() => openShare(`https://bsky.app/intent/compose?text=${encodeURIComponent(message)}`)}
         >
-          Bluesky
+          {t('share.bluesky')}
         </Button>
         <Button
           variant="outlined"
@@ -204,27 +202,25 @@ function ShareStudy({
           startIcon={<MastodonGlyph />}
           onClick={() => setMastodonOpen(true)}
         >
-          Mastodon
+          {t('share.mastodon')}
         </Button>
         <Button variant="outlined" size="small" startIcon={<LinkGlyph />} onClick={copyLink}>
-          Copy link
+          {t('share.copyLink')}
         </Button>
       </div>
 
       {status ? <p className="share-status">{status}</p> : null}
 
       <Dialog open={mastodonOpen} onClose={() => setMastodonOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Share on Mastodon</DialogTitle>
+        <DialogTitle>{t('share.mastodon.dialogTitle')}</DialogTitle>
         <DialogContent>
-          <p className="share-dialog-copy">
-            Mastodon has no central share page, so we need the server you post from.
-          </p>
+          <p className="share-dialog-copy">{t('share.mastodon.help')}</p>
           <TextField
             autoFocus
             fullWidth
             size="small"
-            label="Your Mastodon server"
-            placeholder="mastodon.social"
+            label={t('share.mastodon.instanceLabel')}
+            placeholder={t('share.mastodon.placeholder')}
             value={instance}
             onChange={(event) => setInstance(event.target.value)}
             onKeyDown={(event) => {
@@ -235,9 +231,9 @@ function ShareStudy({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setMastodonOpen(false)}>Cancel</Button>
+          <Button onClick={() => setMastodonOpen(false)}>{t('share.mastodon.cancel')}</Button>
           <Button variant="contained" onClick={shareToMastodon} disabled={!normalizeInstance(instance)}>
-            Continue
+            {t('share.mastodon.confirm')}
           </Button>
         </DialogActions>
       </Dialog>
