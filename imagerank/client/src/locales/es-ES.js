@@ -164,7 +164,5 @@ export default {
 
   'share.subject': '¿Qué foto te gusta más y cuál parece real?',
   'share.text':
-    '¿Qué foto te gusta más y cuál parece real? A menudo no son la misma imagen. El grupo de estándares de imagen IEEE 1858 está midiendo esa diferencia y necesita personas que miren fotos y elijan. De 15 a 45 minutos en un portátil, sin necesidad de conocimientos previos.',
-  'share.textShort':
-    '¿Qué foto te gusta más y cuál parece real? A menudo no son la misma imagen. El grupo de estándares de imagen IEEE 1858 está midiendo esa diferencia. De 15 a 45 minutos en un portátil, sin conocimientos previos.',
+    '¿Qué foto te gusta más y cuál parece real? A menudo no son la misma imagen. Los investigadores de IEEE Camera Perceptual Image Quality están midiendo esa diferencia y necesitan personas que miren fotos y elijan. No se requiere ninguna experiencia.',
 }

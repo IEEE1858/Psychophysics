@@ -379,39 +379,55 @@
 
 /* RTL locales mirror the whole document, which puts "top right" on the left. That
    is correct: it is the start of the line in the reader's direction. */
-/* Doubled class to outrank MuiButton-root, which uppercases labels. A language's
-   own name is a proper noun and should not be shouted, and several of these scripts
-   have no case at all. */
+
+/* The globe and the current language sit together inside one outlined pill, so the
+   control reads as a picker rather than a decorative icon. Deliberately high
+   contrast: someone who needs another language cannot read the page telling them
+   where to find it, so this has to be findable on shape and weight alone.
+
+   The class is doubled to outrank MuiButton-root, which uppercases labels and sets
+   its own colour. A language's own name is a proper noun and should not be shouted,
+   and several of these scripts have no case at all. */
 .language-button.language-button {
-  gap: 2px;
-  padding: 4px 10px;
+  gap: 6px;
+  padding: 7px 15px;
   border-radius: 999px;
-  font-size: 0.86rem;
+  font-size: 0.95rem;
   font-weight: 700;
   text-transform: none;
   letter-spacing: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .language-button.language-button-light {
-  color: #6c5a34;
-  border: 1px solid rgba(122, 95, 41, 0.32);
-  background: rgba(255, 252, 247, 0.72);
+  color: #4a3c1d;
+  border: 2px solid rgba(122, 95, 41, 0.55);
+  background: #fffdf7;
+  box-shadow: 0 2px 8px rgba(39, 50, 74, 0.1);
 }
 
 .language-button.language-button-light:hover {
-  background: rgba(255, 252, 247, 0.95);
-  border-color: rgba(122, 95, 41, 0.5);
+  background: #fff;
+  border-color: #7a5f29;
+  box-shadow: 0 4px 14px rgba(39, 50, 74, 0.18);
 }
 
 /* On the study screen's dark toolbar. */
 .language-button.language-button-dark {
-  color: #f4efe4;
-  border: 1px solid rgba(244, 239, 228, 0.4);
+  color: #fffdf6;
+  border: 2px solid rgba(255, 253, 246, 0.6);
+  background: rgba(255, 253, 246, 0.1);
 }
 
 .language-button.language-button-dark:hover {
-  background: rgba(244, 239, 228, 0.14);
-  border-color: rgba(244, 239, 228, 0.65);
+  background: rgba(255, 253, 246, 0.22);
+  border-color: #fffdf6;
+}
+
+/* Keyboard focus must be at least as obvious as hover. */
+.language-button.language-button:focus-visible {
+  outline: 3px solid rgba(40, 114, 113, 0.55);
+  outline-offset: 2px;
 }
 
 .language-button-text {

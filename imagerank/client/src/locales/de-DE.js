@@ -167,7 +167,5 @@ export default {
 
   'share.subject': 'Welches Foto gefällt Ihnen am besten, und welches sieht echt aus?',
   'share.text':
-    'Welches Foto gefällt Ihnen am besten, und welches sieht echt aus? Oft ist es nicht dasselbe Bild. Die Bildstandards-Gruppe IEEE 1858 misst diesen Unterschied und sucht Menschen, die Fotos ansehen und auswählen. 15–45 Minuten an einem Laptop, keine Vorkenntnisse erforderlich.',
-  'share.textShort':
-    'Welches Foto gefällt Ihnen am besten, und welches sieht echt aus? Oft nicht dasselbe Bild. Die Bildstandards-Gruppe IEEE 1858 misst diesen Unterschied. 15–45 Minuten an einem Laptop, keine Vorkenntnisse nötig.',
+    'Welches Foto gefällt Ihnen am besten, und welches sieht echt aus? Oft ist es nicht dasselbe Bild. Forschende von IEEE Camera Perceptual Image Quality messen diesen Unterschied und suchen Menschen, die Fotos ansehen und auswählen. Keine Vorkenntnisse nötig.',
 }
