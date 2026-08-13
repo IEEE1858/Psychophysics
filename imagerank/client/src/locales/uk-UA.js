@@ -1,0 +1,171 @@
+// Ukrainian. Keys omitted here fall back to English (see lib/i18n.js).
+export default {
+  'lang.label': 'Мова',
+  'lang.choose': 'Виберіть мову',
+
+  'home.eyebrow': 'IEEE 1858 · Психофізичне дослідження',
+  // Translators: "image" here means a *photograph*, and "rank" means ordering or
+  // rating them.
+  'home.title': 'Ранжування фотографій',
+  'home.lead1':
+    'Це дослідження вивчає, як {sharpening} та {hdr}-обробка зображення змінюють враження від фотографії. Ви розглядатимете те саме зображення з різними рівнями обробки й обиратимете версію, яка вам {favorite}, і версію, яка виглядає {mostRealistic}.',
+  'home.lead1.sharpening': 'підвищення різкості',
+  'home.lead1.hdr': 'HDR',
+  'home.lead1.favorite': 'подобається найбільше',
+  'home.lead1.mostRealistic': 'найреалістичніше',
+  'home.lead2':
+    'Ці два вибори не обов’язково збігаються. Найреалістичніше зображення не завжди виглядає найдоглянутішим, і саме цю розбіжність ми вимірюємо.',
+  'home.viewingNote':
+    'Щоб результати були узгодженими, проходьте дослідження на настільному комп’ютері або ноутбуці за внутрішнього освітлення.',
+
+  'home.cta.start': 'Почати дослідження',
+  'home.cta.resume': 'Продовжити дослідження',
+  'home.cta.signedInAs': 'Ви увійшли як {email}. {signOut}',
+  'home.cta.signOut': 'Вийти',
+  'home.cta.haveAccount': 'Уже маєте обліковий запис або хочете продовжити на іншому пристрої? {signIn}',
+  'home.cta.signIn': 'Увійти',
+
+  'home.mobile.title': 'Будь ласка, перейдіть на настільний комп’ютер або ноутбук.',
+  'home.mobile.body':
+    'Для точного перегляду потрібен більший екран за внутрішнього освітлення. Відкрийте цю сторінку ({url}) на настільному комп’ютері або ноутбуці, щоб узяти участь у дослідженні.',
+
+  'home.examples.title': 'Приклади зображень',
+  'home.examples.subtitle':
+    'Вибірка зображень, які ви оцінюватимете. Перед початком можна переглянути повний набір.',
+  'home.examples.loading': 'Завантаження прикладів зображень…',
+  'home.examples.hdr.title': 'HDR',
+  'home.examples.hdr.blurb': 'Тональне відображення широкого динамічного діапазону на різних рівнях обробки.',
+  'home.examples.hdr.preview': 'Переглянути зображення HDR',
+  'home.examples.sharpness.title': 'Різкість',
+  'home.examples.sharpness.blurb': 'Нерізке маскування на різних рівнях обробки.',
+  'home.examples.sharpness.preview': 'Переглянути зображення різкості',
+  'home.examples.view': 'Переглянути {label}',
+
+  'home.about.title': 'Хто проводить це дослідження?',
+  'home.about.body1':
+    'Це дослідження проводить робоча група {link} — група інженерів і дослідників у галузі обробки зображень, які розробляють відкриті стандарти для оцінювання того, наскільки добре фотографії камери справді виглядають для людей.',
+  'home.about.linkText': 'IEEE 1858 Camera Perceptual Image Quality',
+  'home.about.body2':
+    'Якість телефонів і камер довго описували числами на кшталт мегапікселів, але ці числа не завжди відповідають тому, що насправді помічає наше око. Із моменту публікації першого стандарту у 2016 році (з оновленими версіями у 2023 році та ще однією в розробці) група працює над тим, щоб вимірювати якість зображення так, як її сприймають реальні глядачі, аби камери різних виробників можна було порівнювати справедливо. Ваш вибір у цьому дослідженні допомагає пов’язати ці вимірювання зі справжнім людським сприйняттям.',
+  'home.about.learnMore': 'Докладніше про IEEE 1858 →',
+
+  'home.footer.title': 'Набір зображень і ліцензія',
+  'home.footer.body':
+    'Зображення для дослідження взято з {dataset} (Bychkovsky et al., 2011) і використано за дослідницькими ліцензіями {adobe} та {adobeMit}. Ліцензію, що застосовується до кожного зображення, наведено в його інформаційній панелі ({icon}).',
+  'home.footer.dataset': 'MIT-Adobe FiveK Dataset',
+  'home.footer.adobe': 'Adobe',
+  'home.footer.adobeMit': 'Adobe–MIT',
+
+  'share.title': 'Допоможіть нам знайти більше учасників',
+  'share.blurb': 'Чим більше людей візьме участь, тим кращими будуть результати. Поширте дослідження:',
+  'share.blurb.home': 'Дослідженню потрібно багато очей. Запросіть тих, кому це буде цікаво:',
+  'share.blurb.mobile':
+    'Ви зможете пройти дослідження на ноутбуці згодом. А поки надішліть його комусь, у кого він є:',
+  'share.email': 'Ел. пошта',
+  'share.facebook': 'Facebook',
+  'share.twitter': 'Twitter',
+  'share.bluesky': 'Bluesky',
+  'share.mastodon': 'Mastodon',
+  'share.copyLink': 'Скопіювати посилання',
+  'share.copied': 'Посилання скопійовано: {url}',
+  'share.copyManually': 'Скопіюйте це посилання: {url}',
+  'share.mastodon.dialogTitle': 'Поділитися в Mastodon',
+  'share.mastodon.instanceLabel': 'Інстанс Mastodon',
+  'share.mastodon.placeholder': 'mastodon.social',
+  'share.mastodon.help':
+    'Укажіть сервер, на якому у вас є обліковий запис. Ми запам’ятаємо його на наступний раз.',
+  'share.mastodon.cancel': 'Скасувати',
+  'share.mastodon.confirm': 'Продовжити',
+
+  'demo.back': '← Назад на головну',
+  'demo.backToStudy': '← Назад до дослідження',
+  'demo.eyebrow.before': 'Перед початком',
+  'demo.eyebrow.edit': 'Змінити дані',
+  'demo.title': 'Про вас',
+  'demo.lead':
+    'Кілька запитань про вас і ваш екран. Це допомагає нам інтерпретувати результати. Усі поля обов’язкові.',
+  'demo.age': 'Вік',
+  'demo.gender': 'Стать',
+  'demo.email': 'Ел. пошта',
+  'demo.emailPlaceholder': 'vy@pryklad.com',
+  'demo.selfDescription': 'Як би ви себе описали?',
+  'demo.visionStatus': 'Чи знижений ваш зір?',
+  'demo.visionDetails': 'Відомості про зір',
+  'demo.visionDetailsPlaceholder': 'Опишіть особливості вашого зору.',
+  'demo.colorBlind': 'Дальтонізм?',
+  'demo.country': 'Країна походження',
+  'demo.displayType': 'Який тип екрана?',
+  'demo.lighting': 'Яке освітлення?',
+  'demo.timeBudget': 'Скільки часу ви маєте на перегляд зображень?',
+  'demo.timeBudgetHelp':
+    'Ми покажемо приблизно стільки зображень, скільки вміститься в цей час. Ви завжди можете завершити раніше або попросити більше в кінці.',
+  'demo.minutesShort': '{value} хв',
+
+  'demo.gender.female': 'Жіноча',
+  'demo.gender.male': 'Чоловіча',
+  'demo.gender.nonBinary': 'Небінарна',
+  'demo.gender.preferNotToSay': 'Волію не відповідати',
+  'demo.self.regular': 'Звичайна людина',
+  'demo.self.expert': 'Фотограф / фахівець із зображень',
+  'demo.vision.ordinary': 'Ні — звичайний зір',
+  'demo.vision.corrected': 'Ні, завдяки окулярам/лінзам/операції',
+  'demo.vision.yesDetails': 'Так, зазначити подробиці',
+  'demo.yes': 'Так',
+  'demo.no': 'Ні',
+  'demo.display.laptop': 'Ноутбук',
+  'demo.display.monitor': 'Зовнішній монітор',
+  'demo.lighting.dim': 'Тьмяне світло',
+  'demo.lighting.indoor': 'Звичайне внутрішнє освітлення',
+  'demo.lighting.outdoor': 'Зовнішнє освітлення (не рекомендовано)',
+
+  'demo.account.title': 'Зберегти прогрес на різних пристроях (необов’язково)',
+  'demo.account.body':
+    'Задайте пароль, щоб створити обліковий запис, прив’язаний до зазначеної вище пошти, а потім увійдіть на іншому комп’ютері й продовжте з того самого місця. Залиште поле порожнім, щоб продовжити без облікового запису. Віддаєте перевагу Google? {googleLink}.',
+  'demo.account.google': 'Увійти через Google',
+  'demo.password': 'Створити пароль (необов’язково)',
+  'demo.passwordHelp': 'Щонайменше {min} символів.',
+
+  'demo.error.required': 'Обов’язково',
+  'demo.error.email': 'Введіть дійсну адресу ел. пошти',
+  'demo.error.visionDetails': 'Зазначте відомості про ваш зір',
+  'demo.error.fix': 'Виправте виділені поля, щоб продовжити.',
+  'demo.error.password': 'Пароль має містити щонайменше {min} символів.',
+  'demo.error.account': 'Не вдалося створити обліковий запис. Спробуйте ще раз.',
+  'demo.error.save': 'Не вдалося зберегти ваші відповіді. Перевірте з’єднання та спробуйте ще раз.',
+
+  'demo.cancel': 'Скасувати',
+  'demo.backHome': 'На головну',
+  'demo.saving': 'Збереження…',
+  'demo.saveReturn': 'Зберегти й повернутися до дослідження',
+  'demo.submit': 'Перейти до дослідження',
+
+  'study.topbar.title': 'IEEE 1858 CPIQ Image Rank',
+  'study.topbar.progress': '{collection}: зображення {position} з {total}: {image}',
+  'study.topbar.reranking': 'Повторне оцінювання: {collection} — {image}',
+  'study.slider.aria': 'Рівень обробки',
+  'study.marker.realisticAt': 'Найреалістичніше на рівні {level}',
+  'study.marker.favoriteAt': 'Улюблене зображення на рівні {level}',
+  'study.loadingLibrary': 'Завантаження бібліотеки зображень…',
+  'study.exploreMore':
+    'перемістіть повзунок праворуч, щоб подивитися інші, більш оброблені зображення, перш ніж вирішувати.',
+  'study.topbar.help': 'Повторити навчання',
+  'study.topbar.rankings': 'Оцінки',
+  'study.topbar.editDemographics': 'Змінити дані',
+  'study.topbar.imageInfo': 'Інформація про зображення',
+  'study.topbar.zoomOut': 'Зменшити',
+  'study.topbar.zoomIn': 'Збільшити',
+  'study.topbar.resetView': 'Скинути вигляд',
+  'study.slider.unprocessed': 'Без обробки',
+  'study.slider.heavilyProcessed': 'Сильна обробка',
+  'study.pickMostRealistic': 'Вибрати найреалістичніше',
+  'study.pickFavorite': 'Вибрати улюблене',
+  'study.previous': 'Назад',
+  'study.nextImage': 'Наступне зображення',
+  'study.saveChanges': 'Зберегти зміни',
+  'study.finish': 'Завершити',
+  'study.loading.title': 'Завантаження зображення',
+
+  'share.subject': 'Яке фото вам подобається найбільше і яке виглядає справжнім?',
+  'share.text':
+    'Яке фото вам подобається найбільше і яке виглядає справжнім? Часто це різні зображення. Дослідники IEEE Camera Perceptual Image Quality вимірюють цю розбіжність і шукають людей, які подивляться фотографії та зроблять вибір. Спеціальних знань не потрібно.',
+}
