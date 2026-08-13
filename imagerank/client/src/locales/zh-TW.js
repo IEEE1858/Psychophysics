@@ -81,6 +81,8 @@ export default {
   'demo.gender': '性別',
   'demo.email': '電子郵件',
   'demo.emailPlaceholder': 'you@example.com',
+  'demo.emailOptional': '電子郵件（選填）',
+  'demo.error.emailForAccount': '建立帳戶需要電子郵件地址。請填寫一個，或清除密碼以不建立帳戶繼續。',
   'demo.selfDescription': '你如何描述自己？',
   'demo.visionStatus': '你的視力是否下降？',
   'demo.visionDetails': '視力詳情',

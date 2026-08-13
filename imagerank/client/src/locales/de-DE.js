@@ -89,6 +89,8 @@ export default {
   'demo.gender': 'Geschlecht',
   'demo.email': 'E-Mail',
   'demo.emailPlaceholder': 'sie@beispiel.de',
+  'demo.emailOptional': 'E-Mail (optional)',
+  'demo.error.emailForAccount': 'Für ein Konto ist eine E-Mail-Adresse nötig. Geben Sie eine an oder löschen Sie das Passwort, um ohne Konto fortzufahren.',
   'demo.selfDescription': 'Wie würden Sie sich beschreiben?',
   'demo.visionStatus': 'Ist Ihr Sehvermögen eingeschränkt?',
   'demo.visionDetails': 'Angaben zum Sehvermögen',

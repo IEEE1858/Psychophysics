@@ -85,6 +85,8 @@ export default {
   'demo.gender': '性別',
   'demo.email': 'メールアドレス',
   'demo.emailPlaceholder': 'you@example.com',
+  'demo.emailOptional': 'メールアドレス（任意）',
+  'demo.error.emailForAccount': 'アカウントの作成にはメールアドレスが必要です。入力するか、パスワードを消してアカウントなしで続けてください。',
   'demo.selfDescription': 'ご自身をどのように説明されますか。',
   'demo.visionStatus': '視力に低下はありますか。',
   'demo.visionDetails': '視力の詳細',

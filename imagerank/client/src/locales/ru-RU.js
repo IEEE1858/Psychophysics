@@ -86,6 +86,8 @@ export default {
   'demo.gender': 'Пол',
   'demo.email': 'Эл. почта',
   'demo.emailPlaceholder': 'vy@primer.com',
+  'demo.emailOptional': 'Эл. почта (необязательно)',
+  'demo.error.emailForAccount': 'Для создания аккаунта нужен адрес эл. почты. Укажите его или удалите пароль, чтобы продолжить без аккаунта.',
   'demo.selfDescription': 'Как бы вы себя описали?',
   'demo.visionStatus': 'Ваше зрение снижено?',
   'demo.visionDetails': 'Сведения о зрении',

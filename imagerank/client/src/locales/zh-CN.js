@@ -81,6 +81,8 @@ export default {
   'demo.gender': '性别',
   'demo.email': '电子邮件',
   'demo.emailPlaceholder': 'you@example.com',
+  'demo.emailOptional': '电子邮件（选填）',
+  'demo.error.emailForAccount': '创建账户需要电子邮件地址。请填写一个，或清除密码以不创建账户继续。',
   'demo.selfDescription': '你如何描述自己？',
   'demo.visionStatus': '你的视力是否下降？',
   'demo.visionDetails': '视力详情',
