@@ -84,6 +84,8 @@ export default {
   'demo.gender': '성별',
   'demo.email': '이메일',
   'demo.emailPlaceholder': 'you@example.com',
+  'demo.emailOptional': '이메일 (선택)',
+  'demo.error.emailForAccount': '계정을 만들려면 이메일 주소가 필요합니다. 주소를 입력하거나, 비밀번호를 지우고 계정 없이 계속하세요.',
   'demo.selfDescription': '스스로를 어떻게 설명하시겠습니까?',
   'demo.visionStatus': '시력이 저하되어 있습니까?',
   'demo.visionDetails': '시력 세부 정보',

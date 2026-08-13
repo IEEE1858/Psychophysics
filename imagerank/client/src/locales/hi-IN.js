@@ -86,6 +86,8 @@ export default {
   'demo.gender': 'लिंग',
   'demo.email': 'ईमेल',
   'demo.emailPlaceholder': 'you@example.com',
+  'demo.emailOptional': 'ईमेल (वैकल्पिक)',
+  'demo.error.emailForAccount': 'खाता बनाने के लिए ईमेल पता आवश्यक है। एक जोड़ें, या खाते के बिना जारी रखने के लिए पासवर्ड हटा दें।',
   'demo.selfDescription': 'आप स्वयं का वर्णन कैसे करेंगे?',
   'demo.visionStatus': 'क्या आपकी दृष्टि कमज़ोर है?',
   'demo.visionDetails': 'दृष्टि का विवरण',

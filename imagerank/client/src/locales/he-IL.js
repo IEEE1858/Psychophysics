@@ -90,6 +90,8 @@ export default {
   'demo.gender': 'מגדר',
   'demo.email': 'דוא״ל',
   'demo.emailPlaceholder': 'you@example.com',
+  'demo.emailOptional': 'דוא״ל (אופציונלי)',
+  'demo.error.emailForAccount': 'כדי ליצור חשבון נדרשת כתובת דוא״ל. הוסיפו אחת, או מחקו את הסיסמה כדי להמשיך בלי חשבון.',
   'demo.selfDescription': 'כיצד תתארו את עצמכם?',
   'demo.visionStatus': 'האם הראייה שלכם ירודה?',
   'demo.visionDetails': 'פרטים על הראייה',

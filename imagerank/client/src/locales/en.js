@@ -107,6 +107,8 @@ export default {
   'demo.gender': 'Gender',
   'demo.email': 'Email',
   'demo.emailPlaceholder': 'you@example.com',
+  'demo.emailOptional': 'Email (optional)',
+  'demo.error.emailForAccount': 'An email address is needed to create an account. Add one, or clear the password to continue without an account.',
   'demo.selfDescription': 'How would you describe yourself?',
   'demo.visionStatus': 'Is your vision degraded?',
   'demo.visionDetails': 'Vision details',

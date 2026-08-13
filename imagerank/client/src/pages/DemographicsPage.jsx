@@ -50,10 +50,12 @@ const INITIAL_DEMOGRAPHICS = {
 
 // Every field except visionDetails is always required; visionDetails is only
 // required when the participant reports degraded vision ("Yes").
+// Email is deliberately absent: it is optional (issue #49). It is still validated
+// for format when supplied, and still required to create an account, which is
+// checked at submit time rather than here.
 const REQUIRED_FIELDS = [
   'age',
   'gender',
-  'email',
   'selfDescription',
   'visionStatus',
   'colorBlind',
@@ -65,6 +67,8 @@ const REQUIRED_FIELDS = [
 // Returns translation *keys* rather than sentences, so validation can stay a plain
 // function outside the component while the messages still follow the participant's
 // language.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 function validate(demographics) {
   const errors = {}
 
@@ -74,7 +78,7 @@ function validate(demographics) {
     }
   }
 
-  if (demographics.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(demographics.email)) {
+  if (demographics.email && !EMAIL_RE.test(demographics.email)) {
     errors.email = 'demo.error.email'
   }
 
@@ -193,6 +197,15 @@ function DemographicsPage() {
       setAccountError(t('demo.error.password', { min: MIN_PASSWORD_LENGTH }))
       return
     }
+    // An account is keyed by email, so a password without one cannot be honoured.
+    // Caught here rather than in validate() because it depends on the password
+    // field, and the participant can always clear the password and continue
+    // anonymously instead.
+    if (wantsAccount && !EMAIL_RE.test(demographics.email.trim())) {
+      setErrors((previous) => ({ ...previous, email: 'demo.error.emailForAccount' }))
+      setAccountError(t('demo.error.emailForAccount'))
+      return
+    }
 
     setSaving(true)
     try {
@@ -284,7 +297,7 @@ function DemographicsPage() {
             <TextField
               type="email"
               name="email"
-              label={t('demo.email')}
+              label={t('demo.emailOptional')}
               placeholder={t('demo.emailPlaceholder')}
               value={demographics.email}
               onChange={handleChange}

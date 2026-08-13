@@ -88,6 +88,8 @@ export default {
   'demo.gender': 'Стать',
   'demo.email': 'Ел. пошта',
   'demo.emailPlaceholder': 'vy@pryklad.com',
+  'demo.emailOptional': 'Ел. пошта (необов’язково)',
+  'demo.error.emailForAccount': 'Щоб створити обліковий запис, потрібна адреса ел. пошти. Укажіть її або видаліть пароль, щоб продовжити без облікового запису.',
   'demo.selfDescription': 'Як би ви себе описали?',
   'demo.visionStatus': 'Чи знижений ваш зір?',
   'demo.visionDetails': 'Відомості про зір',

@@ -86,6 +86,8 @@ export default {
   'demo.gender': 'Genere',
   'demo.email': 'E-mail',
   'demo.emailPlaceholder': 'tu@esempio.com',
+  'demo.emailOptional': 'E-mail (facoltativa)',
+  'demo.error.emailForAccount': 'Per creare un account serve un indirizzo e-mail. Aggiungine uno oppure cancella la password per continuare senza account.',
   'demo.selfDescription': 'Come ti descriveresti?',
   'demo.visionStatus': 'La tua vista è ridotta?',
   'demo.visionDetails': 'Dettagli sulla vista',
