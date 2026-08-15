@@ -6,14 +6,15 @@ import Divider from '@mui/material/Divider'
 import TextField from '@mui/material/TextField'
 import { login, register } from '../lib/auth'
 import './pages.css'
+import { useT } from '../lib/i18n'
 
 // Human-readable messages for the ?error= codes the server sends back when a
 // Google sign-in round-trip fails.
 const GOOGLE_ERRORS = {
-  google_unavailable: 'Google sign-in is not configured. Please use an email and password.',
-  google_denied: 'Google sign-in was cancelled.',
-  bad_state: 'Your sign-in session expired. Please try again.',
-  google_failed: 'Google sign-in failed. Please try again.',
+  google_unavailable: 'signin.error.googleUnavailable',
+  google_denied: 'signin.error.googleDenied',
+  bad_state: 'signin.error.badState',
+  google_failed: 'signin.error.googleFailed',
 }
 
 // Optional participant sign-in (issue #31). Returning participants use this to
@@ -21,6 +22,7 @@ const GOOGLE_ERRORS = {
 // account here or just start the study anonymously from the home page.
 function SignInPage() {
   const navigate = useNavigate()
+  const t = useT()
   const [searchParams] = useSearchParams()
   const [mode, setMode] = useState('login') // 'login' | 'register'
   const [email, setEmail] = useState('')
@@ -43,7 +45,7 @@ function SignInPage() {
     } catch (requestError) {
       setError(
         requestError.response?.data?.error ||
-          'Could not reach the server. Please try again.',
+          t('signin.error.network'),
       )
     } finally {
       setSubmitting(false)
@@ -58,17 +60,17 @@ function SignInPage() {
             ← Back to home
           </Link>
           <p className="eyebrow">Your account</p>
-          <h1>{isRegister ? 'Create an account' : 'Sign in'}</h1>
+          <h1>{isRegister ? t('signin.createTitle') : t('signin.title')}</h1>
           <p className="home-lead">
             {isRegister
-              ? 'Create an optional account to save your progress and continue on another device.'
-              : 'Sign in to resume your study on this or another device. Signing in is optional.'}
+              ? t('signin.createLead')
+              : t('signin.lead')}
           </p>
         </header>
 
         <form className="form-card admin-login-card" onSubmit={handleSubmit} noValidate>
           <TextField
-            label="Email"
+            label={t('signin.email')}
             name="email"
             type="email"
             value={email}
@@ -77,13 +79,13 @@ function SignInPage() {
             fullWidth
           />
           <TextField
-            label="Password"
+            label={t('signin.password')}
             name="password"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete={isRegister ? 'new-password' : 'current-password'}
-            helperText={isRegister ? 'At least 8 characters.' : undefined}
+            helperText={isRegister ? t('demo.passwordHelp', { min: 8 }) : undefined}
             fullWidth
           />
           {error ? <Alert severity="error">{error}</Alert> : null}
@@ -97,11 +99,11 @@ function SignInPage() {
             >
               {submitting
                 ? isRegister
-                  ? 'Creating account…'
-                  : 'Signing in…'
+                  ? t('signin.creating')
+                  : t('signin.signingIn')
                 : isRegister
-                  ? 'Create account'
-                  : 'Sign in'}
+                  ? t('signin.createSubmit')
+                  : t('signin.submit')}
             </Button>
           </div>
 
@@ -113,11 +115,11 @@ function SignInPage() {
             fullWidth
             href="/api/auth/google/start"
           >
-            Continue with Google
+            {t('signin.google')}
           </Button>
 
           <p className="cta-note" style={{ textAlign: 'center' }}>
-            {isRegister ? 'Already have an account?' : 'New here?'}{' '}
+            {isRegister ? t('signin.haveAccount') : t('signin.newHere')}{' '}
             <button
               type="button"
               className="link-button"
@@ -126,7 +128,7 @@ function SignInPage() {
                 setMode(isRegister ? 'login' : 'register')
               }}
             >
-              {isRegister ? 'Sign in' : 'Create an account'}
+              {isRegister ? t('signin.title') : t('signin.createTitle')}
             </button>
           </p>
         </form>

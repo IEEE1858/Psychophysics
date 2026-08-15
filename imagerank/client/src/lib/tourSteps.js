@@ -5,63 +5,55 @@
 // `isLastImage` drops the closing "Next image" step when that button is not on
 // screen (the last image of the playlist shows Finish instead), since a step
 // pointing at a missing target would stall the tour.
-export function buildTourSteps({ isLastImage } = {}) {
+export function buildTourSteps(t, { isLastImage } = {}) {
   const steps = [
     {
       target: 'body',
       placement: 'center',
-      title: 'Welcome to the image grading task',
-      content:
-        'First, set your browser to full screen so the image fills your display — press F11 on Windows, or Control + Command + F on a Mac.',
+      title: t('tour.fullscreen.title'),
+      content: t('tour.fullscreen.body'),
     },
     {
       target: 'body',
       placement: 'center',
-      title: 'Check your lighting',
-      content:
-        'View the study in a room where you can clearly see your monitor. Avoid direct sunlight or bright glare on the screen.',
+      title: t('tour.lighting.title'),
+      content: t('tour.lighting.body'),
     },
     {
       target: '[data-tour="slider"]',
       placement: 'top',
-      title: 'The processing slider',
-      content:
-        'This slider moves through the different levels of processing applied to the same image, from unprocessed on the left to heavily processed on the right.',
+      title: t('tour.slider.title'),
+      content: t('tour.slider.body'),
     },
     {
       target: '[data-tour="pick-realistic"]',
       placement: 'top',
-      title: 'Most realistic',
-      content:
-        'The most realistic image is a true-to-life representation of the scene with accurate colors and tones — not exaggerated, not too blurry.',
+      title: t('tour.realistic.title'),
+      content: t('tour.realistic.body'),
     },
     {
       target: '[data-tour="pick-favorite"]',
       placement: 'top',
-      title: 'Favorite image',
-      content:
-        'Your favorite image is simply the one you like the best — the version of the set that looks most pleasing to you.',
+      title: t('tour.favorite.title'),
+      content: t('tour.favorite.body'),
     },
     {
       target: '[data-tour="slider"]',
       placement: 'top',
-      title: 'Explore the set',
-      content:
-        'Move the slider left and right until you find the image that looks most realistic, and the one that is your favorite. Tip: you can also use the ← and → arrow keys on your keyboard.',
+      title: t('tour.explore.title'),
+      content: t('tour.explore.body'),
     },
     {
       target: '[data-tour="zoom"]',
       placement: 'bottom',
-      title: 'Inspect the details',
-      content:
-        'Zoom into the image to inspect fine details — use these controls, your mouse wheel, or double-click on the image. Use “Reset view” to zoom back out.',
+      title: t('tour.zoom.title'),
+      content: t('tour.zoom.body'),
     },
     {
       target: '.study-bottombar',
       placement: 'top',
-      title: 'Record your choice',
-      content:
-        'Once you have found it, click “Pick Most Realistic” or “Pick Favorite Image” to record your selection. A marker appears on the slider showing the level you picked.',
+      title: t('tour.record.title'),
+      content: t('tour.record.body'),
     },
   ]
 
@@ -69,9 +61,8 @@ export function buildTourSteps({ isLastImage } = {}) {
     steps.push({
       target: '[data-tour="next"]',
       placement: 'top',
-      title: 'Move on',
-      content:
-        'When you are happy with the most realistic and favorite image you have selected, click “Next image” to continue.',
+      title: t('tour.next.title'),
+      content: t('tour.next.body'),
     })
   }
 

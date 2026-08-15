@@ -418,8 +418,9 @@ function App() {
   // Build the tour steps for the current image; drop the closing "Next image"
   // step on the last image, where that button is replaced by Finish.
   const tourSteps = useMemo(
-    () => buildTourSteps({ isLastImage: isLastImageOverall }),
-    [isLastImageOverall],
+    () => buildTourSteps(t, { isLastImage: isLastImageOverall }),
+    // `t` belongs here: switching language mid-study should rebuild the steps.
+    [isLastImageOverall, t],
   )
 
   function closeTour() {

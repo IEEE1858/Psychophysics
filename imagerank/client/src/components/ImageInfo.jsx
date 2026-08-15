@@ -5,6 +5,7 @@ import DialogTitle from '@mui/material/DialogTitle'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import '../pages/pages.css'
+import { useT } from '../lib/i18n'
 
 // Dependency-free info glyph (we don't ship @mui/icons-material).
 function InfoGlyph() {
@@ -26,8 +27,8 @@ function cap(value) {
 // (issue #41). filesAdobe.txt images use the Adobe license; filesAdobeMIT.txt
 // images use the Adobe–MIT license.
 const LICENSES = {
-  Adobe: { label: 'Adobe Research License', href: '/licenses/LicenseAdobe.txt' },
-  AdobeMIT: { label: 'Adobe–MIT Research License', href: '/licenses/LicenseAdobeMIT.txt' },
+  Adobe: { labelKey: 'info.licenseAdobe', href: '/licenses/LicenseAdobe.txt' },
+  AdobeMIT: { labelKey: 'info.licenseAdobeMit', href: '/licenses/LicenseAdobeMIT.txt' },
 }
 
 // The capture summary plus the scene categorization (issue #37), in display
@@ -41,17 +42,17 @@ function captureRows(exif) {
   const camera = [exif.make, exif.model].filter(Boolean).join(' ').trim()
   const dimensions = exif.width && exif.height ? `${exif.width} × ${exif.height}` : null
   return [
-    ['Subject', cap(exif.subject)],
-    ['Light', cap(exif.light)],
-    ['Location', cap(exif.location)],
-    ['Camera', camera || null],
-    ['Lens', exif.lens],
-    ['Focal length', exif.focalLength],
-    ['Aperture', exif.fNumber],
-    ['Shutter', exif.exposureTime],
-    ['ISO', exif.iso != null ? String(exif.iso) : null],
-    ['Date taken', exif.dateTaken],
-    ['Dimensions', dimensions],
+    ['info.subject', cap(exif.subject)],
+    ['info.light', cap(exif.light)],
+    ['info.location', cap(exif.location)],
+    ['info.camera', camera || null],
+    ['info.lens', exif.lens],
+    ['info.focalLength', exif.focalLength],
+    ['info.aperture', exif.fNumber],
+    ['info.shutter', exif.exposureTime],
+    ['info.iso', exif.iso != null ? String(exif.iso) : null],
+    ['info.dateTaken', exif.dateTaken],
+    ['info.dimensions', dimensions],
   ].filter(([, value]) => value != null && value !== '')
 }
 
@@ -61,6 +62,7 @@ function captureRows(exif) {
 // processing level or params — so it can't bias study judgments.
 function ImageInfoButton({ image, collectionLabel }) {
   const [open, setOpen] = useState(false)
+  const t = useT()
   if (!image) {
     return null
   }
@@ -70,10 +72,10 @@ function ImageInfoButton({ image, collectionLabel }) {
 
   return (
     <>
-      <Tooltip title="Image information">
+      <Tooltip title={t('info.title')}>
         <IconButton
           className="image-info-button"
-          aria-label="Image information"
+          aria-label={t('info.title')}
           size="small"
           onClick={() => setOpen(true)}
         >
@@ -82,7 +84,7 @@ function ImageInfoButton({ image, collectionLabel }) {
       </Tooltip>
 
       <Dialog open={open} onClose={() => setOpen(false)} aria-labelledby="image-info-title">
-        <DialogTitle id="image-info-title">Image information</DialogTitle>
+        <DialogTitle id="image-info-title">{t('info.title')}</DialogTitle>
         <DialogContent>
           <dl className="image-info-list">
             <div className="image-info-row">
@@ -91,22 +93,22 @@ function ImageInfoButton({ image, collectionLabel }) {
             </div>
             {collectionLabel ? (
               <div className="image-info-row">
-                <dt>Category</dt>
+                <dt>{t('info.category')}</dt>
                 <dd>{collectionLabel}</dd>
               </div>
             ) : null}
             {rows.map(([label, value]) => (
               <div className="image-info-row" key={label}>
-                <dt>{label}</dt>
+                <dt>{t(label)}</dt>
                 <dd>{value}</dd>
               </div>
             ))}
             {license ? (
               <div className="image-info-row" key="License">
-                <dt>License</dt>
+                <dt>{t('info.license')}</dt>
                 <dd>
                   <a href={license.href} target="_blank" rel="noopener noreferrer">
-                    {license.label}
+                    {t(license.labelKey)}
                   </a>
                 </dd>
               </div>
@@ -115,11 +117,11 @@ function ImageInfoButton({ image, collectionLabel }) {
 
           {rows.length === 0 ? (
             <p className="image-info-empty">
-              Source metadata is not available for this image.
+              {t('info.unavailable')}
             </p>
           ) : (
             <p className="image-info-note">
-              Metadata describes the original, unprocessed source photograph.
+              {t('info.note')}
             </p>
           )}
         </DialogContent>

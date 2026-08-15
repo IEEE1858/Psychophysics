@@ -5,10 +5,13 @@ import CircularProgress from '@mui/material/CircularProgress'
 import { findCollection, useLibrary } from '../lib/useLibrary'
 import { thumbnailFor } from '../lib/sample'
 import './pages.css'
+import { useT, useTx } from '../lib/i18n'
 
 function PreviewPage() {
   const { collectionId } = useParams()
   const navigate = useNavigate()
+  const t = useT()
+  const tx = useTx()
   const { library, loading, error } = useLibrary()
 
   const collections = library?.collections ?? []
@@ -22,11 +25,10 @@ function PreviewPage() {
           <Link className="back-link" to="/">
             ← Back to home
           </Link>
-          <p className="eyebrow">Preview</p>
-          <h1>Example images</h1>
+          <p className="eyebrow">{t('preview.eyebrow')}</p>
+          <h1>{t('preview.title')}</h1>
           <p className="home-lead">
-            Browse every image in each collection. Click any image to open the viewer and move
-            through its processing levels. During the study you will rank each one in turn.
+            {t('preview.lead')}
           </p>
 
           {collections.length ? (
@@ -50,7 +52,7 @@ function PreviewPage() {
         {loading ? (
           <div className="home-status">
             <CircularProgress size={28} />
-            <span>Loading images…</span>
+            <span>{t('preview.loading')}</span>
           </div>
         ) : null}
 
@@ -58,8 +60,11 @@ function PreviewPage() {
 
         {notFound ? (
           <Alert severity="warning">
-            No collection named “{collectionId}”. Try{' '}
-            <Link to="/preview/hdr">HDR</Link> or <Link to="/preview/sharpness">Sharpness</Link>.
+            {tx('preview.noCollection', {
+              name: collectionId,
+              hdr: <Link to="/preview/hdr">{t('home.examples.hdr.title')}</Link>,
+              sharpness: <Link to="/preview/sharpness">{t('home.examples.sharpness.title')}</Link>,
+            })}
           </Alert>
         ) : null}
 
@@ -81,10 +86,10 @@ function PreviewPage() {
         {collection ? (
           <div className="preview-footer">
             <Button component={Link} to="/" variant="outlined">
-              Back to home
+              {t('preview.backHome')}
             </Button>
             <Button variant="contained" className="cta-button" onClick={() => navigate('/demographics')}>
-              Start the Study
+              {t('home.cta.start')}
             </Button>
           </div>
         ) : null}
