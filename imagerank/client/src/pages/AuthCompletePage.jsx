@@ -4,6 +4,7 @@ import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 import { completeTokenSignIn } from '../lib/auth'
 import './pages.css'
+import { useT } from '../lib/i18n'
 
 // Read the token from the URL fragment (#token=...) once, at mount.
 function tokenFromHash() {
@@ -16,6 +17,7 @@ function tokenFromHash() {
 // into the study (or demographics for a brand-new account).
 function AuthCompletePage() {
   const navigate = useNavigate()
+  const t = useT()
   const [token] = useState(tokenFromHash)
   const [error, setError] = useState(token ? '' : 'Sign-in did not complete. Please try again.')
   // StrictMode double-invokes effects in dev; guard so we only run once.
@@ -31,7 +33,7 @@ function AuthCompletePage() {
       .then((participantId) => {
         navigate(participantId != null ? '/study' : '/demographics', { replace: true })
       })
-      .catch(() => setError('We could not complete your sign-in. Please try again.'))
+      .catch(() => setError('auth.failed'))
   }, [navigate, token])
 
   return (
@@ -43,7 +45,7 @@ function AuthCompletePage() {
           ) : (
             <>
               <CircularProgress size={28} />
-              <span>Finishing sign-in…</span>
+              <span>{t('auth.finishing')}</span>
             </>
           )}
         </div>

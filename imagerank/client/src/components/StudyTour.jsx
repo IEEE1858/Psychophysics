@@ -1,4 +1,5 @@
 import { Joyride, EVENTS } from 'react-joyride'
+import { useT } from '../lib/i18n'
 
 // Guided "tour mode" that walks a participant through the image grading
 // interface (issue #15). It auto-launches on their very first image and can be
@@ -10,6 +11,7 @@ import { Joyride, EVENTS } from 'react-joyride'
 // 'skip'` makes the corner [×] end the tour instead of its default of advancing
 // to the next step.
 function StudyTour({ run, steps, onClose }) {
+  const t = useT()
   return (
     <Joyride
       run={run}
@@ -22,7 +24,7 @@ function StudyTour({ run, steps, onClose }) {
           onClose()
         }
       }}
-      locale={{ last: 'Done', skip: 'Skip tour' }}
+      locale={{ last: t('tour.done'), skip: t('tour.skip'), next: t('tour.next'), back: t('tour.back'), close: t('common.close') }}
       options={{
         showProgress: true,
         skipBeacon: true,

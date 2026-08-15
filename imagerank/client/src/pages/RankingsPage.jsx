@@ -6,6 +6,7 @@ import Button from '@mui/material/Button'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useLibrary } from '../lib/useLibrary'
 import { thumbnailFor } from '../lib/sample'
+import { useT } from '../lib/i18n'
 import { getParticipantId } from '../lib/session'
 import './pages.css'
 
@@ -24,6 +25,7 @@ function formatLevel(level, maxLevel) {
 // image (/study?rerank=...) so the participant can re-rank it.
 function RankingsPage() {
   const navigate = useNavigate()
+  const t = useT()
   const { library, loading: libraryLoading, error: libraryError } = useLibrary()
   const [rankings, setRankings] = useState(null)
   const [error, setError] = useState('')
@@ -46,7 +48,7 @@ function RankingsPage() {
       })
       .catch(() => {
         if (active) {
-          setError('Failed to load your rankings.')
+          setError('rankings.errorLoad')
         }
       })
     return () => {
@@ -83,31 +85,28 @@ function RankingsPage() {
       <section className="page-panel">
         <header className="preview-header admin-header">
           <div>
-            <p className="eyebrow">Your rankings</p>
-            <h1>Review and revise</h1>
-            <p className="home-lead">
-              These are the images you have ranked so far. Select any image to revisit it and
-              change your most realistic and favorite choices.
-            </p>
+            <p className="eyebrow">{t('rankings.eyebrow')}</p>
+            <h1>{t('rankings.title')}</h1>
+            <p className="home-lead">{t('rankings.lead')}</p>
           </div>
           <div className="admin-header-actions">
             <Button onClick={() => navigate('/study')} variant="outlined" size="small">
-              Back to study
+              {t('rankings.backToStudy')}
             </Button>
           </div>
         </header>
 
-        {error ? <Alert severity="error">{error}</Alert> : null}
+        {error ? <Alert severity="error">{t(error)}</Alert> : null}
         {libraryError ? <Alert severity="error">{libraryError}</Alert> : null}
 
         {loading ? (
           <div className="home-status">
             <CircularProgress size={28} />
-            <span>Loading your rankings…</span>
+            <span>{t('rankings.loading')}</span>
           </div>
         ) : rankedItems.length === 0 ? (
           <Alert severity="info">
-            You haven&apos;t ranked any images yet. Once you rank an image it will appear here.
+            {t('rankings.empty')}
           </Alert>
         ) : (
           <div className="rankings-grid">
@@ -120,13 +119,13 @@ function RankingsPage() {
                   type="button"
                   className="rankings-card"
                   onClick={() => navigate(`/study?rerank=${encodeURIComponent(key)}`)}
-                  title="Revisit and re-rank this image"
+                  title={t('rankings.revisit')}
                 >
                   <div className="admin-ranking-thumb">
                     {image ? (
                       <img src={thumbnailFor(image)} alt={image.label} loading="lazy" />
                     ) : (
-                      <div className="admin-thumb-missing">no thumbnail</div>
+                      <div className="admin-thumb-missing">{t('rankings.noThumb')}</div>
                     )}
                   </div>
                   <div className="rankings-card-body">

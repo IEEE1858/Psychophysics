@@ -8,6 +8,7 @@ import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 import { findCollection, useLibrary } from '../lib/useLibrary'
 import ImageInfoButton from '../components/ImageInfo'
 import './pages.css'
+import { useT, useTx } from '../lib/i18n'
 
 // A read-only image viewer for the preview flow. It lets a visitor move through
 // the processing levels of a single image, but unlike the study it never
@@ -16,6 +17,8 @@ import './pages.css'
 function PreviewViewer() {
   const { collectionId, imageId } = useParams()
   const navigate = useNavigate()
+  const t = useT()
+  const tx = useTx()
   const { library, loading, error } = useLibrary()
   const [level, setLevel] = useState(0)
   const [viewedImageId, setViewedImageId] = useState(imageId)
@@ -69,18 +72,17 @@ function PreviewViewer() {
           <Link className="back-link" to={backToPreview}>
             ← Back to image preview
           </Link>
-          <p className="eyebrow">{collection ? `${collection.label} preview` : 'Preview'}</p>
-          <h1>{image ? image.label : 'Image viewer'}</h1>
+          <p className="eyebrow">{collection ? t('preview.collectionEyebrow', { collection: collection.label }) : t('preview.eyebrow')}</p>
+          <h1>{image ? image.label : t('preview.viewerTitle')}</h1>
           <p className="home-lead">
-            Move the slider to compare processing levels. This is a preview only — your selections
-            here are not recorded.
+            {t('preview.viewerLead')}
           </p>
         </header>
 
         {loading ? (
           <div className="home-status">
             <CircularProgress size={28} />
-            <span>Loading image…</span>
+            <span>{t('preview.loadingImage')}</span>
           </div>
         ) : null}
 
@@ -88,7 +90,9 @@ function PreviewViewer() {
 
         {notFound ? (
           <Alert severity="warning">
-            That image was not found. <Link to={backToPreview}>Back to the gallery</Link>.
+            {tx('preview.notFound', {
+              link: <Link to={backToPreview}>{t('preview.backToGallery')}</Link>,
+            })}
           </Alert>
         ) : null}
 
@@ -111,13 +115,13 @@ function PreviewViewer() {
                       <div className="viewer-stage-actions">
                         <ImageInfoButton image={image} collectionLabel={collection?.label} />
                         <Button size="small" variant="outlined" onClick={() => zoomOut()}>
-                          Zoom out
+                          {t('study.topbar.zoomOut')}
                         </Button>
                         <Button size="small" variant="outlined" onClick={() => zoomIn()}>
-                          Zoom in
+                          {t('study.topbar.zoomIn')}
                         </Button>
                         <Button size="small" variant="contained" onClick={() => resetTransform(0)}>
-                          Reset view
+                          {t('study.topbar.resetView')}
                         </Button>
                       </div>
                     </div>
@@ -136,8 +140,8 @@ function PreviewViewer() {
 
             <div className="viewer-slider-block">
               <div className="viewer-slider-labels">
-                <span>Unprocessed</span>
-                <span>Heavily processed</span>
+                <span>{t('study.slider.unprocessed')}</span>
+                <span>{t('study.slider.heavilyProcessed')}</span>
               </div>
 
               <Slider
@@ -146,7 +150,7 @@ function PreviewViewer() {
                 step={1}
                 value={level}
                 onChange={(_, value) => setLevel(Array.isArray(value) ? value[0] : value)}
-                aria-label="Processing level"
+                aria-label={t('study.slider.aria')}
               />
 
               <div className="viewer-slider-meta">
@@ -159,10 +163,10 @@ function PreviewViewer() {
 
             <div className="viewer-actions">
               <Button component={Link} to={backToPreview} variant="outlined">
-                Back to image preview
+                {t('preview.backToPreview')}
               </Button>
               <Button variant="contained" className="cta-button" onClick={() => navigate('/demographics')}>
-                Start the Study
+                {t('home.cta.start')}
               </Button>
             </div>
           </>
