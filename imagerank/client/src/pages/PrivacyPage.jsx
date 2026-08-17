@@ -47,7 +47,8 @@ function PrivacyPage() {
             with your responses and used only as described below. If you leave it blank you
             take part as a guest, with no account and no password, and we identify your
             session by the <strong>IP address</strong> your browser connects from so that
-            we can tell separate submissions apart. Nothing else about you is collected.
+            we can tell separate submissions apart. Beyond the analytics described below,
+            nothing else about you is collected.
           </p>
 
           <h2 className="section-title">What we will never do</h2>
@@ -83,22 +84,30 @@ function PrivacyPage() {
             guest submissions apart; we do not use it to locate you or to build a profile.
           </p>
 
-          <h2 className="section-title">Cookies and tracking</h2>
+          <h2 className="section-title">Cookies and analytics</h2>
           <p className="about-body">
-            We use no advertising or analytics trackers and no third-party cookies. The
-            study stores a small amount of data in your browser&apos;s local storage — your
-            participant id, your answers, your place in the study, and your chosen language
-            — so that you can close the tab and resume later. Clearing your browser storage
-            clears it.
+            We use <strong>Google Analytics</strong> to understand how visitors reach and move
+            through the study. It sets cookies (<code>_ga</code> and{' '}
+            <code>_ga_49P1MRCD0E</code>) and shares usage data such as pages viewed, approximate
+            location, and browser and device details with Google. We use{' '}
+            <strong>no advertising trackers</strong>, we do not use analytics data to identify
+            you, and we do not link it to the choices you make in the study.
+          </p>
+          <p className="about-body">
+            The study also stores a small amount of data in your browser&apos;s local storage —
+            your participant id, your answers, your place in the study, and your chosen language
+            — so that you can close the tab and resume later. Clearing your browser&apos;s
+            cookies and site storage clears both.
           </p>
 
           <h2 className="section-title">Where the data lives, and for how long</h2>
           <p className="about-body">
             Responses are stored on a server operated by Imatest on behalf of the IEEE 1858
             Camera Perceptual Image Quality working group. Access is limited to the research
-            team. Study images are served from Amazon S3. We keep responses for as long as
-            the research is ongoing; we do not need your email or IP address after analysis
-            is complete, and we remove them when they are no longer required.
+            team. Study images are served from Amazon S3, and analytics data is processed by
+            Google. We keep responses for as long as the research is ongoing; we do not need
+            your email or IP address after analysis is complete, and we remove them when they
+            are no longer required.
           </p>
 
           <h2 className="section-title">Your choices</h2>
@@ -108,6 +117,11 @@ function PrivacyPage() {
             clears the stored address once you have withdrawn both. If you would like your
             responses removed, or want to know what we hold about you, contact us and we
             will do it.
+          </p>
+          <p className="about-body">
+            You can refuse analytics by blocking cookies for this site in your browser, or by
+            using a browser extension that blocks Google Analytics. The study itself works
+            normally either way.
           </p>
 
           <h2 className="section-title">Contact</h2>
