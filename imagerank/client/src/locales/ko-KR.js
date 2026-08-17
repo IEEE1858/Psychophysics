@@ -53,6 +53,10 @@ export default {
   'home.footer.adobe': 'Adobe',
   'home.footer.adobeMit': 'Adobe–MIT',
 
+  'consent.label': '분석 동의',
+  'consent.body': '방문자가 이 연구를 어떻게 찾고 진행하는지 파악하기 위해 Google Analytics를 사용하고자 합니다. 쿠키가 설정되고 이용 데이터가 Google과 공유됩니다. 귀하를 식별하거나 응답과 연결하는 데는 사용하지 않습니다. {policy}을 참고하세요.',
+  'consent.accept': '동의',
+  'consent.decline': '거부',
   'privacy.title': '개인정보 처리방침',
   'privacy.eyebrow': '데이터를 다루는 방식',
   'privacy.link': '개인정보 처리방침',

@@ -59,6 +59,10 @@ export default {
   'home.footer.adobe': 'Adobe',
   'home.footer.adobeMit': 'Adobe–MIT',
 
+  'consent.label': 'הסכמה לניתוח נתונים',
+  'consent.body': 'נשמח להשתמש ב־Google Analytics כדי לראות כיצד מבקרים מגיעים למחקר וכיצד הם מתקדמים בו. הדבר מגדיר קובצי cookie ומשתף נתוני שימוש עם Google. לא נשתמש בכך לזיהוי שלכם ולא נקשר זאת לתשובות שלכם. ראו את {policy} שלנו.',
+  'consent.accept': 'אישור',
+  'consent.decline': 'דחייה',
   'privacy.title': 'מדיניות פרטיות',
   'privacy.eyebrow': 'איך אנחנו מטפלים בנתונים שלכם',
   'privacy.link': 'מדיניות פרטיות',

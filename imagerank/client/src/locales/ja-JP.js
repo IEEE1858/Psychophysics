@@ -53,6 +53,10 @@ export default {
   'home.footer.adobe': 'Adobe',
   'home.footer.adobeMit': 'Adobe–MIT',
 
+  'consent.label': '解析への同意',
+  'consent.body': 'この研究にどのように訪れ、どのように進まれたかを把握するため、Google Analytics を利用したいと考えています。cookie が設定され、利用状況のデータが Google と共有されます。個人を特定する目的や、回答と結びつける目的では使用しません。{policy}をご覧ください。',
+  'consent.accept': '同意する',
+  'consent.decline': '同意しない',
   'privacy.title': 'プライバシーポリシー',
   'privacy.eyebrow': 'データの取り扱いについて',
   'privacy.link': 'プライバシーポリシー',

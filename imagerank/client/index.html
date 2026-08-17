@@ -11,23 +11,10 @@
     />
     <link rel="canonical" href="https://imagerank.imatest.com/" />
 
-    <!-- Google Analytics (GA4, G-49P1MRCD0E). This is the SPA shell that Apache
-         serves for every route, so the tag covers the whole site from one place.
-         GA4's enhanced measurement follows History API changes, so client-side route
-         changes are counted without us sending page_view ourselves.
-
-         Note: this is an analytics tracker setting third-party cookies, which the
-         privacy policy at /privacy must describe. Keep the two in step. -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-49P1MRCD0E"></script>
-    <script>
-      window.dataLayer = window.dataLayer || []
-      function gtag() {
-        dataLayer.push(arguments)
-      }
-      gtag('js', new Date())
-
-      gtag('config', 'G-49P1MRCD0E')
-    </script>
+    <!-- The Google Analytics tag is deliberately NOT here. It must not fire before
+         consent in the EEA/UK, and anything in this shell runs on load. It is injected
+         by src/lib/consent.js instead, either after consent or where consent is not
+         required. -->
 
     <!-- Sharing card. Crawlers (Facebook, X, Bluesky, LinkedIn, Slack) do not run
          JavaScript, so these have to live in the static shell rather than being set

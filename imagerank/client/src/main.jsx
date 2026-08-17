@@ -15,6 +15,12 @@ import ImageDetailPage from './pages/ImageDetailPage.jsx'
 import RankingsPage from './pages/RankingsPage.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import { I18nProvider } from './lib/I18nProvider.jsx'
+import ConsentBanner from './components/ConsentBanner.jsx'
+import { initAnalytics } from './lib/consent.js'
+
+// Loads analytics only outside the consent region, or where consent was already
+// given. Everyone else sees the banner first and nothing is sent to Google.
+initAnalytics()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -35,6 +41,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/study" element={<App />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <ConsentBanner />
       </BrowserRouter>
     </I18nProvider>
   </StrictMode>,
