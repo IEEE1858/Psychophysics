@@ -75,6 +75,10 @@ export default {
   'home.footer.adobeMit': 'Adobe–MIT',
 
   // ---- Sharing ----
+  'consent.label': 'Analytics consent',
+  'consent.body': 'We would like to use Google Analytics to see how visitors find and move through this study. It sets cookies and shares usage data with Google. We will not use it to identify you or link it to your answers. See our {policy}.',
+  'consent.accept': 'Accept',
+  'consent.decline': 'Decline',
   'privacy.title': 'Privacy policy',
   'privacy.eyebrow': 'How we handle your data',
   'privacy.link': 'Privacy policy',

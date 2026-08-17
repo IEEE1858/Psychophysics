@@ -52,6 +52,10 @@ export default {
   'home.footer.adobe': 'Adobe',
   'home.footer.adobeMit': 'Adobe–MIT',
 
+  'consent.label': '分析授權',
+  'consent.body': '我們希望使用 Google Analytics 了解訪客如何找到並瀏覽本研究。這會設定 cookie 並與 Google 共用使用資料。我們不會用它識別你的身分，也不會與你的回答相關聯。請參閱我們的{policy}。',
+  'consent.accept': '接受',
+  'consent.decline': '拒絕',
   'privacy.title': '隱私政策',
   'privacy.eyebrow': '我們如何處理你的資料',
   'privacy.link': '隱私政策',

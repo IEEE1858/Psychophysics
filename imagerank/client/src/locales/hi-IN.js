@@ -54,6 +54,10 @@ export default {
   'home.footer.adobe': 'Adobe',
   'home.footer.adobeMit': 'Adobe–MIT',
 
+  'consent.label': 'विश्लेषण की सहमति',
+  'consent.body': 'हम यह देखने के लिए Google Analytics का उपयोग करना चाहेंगे कि विज़िटर इस अध्ययन तक कैसे पहुँचते हैं और इसे कैसे पूरा करते हैं। यह कुकीज़ सेट करता है और उपयोग डेटा Google के साथ साझा करता है। हम इसका उपयोग आपकी पहचान करने या आपके उत्तरों से जोड़ने के लिए नहीं करेंगे। हमारी {policy} देखें।',
+  'consent.accept': 'स्वीकार करें',
+  'consent.decline': 'अस्वीकार करें',
   'privacy.title': 'गोपनीयता नीति',
   'privacy.eyebrow': 'हम आपके डेटा को कैसे संभालते हैं',
   'privacy.link': 'गोपनीयता नीति',
