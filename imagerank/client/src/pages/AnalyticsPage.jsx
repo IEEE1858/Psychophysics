@@ -108,7 +108,10 @@ function AnalyticsView({ onSignOut }) {
   const navigate = useNavigate()
   const [analytics, setAnalytics] = useState(null)
   const [error, setError] = useState('')
-  const [refreshing, setRefreshing] = useState(false)
+  // The key of the query whose response is currently on screen. Set only when a
+  // request settles, so "refreshing" can be derived below rather than assigned from
+  // inside the effect (react-hooks/set-state-in-effect).
+  const [loadedParamsKey, setLoadedParamsKey] = useState(null)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
 
   // Age is a free-typed text field, so debounce it; the multi-selects fire on
@@ -141,9 +144,14 @@ function AnalyticsView({ onSignOut }) {
     ],
   )
 
+  // Derived, not stored: a request is outstanding whenever the params on screen are
+  // not the params we last loaded. This also makes the spinner appear in the same
+  // render as the filter change, rather than one render later.
+  const paramsKey = JSON.stringify(queryParams)
+  const refreshing = loadedParamsKey !== paramsKey
+
   useEffect(() => {
     let active = true
-    setRefreshing(true)
     axios
       .get('/api/admin/analytics', { headers: authHeader(), params: queryParams })
       .then((response) => {
@@ -162,14 +170,16 @@ function AnalyticsView({ onSignOut }) {
         setError('Failed to load analytics.')
       })
       .finally(() => {
+        // Skipped when superseded: a newer request is in flight and will record its
+        // own key, so the spinner correctly stays up until that one settles.
         if (active) {
-          setRefreshing(false)
+          setLoadedParamsKey(paramsKey)
         }
       })
     return () => {
       active = false
     }
-  }, [onSignOut, queryParams])
+  }, [onSignOut, paramsKey, queryParams])
 
   const filterOptions = analytics?.filterOptions ?? {
     genders: [],
@@ -192,7 +202,12 @@ function AnalyticsView({ onSignOut }) {
 
   const collections = useMemo(() => analytics?.collections ?? [], [analytics])
   const images = useMemo(() => analytics?.images ?? [], [analytics])
-  const expertise = analytics?.expertise ?? { participants: { expert: 0, layperson: 0 }, collections: [] }
+  // Memoized like collections/images above: the ?? fallback allocates a new object
+  // every render, which would change the identity of every memo that depends on it.
+  const expertise = useMemo(
+    () => analytics?.expertise ?? { participants: { expert: 0, layperson: 0 }, collections: [] },
+    [analytics],
+  )
 
   // Grouped box plot: one x category per collection × selection, split into an
   // "Expert" and "Layperson" trace so the two groups render side by side
