@@ -608,11 +608,17 @@ function listSubmissions() {
 // Raw rows for the analytics dashboard (issue #24). Aggregation/normalization
 // happens in the route layer (server/stats.js) — study datasets are small, so
 // computing in JS keeps the SQL simple and the stats logic in one place.
+// Joined with the participant's demographics so the dashboard can filter and
+// group (e.g. expert vs. layperson) without a second round trip.
 function getRankingRowsForStats() {
   return db
     .prepare(
-      `SELECT collection_id, image_id, max_level, most_realistic_level, favorite_level
-       FROM image_rankings`
+      `SELECT r.collection_id, r.image_id, r.max_level, r.most_realistic_level, r.favorite_level,
+              r.participant_id,
+              p.age, p.gender, p.self_description, p.vision_status, p.country_of_origin,
+              p.display_type, p.lighting, p.color_blind
+       FROM image_rankings r
+       JOIN participants p ON p.id = r.participant_id`
     )
     .all();
 }

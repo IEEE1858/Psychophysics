@@ -3,12 +3,82 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
+import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import MenuItem from '@mui/material/MenuItem'
+import OutlinedInput from '@mui/material/OutlinedInput'
+import Select from '@mui/material/Select'
+import TextField from '@mui/material/TextField'
 import { authHeader, useAdminAuth } from '../lib/adminAuth'
 import { baseLayout, collectionColor, formatStat } from '../lib/analytics'
 import AdminLogin from '../components/AdminLogin'
 import PlotlyChart from '../components/PlotlyChart'
 import './pages.css'
+
+// Expertise groups get their own fixed colors — independent of the
+// sharpness/HDR collection colors — since the expert-vs-layperson chart
+// overlays both collections in one plot.
+const EXPERTISE_COLORS = { expert: '#e76f51', layperson: '#287271' }
+const EXPERTISE_LABELS = { expert: 'Expert', layperson: 'Layperson' }
+
+// Debounce a fast-changing value (e.g. an age text field) so it only settles
+// `delay` ms after the user stops typing, instead of firing a request per key.
+function useDebounced(value, delay) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(timer)
+  }, [value, delay])
+  return debounced
+}
+
+const EMPTY_FILTERS = {
+  ageMin: '',
+  ageMax: '',
+  genders: [],
+  countries: [],
+  visionStatuses: [],
+  expertise: [],
+  displayTypes: [],
+  lightingConditions: [],
+  colorBlind: [],
+}
+
+// Multi-select filter with chip display, backed by a fixed option list from
+// the server's filterOptions (only demographic values actually present in the
+// data are offered).
+function MultiFilter({ label, value, options, onChange }) {
+  if (options.length === 0) {
+    return null
+  }
+  return (
+    <FormControl size="small" className="analytics-filter-control" sx={{ width: 130, minWidth: 130 }}>
+      <InputLabel id={`${label}-filter-label`}>{label}</InputLabel>
+      <Select
+        labelId={`${label}-filter-label`}
+        multiple
+        value={value}
+        onChange={(event) => onChange(typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value)}
+        input={<OutlinedInput label={label} />}
+        renderValue={(selected) => (
+          <div className="analytics-filter-chips">
+            {selected.map((item) => (
+              <Chip key={item} label={item} size="small" />
+            ))}
+          </div>
+        )}
+      >
+        {options.map((option) => (
+          <MenuItem key={option} value={option}>
+            {option}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  )
+}
 
 // One min/max/mean/std row for a collection's favorite or realism selections.
 function StatRow({ label, stats }) {
@@ -38,14 +108,48 @@ function AnalyticsView({ onSignOut }) {
   const navigate = useNavigate()
   const [analytics, setAnalytics] = useState(null)
   const [error, setError] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
+  const [filters, setFilters] = useState(EMPTY_FILTERS)
+
+  // Age is a free-typed text field, so debounce it; the multi-selects fire on
+  // pick and don't need one.
+  const ageMin = useDebounced(filters.ageMin, 400)
+  const ageMax = useDebounced(filters.ageMax, 400)
+
+  const queryParams = useMemo(
+    () => ({
+      ageMin: ageMin || undefined,
+      ageMax: ageMax || undefined,
+      gender: filters.genders.length ? filters.genders.join(',') : undefined,
+      country: filters.countries.length ? filters.countries.join(',') : undefined,
+      vision: filters.visionStatuses.length ? filters.visionStatuses.join(',') : undefined,
+      expertise: filters.expertise.length ? filters.expertise.join(',') : undefined,
+      displayType: filters.displayTypes.length ? filters.displayTypes.join(',') : undefined,
+      lighting: filters.lightingConditions.length ? filters.lightingConditions.join(',') : undefined,
+      colorBlind: filters.colorBlind.length ? filters.colorBlind.join(',') : undefined,
+    }),
+    [
+      ageMin,
+      ageMax,
+      filters.genders,
+      filters.countries,
+      filters.visionStatuses,
+      filters.expertise,
+      filters.displayTypes,
+      filters.lightingConditions,
+      filters.colorBlind,
+    ],
+  )
 
   useEffect(() => {
     let active = true
+    setRefreshing(true)
     axios
-      .get('/api/admin/analytics', { headers: authHeader() })
+      .get('/api/admin/analytics', { headers: authHeader(), params: queryParams })
       .then((response) => {
         if (active) {
           setAnalytics(response.data)
+          setError('')
         }
       })
       .catch((requestError) => {
@@ -57,13 +161,82 @@ function AnalyticsView({ onSignOut }) {
         }
         setError('Failed to load analytics.')
       })
+      .finally(() => {
+        if (active) {
+          setRefreshing(false)
+        }
+      })
     return () => {
       active = false
     }
-  }, [onSignOut])
+  }, [onSignOut, queryParams])
+
+  const filterOptions = analytics?.filterOptions ?? {
+    genders: [],
+    countries: [],
+    visionStatuses: [],
+    displayTypes: [],
+    lightingConditions: [],
+    colorBlind: [],
+  }
+  const hasActiveFilters =
+    Boolean(filters.ageMin) ||
+    Boolean(filters.ageMax) ||
+    filters.genders.length > 0 ||
+    filters.countries.length > 0 ||
+    filters.visionStatuses.length > 0 ||
+    filters.expertise.length > 0 ||
+    filters.displayTypes.length > 0 ||
+    filters.lightingConditions.length > 0 ||
+    filters.colorBlind.length > 0
 
   const collections = useMemo(() => analytics?.collections ?? [], [analytics])
   const images = useMemo(() => analytics?.images ?? [], [analytics])
+  const expertise = analytics?.expertise ?? { participants: { expert: 0, layperson: 0 }, collections: [] }
+
+  // Grouped box plot: one x category per collection × selection, split into an
+  // "Expert" and "Layperson" trace so the two groups render side by side
+  // (layout.boxmode = 'group').
+  const expertiseBoxData = useMemo(
+    () =>
+      ['expert', 'layperson'].map((group) => {
+        const x = []
+        const y = []
+        expertise.collections.forEach((collection) => {
+          const entry = collection[group]
+          entry.favoriteLevels.forEach((level) => {
+            x.push(`${collection.label} · Favorite`)
+            y.push(level)
+          })
+          entry.realismLevels.forEach((level) => {
+            x.push(`${collection.label} · Realism`)
+            y.push(level)
+          })
+        })
+        return {
+          type: 'box',
+          name: EXPERTISE_LABELS[group],
+          x,
+          y,
+          marker: { color: EXPERTISE_COLORS[group] },
+          boxmean: 'sd',
+          boxpoints: 'outliers',
+        }
+      }),
+    [expertise],
+  )
+
+  const expertiseBoxLayout = useMemo(
+    () =>
+      baseLayout({
+        boxmode: 'group',
+        showlegend: true,
+        legend: { orientation: 'h', y: 1.12, x: 0 },
+        yaxis: { title: 'Selected processing level', zeroline: false },
+        xaxis: { automargin: true },
+      }),
+    [],
+  )
 
   // Box/whisker plot: one box per collection × selection, over the raw chosen
   // levels. boxmean: 'sd' overlays the mean and standard deviation.
@@ -166,11 +339,91 @@ function AnalyticsView({ onSignOut }) {
 
       {analytics ? (
         <>
+          <section className="analytics-section">
+            <div className="analytics-filter-head">
+              <h2 className="admin-detail-subtitle">Filters</h2>
+              {refreshing ? <CircularProgress size={16} /> : null}
+              {hasActiveFilters ? (
+                <Button size="small" variant="text" onClick={() => setFilters(EMPTY_FILTERS)}>
+                  Clear filters
+                </Button>
+              ) : null}
+            </div>
+            <div className="analytics-filter-row">
+              <TextField
+                size="small"
+                type="number"
+                label="Age min"
+                value={filters.ageMin}
+                onChange={(event) => setFilters((prev) => ({ ...prev, ageMin: event.target.value }))}
+                className="analytics-filter-control analytics-filter-age"
+                sx={{ width: 130, minWidth: 130 }}
+                slotProps={{ htmlInput: { min: 0, max: 120 } }}
+              />
+              <TextField
+                size="small"
+                type="number"
+                label="Age max"
+                value={filters.ageMax}
+                onChange={(event) => setFilters((prev) => ({ ...prev, ageMax: event.target.value }))}
+                className="analytics-filter-control analytics-filter-age"
+                sx={{ width: 130, minWidth: 130 }}
+                slotProps={{ htmlInput: { min: 0, max: 120 } }}
+              />
+              <MultiFilter
+                label="Gender"
+                value={filters.genders}
+                options={filterOptions.genders}
+                onChange={(next) => setFilters((prev) => ({ ...prev, genders: next }))}
+              />
+              <MultiFilter
+                label="Country"
+                value={filters.countries}
+                options={filterOptions.countries}
+                onChange={(next) => setFilters((prev) => ({ ...prev, countries: next }))}
+              />
+              <MultiFilter
+                label="Vision"
+                value={filters.visionStatuses}
+                options={filterOptions.visionStatuses}
+                onChange={(next) => setFilters((prev) => ({ ...prev, visionStatuses: next }))}
+              />
+              <MultiFilter
+                label="Expertise"
+                value={filters.expertise}
+                options={['expert', 'layperson']}
+                onChange={(next) => setFilters((prev) => ({ ...prev, expertise: next }))}
+              />
+              <MultiFilter
+                label="Display"
+                value={filters.displayTypes}
+                options={filterOptions.displayTypes}
+                onChange={(next) => setFilters((prev) => ({ ...prev, displayTypes: next }))}
+              />
+              <MultiFilter
+                label="Lighting"
+                value={filters.lightingConditions}
+                options={filterOptions.lightingConditions}
+                onChange={(next) => setFilters((prev) => ({ ...prev, lightingConditions: next }))}
+              />
+              <MultiFilter
+                label="Color blind"
+                value={filters.colorBlind}
+                options={filterOptions.colorBlind}
+                onChange={(next) => setFilters((prev) => ({ ...prev, colorBlind: next }))}
+              />
+            </div>
+          </section>
+
           <div className="analytics-cards">
             <StatCard
               label="Subjects"
-              value={analytics.participants.total}
-              sub={`${analytics.participants.completed} completed`}
+              value={hasActiveFilters ? analytics.participants.filtered : analytics.participants.total}
+              sub={
+                hasActiveFilters
+                  ? `of ${analytics.participants.total} total`
+                  : `${analytics.participants.completed} completed`
+              }
             />
             {collections.map((collection) => (
               <StatCard
@@ -181,6 +434,25 @@ function AnalyticsView({ onSignOut }) {
               />
             ))}
           </div>
+
+          <section className="analytics-section">
+            <h2 className="admin-detail-subtitle">Expert vs. layperson</h2>
+            <p className="home-lead analytics-hint">
+              &quot;Photographer / Imaging Expert&quot; participants compared against everyone else, for
+              the demographic slice selected above.
+            </p>
+            <div className="analytics-cards">
+              <StatCard label="Experts" value={expertise.participants.expert} sub="participants" />
+              <StatCard label="Laypersons" value={expertise.participants.layperson} sub="participants" />
+            </div>
+            <div className="analytics-plot-card">
+              {expertiseBoxData.some((trace) => trace.y.length > 0) ? (
+                <PlotlyChart data={expertiseBoxData} layout={expertiseBoxLayout} style={{ height: 420 }} />
+              ) : (
+                <Alert severity="info">No ranking data for this filter.</Alert>
+              )}
+            </div>
+          </section>
 
           <section className="analytics-section">
             <h2 className="admin-detail-subtitle">Summary statistics</h2>

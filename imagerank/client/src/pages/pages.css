@@ -1060,6 +1060,32 @@
   color: #8a93a6;
 }
 
+.analytics-filter-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.analytics-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.analytics-filter-control {
+  min-width: 180px;
+}
+
+.analytics-filter-age {
+  min-width: 100px;
+}
+
+.analytics-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 /* ---- Image detail page ---- */
 .analytics-detail-head {
   display: flex;

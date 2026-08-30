@@ -733,13 +733,128 @@ function levelFraction(level, maxLevel) {
   return level / maxLevel;
 }
 
+// "Photographer / Imaging Expert" vs. everyone else. A missing/blank answer
+// (older records, or a skipped field) falls into "layperson" — study data
+// skews toward that bucket by construction, which is what we want here.
+function expertiseGroup(selfDescription) {
+  return selfDescription === "Photographer / Imaging Expert" ? "expert" : "layperson";
+}
+
+// "a,b,c" -> ["a","b","c"]; missing/empty -> null (meaning "no filter").
+function parseListParam(value) {
+  if (value == null || value === "") return null;
+  const items = String(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return items.length > 0 ? items : null;
+}
+
+function parseNumberParam(value) {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Read the filter dimensions off the query string. Every dimension is
+// optional; an unset dimension imposes no constraint.
+function parseAnalyticsFilters(query) {
+  return {
+    ageMin: parseNumberParam(query.ageMin),
+    ageMax: parseNumberParam(query.ageMax),
+    genders: parseListParam(query.gender),
+    countries: parseListParam(query.country),
+    visionStatuses: parseListParam(query.vision),
+    expertise: parseListParam(query.expertise),
+    displayTypes: parseListParam(query.displayType),
+    lightingConditions: parseListParam(query.lighting),
+    colorBlind: parseListParam(query.colorBlind),
+  };
+}
+
+// AND across dimensions, OR within a dimension's selected values (so e.g.
+// gender=Female,Male keeps both, while still requiring the age range).
+function filterRows(rows, filters) {
+  return rows.filter((row) => {
+    if (filters.ageMin != null && (row.age == null || row.age < filters.ageMin)) return false;
+    if (filters.ageMax != null && (row.age == null || row.age > filters.ageMax)) return false;
+    if (filters.genders && !filters.genders.includes(row.gender)) return false;
+    if (filters.countries && !filters.countries.includes(row.country_of_origin)) return false;
+    if (filters.visionStatuses && !filters.visionStatuses.includes(row.vision_status)) return false;
+    if (filters.expertise && !filters.expertise.includes(expertiseGroup(row.self_description))) {
+      return false;
+    }
+    if (filters.displayTypes && !filters.displayTypes.includes(row.display_type)) return false;
+    if (filters.lightingConditions && !filters.lightingConditions.includes(row.lighting)) return false;
+    if (filters.colorBlind && !filters.colorBlind.includes(row.color_blind)) return false;
+    return true;
+  });
+}
+
+// Distinct demographic values actually present in the data, for populating the
+// filter dropdowns. Computed from *all* rows (not the filtered set) so picking
+// one filter never hides the options for another.
+function buildFilterOptions(rows) {
+  const distinct = (key) => Array.from(new Set(rows.map((row) => row[key]).filter(Boolean))).sort();
+  return {
+    genders: distinct("gender"),
+    countries: distinct("country_of_origin"),
+    visionStatuses: distinct("vision_status"),
+    displayTypes: distinct("display_type"),
+    lightingConditions: distinct("lighting"),
+    colorBlind: distinct("color_blind"),
+  };
+}
+
+// Favorite/realism stats split by expert vs. layperson, per collection, plus
+// how many distinct participants fall in each group overall. Built from the
+// already-filtered rows, so it reflects whatever demographic/condition
+// filters are active while still comparing the two expertise groups directly.
+function buildExpertiseComparison(rows) {
+  const participantsByGroup = { expert: new Set(), layperson: new Set() };
+  for (const row of rows) {
+    participantsByGroup[expertiseGroup(row.self_description)].add(row.participant_id);
+  }
+
+  const collections = COLLECTIONS.map(({ id, label }) => {
+    const collectionRows = rows.filter((row) => row.collection_id === id);
+    const entry = { id, label };
+    for (const group of ["expert", "layperson"]) {
+      const groupRows = collectionRows.filter((row) => expertiseGroup(row.self_description) === group);
+      const favoriteLevels = groupRows.map((row) => row.favorite_level).filter((v) => v != null);
+      const realismLevels = groupRows.map((row) => row.most_realistic_level).filter((v) => v != null);
+      entry[group] = {
+        n: new Set(groupRows.map((row) => row.participant_id)).size,
+        favorite: summarize(favoriteLevels),
+        realism: summarize(realismLevels),
+        favoriteLevels,
+        realismLevels,
+      };
+    }
+    return entry;
+  });
+
+  return {
+    participants: {
+      expert: participantsByGroup.expert.size,
+      layperson: participantsByGroup.layperson.size,
+    },
+    collections,
+  };
+}
+
 // Aggregate every recorded ranking into the shape the analytics dashboard
 // needs: study-wide counts, per-collection summary stats + raw distributions
-// (for box/whisker plots and histograms), and per-image means (for the
-// clickable realism-vs-favorite scatter).
-function buildAnalytics() {
-  const rows = getRankingRowsForStats();
+// (for box/whisker plots and histograms), per-image means (for the clickable
+// realism-vs-favorite scatter), and an expert-vs-layperson breakdown. Accepts
+// optional demographic/condition filters (age/gender/country/vision/expertise/
+// displayType/lighting/colorBlind), applied
+// before every aggregate below so all charts reflect the same filtered set.
+function buildAnalytics(filters = {}) {
+  const allRows = getRankingRowsForStats();
   const participants = getParticipantCounts();
+  const filterOptions = buildFilterOptions(allRows);
+  const rows = filterRows(allRows, filters);
 
   const collections = COLLECTIONS.map(({ id, label }) => {
     const collectionRows = rows.filter((row) => row.collection_id === id);
@@ -810,14 +925,24 @@ function buildAnalytics() {
     };
   });
 
-  return { generatedAt: new Date().toISOString(), participants, collections, images };
+  return {
+    generatedAt: new Date().toISOString(),
+    participants: { ...participants, filtered: new Set(rows.map((row) => row.participant_id)).size },
+    filterOptions,
+    collections,
+    images,
+    expertise: buildExpertiseComparison(rows),
+  };
 }
 
 // Study-wide summary: subject counts, per-collection min/max/mean/std for the
-// favorite and realism selections, raw distributions, and per-image means.
-app.get("/api/admin/analytics", requireAdmin, (_req, res) => {
+// favorite and realism selections, raw distributions, per-image means, and an
+// expert-vs-layperson breakdown. Accepts optional filter query params:
+// ageMin, ageMax, gender, country, vision, expertise, displayType, lighting,
+// colorBlind (comma-separated lists).
+app.get("/api/admin/analytics", requireAdmin, (req, res) => {
   try {
-    res.json(buildAnalytics());
+    res.json(buildAnalytics(parseAnalyticsFilters(req.query)));
   } catch (error) {
     console.error("Failed to build analytics", error);
     res.status(500).json({ error: "Failed to build analytics." });
