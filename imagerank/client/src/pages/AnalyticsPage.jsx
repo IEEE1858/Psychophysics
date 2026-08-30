@@ -181,14 +181,21 @@ function AnalyticsView({ onSignOut }) {
     }
   }, [onSignOut, paramsKey, queryParams])
 
-  const filterOptions = analytics?.filterOptions ?? {
-    genders: [],
-    countries: [],
-    visionStatuses: [],
-    displayTypes: [],
-    lightingConditions: [],
-    colorBlind: [],
-  }
+  // Memoized for the same reason as expertise below: the ?? fallback allocates a new
+  // object every render, so anything depending on its identity would recompute each
+  // time. Nothing does today, but the next memo that reads it would silently churn.
+  const filterOptions = useMemo(
+    () =>
+      analytics?.filterOptions ?? {
+        genders: [],
+        countries: [],
+        visionStatuses: [],
+        displayTypes: [],
+        lightingConditions: [],
+        colorBlind: [],
+      },
+    [analytics],
+  )
   const hasActiveFilters =
     Boolean(filters.ageMin) ||
     Boolean(filters.ageMax) ||
