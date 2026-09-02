@@ -11,6 +11,7 @@ import koKR from '../locales/ko-KR'
 import ruRU from '../locales/ru-RU'
 import zhCN from '../locales/zh-CN'
 import ukUA from '../locales/uk-UA'
+import viVN from '../locales/vi-VN'
 import zhTW from '../locales/zh-TW'
 
 // Translation support (issue #50). The study recruits internationally, so every
@@ -47,6 +48,7 @@ export const LANGUAGES = [
   { code: 'it-IT', native: 'Italiano', english: 'Italian' },
   { code: 'ru-RU', native: 'Русский', english: 'Russian' },
   { code: 'uk-UA', native: 'Українська', english: 'Ukrainian' },
+  { code: 'vi-VN', native: 'Tiếng Việt', english: 'Vietnamese' },
 ]
 
 export const DICTIONARIES = {
@@ -63,6 +65,7 @@ export const DICTIONARIES = {
   'it-IT': itIT,
   'ru-RU': ruRU,
   'uk-UA': ukUA,
+  'vi-VN': viVN,
 }
 
 export function languageLabel(code) {
