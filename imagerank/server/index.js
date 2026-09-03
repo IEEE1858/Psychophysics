@@ -892,10 +892,16 @@ function buildAnalytics(filters = {}) {
         realism: [],
         favoriteFrac: [],
         realismFrac: [],
+        gradingMs: [],
+        participants: new Set(),
       };
       imageMap.set(key, entry);
     }
     entry.maxLevel = Math.max(entry.maxLevel, row.max_level);
+    entry.participants.add(row.participant_id);
+    if (row.grading_ms != null) {
+      entry.gradingMs.push(row.grading_ms);
+    }
     if (row.favorite_level != null) {
       entry.favorite.push(row.favorite_level);
       const frac = levelFraction(row.favorite_level, row.max_level);
@@ -913,15 +919,23 @@ function buildAnalytics(filters = {}) {
     const realism = summarize(entry.realism);
     const favoriteFrac = summarize(entry.favoriteFrac);
     const realismFrac = summarize(entry.realismFrac);
+    const gradingMs = summarize(entry.gradingMs);
     return {
       collectionId: entry.collectionId,
       imageId: entry.imageId,
       maxLevel: entry.maxLevel,
+      // Subjects who graded this image at all, which can exceed the number who
+      // made a given selection since either choice may be skipped.
       n: Math.max(favorite.n, realism.n),
+      rankingCount: entry.participants.size,
       meanFavorite: favorite.mean,
       meanRealism: realism.mean,
       meanFavoriteFrac: favoriteFrac.mean,
       meanRealismFrac: realismFrac.mean,
+      favorite,
+      realism,
+      gradingMsMean: gradingMs.mean,
+      gradingMsTotal: gradingMs.n > 0 ? gradingMs.mean * gradingMs.n : null,
     };
   });
 

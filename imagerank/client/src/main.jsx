@@ -12,6 +12,7 @@ import AuthCompletePage from './pages/AuthCompletePage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
 import AnalyticsPage from './pages/AnalyticsPage.jsx'
 import ImageDetailPage from './pages/ImageDetailPage.jsx'
+import SubjectDetailPage from './pages/SubjectDetailPage.jsx'
 import RankingsPage from './pages/RankingsPage.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import { I18nProvider } from './lib/I18nProvider.jsx'
@@ -36,6 +37,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/analytics" element={<AnalyticsPage />} />
           <Route path="/admin/images/:collectionId/:imageId" element={<ImageDetailPage />} />
+          <Route path="/admin/subjects/:participantId" element={<SubjectDetailPage />} />
           <Route path="/rankings" element={<RankingsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/study" element={<App />} />
