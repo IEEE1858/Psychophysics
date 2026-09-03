@@ -71,9 +71,17 @@ rsync -av --delete --exclude node_modules --exclude data --exclude .env \
 ssh hkoren@atlas 'cd /vhosts/psychophysics/imagerank/server && \
   PATH=/usr/local/lib/nodejs/v26.3.0/bin:$PATH npm install'
 
-# 4. Back up the DB, then restart so migrations run
-ssh hkoren@atlas 'sudo systemctl stop imagerank-api && \
-  sudo cp /var/lib/imagerank/psychophysics.db{,-wal,-shm} /var/lib/imagerank/backups/ && \
+# 4. Back up the DB under a timestamped name, then restart so migrations run.
+#    /var/lib/imagerank is mode 700 owned by `imagerank`, so every command that
+#    touches it needs sudo -- tests, globs and listings included.
+ssh hkoren@atlas 'set -euo pipefail
+  STAMP=$(date -u +%Y%m%dT%H%M%SZ)-pre-deploy
+  sudo systemctl stop imagerank-api
+  for suffix in "" "-wal" "-shm"; do
+    sudo cp -a "/var/lib/imagerank/psychophysics.db$suffix" \
+               "/var/lib/imagerank/backups/psychophysics-$STAMP.db$suffix"
+  done
+  sudo ls -l /var/lib/imagerank/backups/ | grep "$STAMP"
   sudo systemctl start imagerank-api'
 
 # 5. Publish the client build
@@ -87,7 +95,31 @@ Notes:
   to an existing database on its own.
 - **Always back up before restarting**, since startup mutates the schema. Copy the
   `-wal` and `-shm` files too: the DB runs in WAL mode and is not checkpointed on
-  shutdown, so the main `.db` alone can be missing recent writes.
+  shutdown, so the main `.db` alone can be missing recent writes. Stop the service
+  first, as step 4 does -- copying a live DB can capture a torn write.
+- **`hkoren` cannot read `/var/lib/imagerank` at all** (mode 700, owned by
+  `imagerank`). Anything that reads a path under it needs `sudo`, including the
+  parts of a command that only *look*: `[ -f /var/lib/imagerank/... ]`,
+  `ls`, and shell globs like `psychophysics.db*` all come back empty rather than
+  erroring, so a guarded `[ -f … ] && sudo cp …` silently backs nothing up.
+  Brace expansion (`db{,-wal,-shm}`) is safe -- it never touches the filesystem.
+- **Give every backup a UTC timestamp**, as step 4 does. Copying to a fixed name
+  in `backups/` overwrites the previous backup on each deploy, leaving exactly one.
+  Use `cp -a` so the copies stay owned by `imagerank` rather than root. Each set is
+  ~4 MB, nearly all of it WAL; prune old ones when the disk gets tight.
+- If the backup fails, step 4's `set -e` stops before the restart, so the API stays
+  **down** -- fix the copy, then `sudo systemctl start imagerank-api`.
+- There is no `sqlite3` CLI on the host. To inspect or verify the DB, use the
+  bundled Node build (tables: `participants`, `image_rankings`, `accounts`,
+  `admin_users`):
+  ```bash
+  ssh hkoren@atlas 'sudo -u imagerank /usr/local/lib/nodejs/v26.3.0/bin/node -e "
+  const {DatabaseSync} = require(\"node:sqlite\");
+  const db = new DatabaseSync(\"/var/lib/imagerank/psychophysics.db\", {readOnly: true});
+  console.log(db.prepare(\"PRAGMA integrity_check\").get());
+  console.log(db.prepare(\"SELECT COUNT(*) c FROM image_rankings\").get());
+  "'
+  ```
 - Run `npm install` (not `--omit=dev`) on the host: `sharp` is a devDependency but
   `make-thumbnails.js` needs it there.
 - Deploy the server *before* the client so the new SPA never calls API endpoints
