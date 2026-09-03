@@ -1,33 +1,28 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import axios from 'axios'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
+import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
+import Slider from '@mui/material/Slider'
 import { useLibrary } from '../lib/useLibrary'
 import { thumbnailFor } from '../lib/sample'
 import { authHeader, useAdminAuth } from '../lib/adminAuth'
-import { baseLayout, collectionColor, formatStat } from '../lib/analytics'
+import {
+  baseLayout,
+  collectionColor,
+  formatDuration,
+  formatLevel,
+  formatStat,
+  subjectEmail,
+  subjectLabel,
+} from '../lib/analytics'
 import AdminLogin from '../components/AdminLogin'
 import PlotlyChart from '../components/PlotlyChart'
 import './pages.css'
 
-function formatLevel(level, maxLevel) {
-  if (level == null) {
-    return '—'
-  }
-  return maxLevel != null ? `L${level} / ${maxLevel}` : `L${level}`
-}
-
-function formatDuration(ms) {
-  if (!ms) {
-    return '—'
-  }
-  const totalSeconds = Math.round(ms / 1000)
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
-}
+const REALISM_COLOR = '#1d3557'
 
 function StatBlock({ title, stats, color }) {
   return (
@@ -47,6 +42,11 @@ function StatBlock({ title, stats, color }) {
 function ImageDetailView({ collectionId, imageId }) {
   const [detail, setDetail] = useState(null)
   const [error, setError] = useState('')
+  // The viewer opens on the unprocessed image and follows histogram clicks.
+  const [viewLevel, setViewLevel] = useState(0)
+  // Set only by clicking a histogram bar, so the initial level-0 view does not
+  // highlight anyone until the reader actually picks a level.
+  const [highlightLevel, setHighlightLevel] = useState(null)
   const { library } = useLibrary()
 
   useEffect(() => {
@@ -76,42 +76,133 @@ function ImageDetailView({ collectionId, imageId }) {
   }, [library, collectionId, imageId])
 
   const rankings = useMemo(() => detail?.rankings ?? [], [detail])
+  const variants = useMemo(() => image?.variants ?? [], [image])
   const accent = collectionColor(collectionId)
+  const maxLevel = detail?.maxLevel || image?.maxLevel || 0
 
-  // Histogram of every selected level for this image — favorite vs realism.
+  // Every level that exists for this image, whether or not anyone chose it, so
+  // the histogram shows the empty levels too (issue #59). Falls back to
+  // 0..maxLevel when the library has not loaded, and absorbs any recorded level
+  // outside the variant list rather than dropping it.
+  const levelDomain = useMemo(() => {
+    const levels = new Set(
+      variants.length > 0
+        ? variants.map((variant) => variant.level)
+        : Array.from({ length: maxLevel + 1 }, (_, index) => index),
+    )
+    for (const row of rankings) {
+      if (row.favorite_level != null) levels.add(row.favorite_level)
+      if (row.most_realistic_level != null) levels.add(row.most_realistic_level)
+    }
+    return [...levels].sort((left, right) => left - right)
+  }, [variants, maxLevel, rankings])
+
+  // Clamp without an effect: if the chosen level is not in the domain (still
+  // loading, or a stale click), fall back to the first level.
+  const effectiveLevel = levelDomain.includes(viewLevel) ? viewLevel : (levelDomain[0] ?? 0)
+  const currentVariant =
+    variants.find((variant) => variant.level === effectiveLevel) ?? variants[0] ?? null
+
+  const counts = useMemo(() => {
+    const favorite = new Map(levelDomain.map((level) => [level, 0]))
+    const realism = new Map(levelDomain.map((level) => [level, 0]))
+    for (const row of rankings) {
+      if (row.favorite_level != null) {
+        favorite.set(row.favorite_level, (favorite.get(row.favorite_level) ?? 0) + 1)
+      }
+      if (row.most_realistic_level != null) {
+        realism.set(row.most_realistic_level, (realism.get(row.most_realistic_level) ?? 0) + 1)
+      }
+    }
+    return {
+      favorite: levelDomain.map((level) => favorite.get(level) ?? 0),
+      realism: levelDomain.map((level) => realism.get(level) ?? 0),
+    }
+  }, [levelDomain, rankings])
+
+  // Explicit bars rather than Plotly's own binning: that is what keeps the
+  // zero-count levels on the axis.
   const histData = useMemo(
     () => [
       {
-        type: 'histogram',
+        type: 'bar',
         name: 'Favorite image',
-        x: rankings.map((row) => row.favorite_level).filter((value) => value != null),
+        x: levelDomain,
+        y: counts.favorite,
         marker: { color: accent },
-        opacity: 0.75,
+        hovertemplate: 'L%{x}<br>%{y} chose it as favorite<extra></extra>',
       },
       {
-        type: 'histogram',
+        type: 'bar',
         name: 'Most realistic',
-        x: rankings.map((row) => row.most_realistic_level).filter((value) => value != null),
-        marker: { color: '#1d3557' },
-        opacity: 0.6,
+        x: levelDomain,
+        y: counts.realism,
+        marker: { color: REALISM_COLOR },
+        hovertemplate: 'L%{x}<br>%{y} chose it as most realistic<extra></extra>',
       },
     ],
-    [rankings, accent],
+    [levelDomain, counts, accent],
   )
 
   const histLayout = useMemo(
     () =>
       baseLayout({
         barmode: 'group',
-        bargap: 0.12,
+        bargap: 0.18,
         showlegend: true,
-        legend: { orientation: 'h', y: 1.15, x: 0 },
-        xaxis: { title: 'Selected level', dtick: 1 },
-        yaxis: { title: 'Count' },
-        margin: { l: 48, r: 12, t: 32, b: 44 },
+        legend: { orientation: 'h', y: 1.16, x: 0 },
+        xaxis: { title: 'Processing level', dtick: 1, range: [-0.6, (levelDomain.at(-1) ?? 0) + 0.6] },
+        yaxis: { title: 'Number of subjects', dtick: 1, rangemode: 'tozero' },
+        margin: { l: 56, r: 12, t: 36, b: 48 },
+      }),
+    [levelDomain],
+  )
+
+  // Clicking a bar flips the viewer to that level and highlights the subjects
+  // who chose it in the table below.
+  const handleHistClick = useCallback((point) => {
+    const level = Number(point?.x)
+    if (Number.isFinite(level)) {
+      setViewLevel(level)
+      setHighlightLevel(level)
+    }
+  }, [])
+
+  // Does processing preference shift with age? One point per subject, per
+  // selection.
+  const ageData = useMemo(() => {
+    const series = (key, name, color) => {
+      const points = rankings.filter((row) => row.age != null && row[key] != null)
+      return {
+        type: 'scatter',
+        mode: 'markers',
+        name,
+        x: points.map((row) => Number(row.age)),
+        y: points.map((row) => row[key]),
+        text: points.map((row) => subjectLabel(row)),
+        hovertemplate: '<b>%{text}</b><br>Age %{x}<br>L%{y}<extra></extra>',
+        marker: { color, size: 11, opacity: 0.78 },
+      }
+    }
+    return [
+      series('favorite_level', 'Favorite image', accent),
+      series('most_realistic_level', 'Most realistic', REALISM_COLOR),
+    ]
+  }, [rankings, accent])
+
+  const ageLayout = useMemo(
+    () =>
+      baseLayout({
+        showlegend: true,
+        legend: { orientation: 'h', y: 1.16, x: 0 },
+        xaxis: { title: 'Subject age (years)', zeroline: false },
+        yaxis: { title: 'Selected processing level', dtick: 1, rangemode: 'tozero' },
+        margin: { l: 56, r: 12, t: 36, b: 52 },
       }),
     [],
   )
+
+  const agePointCount = ageData.reduce((total, trace) => total + trace.x.length, 0)
 
   if (!detail && !error) {
     return (
@@ -141,21 +232,65 @@ function ImageDetailView({ collectionId, imageId }) {
               <h2 className="admin-detail-title">{image?.label ?? imageId}</h2>
               <p className="home-lead">
                 {detail.count} ranking{detail.count === 1 ? '' : 's'}
-                {detail.maxLevel ? ` · max processing level L${detail.maxLevel}` : ''}
+                {maxLevel ? ` · max processing level L${maxLevel}` : ''}
               </p>
             </div>
           </div>
 
+          <section className="analytics-section">
+            <h3 className="admin-detail-subtitle">Image at each processing level</h3>
+            <div className="image-viewer-card">
+              {currentVariant ? (
+                <img
+                  className="image-viewer-frame"
+                  src={currentVariant.url}
+                  alt={`${image?.label ?? imageId} at level ${effectiveLevel}`}
+                />
+              ) : (
+                <Alert severity="info">
+                  {library ? 'No image variants found for this image.' : 'Loading image variants…'}
+                </Alert>
+              )}
+              <div className="image-viewer-controls">
+                <Slider
+                  value={effectiveLevel}
+                  min={levelDomain[0] ?? 0}
+                  max={levelDomain.at(-1) ?? 0}
+                  step={1}
+                  marks
+                  valueLabelDisplay="auto"
+                  onChange={(_event, value) => setViewLevel(Number(value))}
+                  aria-label="Processing level"
+                  disabled={levelDomain.length < 2}
+                />
+                <p className="image-viewer-caption">
+                  <strong>{formatLevel(effectiveLevel, maxLevel)}</strong>
+                  {effectiveLevel === 0 ? ' · unprocessed original' : ''}
+                  {currentVariant?.description ? ` · ${currentVariant.description}` : ''}
+                </p>
+              </div>
+            </div>
+          </section>
+
           <div className="analytics-statblocks">
             <StatBlock title="Favorite image" stats={detail.favorite} color={accent} />
-            <StatBlock title="Most realistic" stats={detail.realism} color="#1d3557" />
+            <StatBlock title="Most realistic" stats={detail.realism} color={REALISM_COLOR} />
           </div>
 
           <section className="analytics-section">
             <h3 className="admin-detail-subtitle">Distribution of selected levels</h3>
+            <p className="home-lead analytics-table-lead">
+              Every level this image was processed to, including the ones nobody picked. Click a bar to
+              show that level above and highlight the subjects who chose it.
+            </p>
             <div className="analytics-plot-card">
               {rankings.length > 0 ? (
-                <PlotlyChart data={histData} layout={histLayout} style={{ height: 320 }} />
+                <PlotlyChart
+                  data={histData}
+                  layout={histLayout}
+                  onPointClick={handleHistClick}
+                  style={{ height: 340 }}
+                />
               ) : (
                 <Alert severity="info">No rankings recorded for this image yet.</Alert>
               )}
@@ -163,12 +298,33 @@ function ImageDetailView({ collectionId, imageId }) {
           </section>
 
           <section className="analytics-section">
-            <h3 className="admin-detail-subtitle">All rankings ({rankings.length})</h3>
+            <h3 className="admin-detail-subtitle">Processing preference by subject age</h3>
+            <div className="analytics-plot-card">
+              {agePointCount > 0 ? (
+                <PlotlyChart data={ageData} layout={ageLayout} style={{ height: 340 }} />
+              ) : (
+                <Alert severity="info">No subject ages recorded for this image yet.</Alert>
+              )}
+            </div>
+          </section>
+
+          <section className="analytics-section">
+            <div className="analytics-rankings-head">
+              <h3 className="admin-detail-subtitle">All rankings ({rankings.length})</h3>
+              {highlightLevel != null ? (
+                <Chip
+                  label={`Highlighting L${highlightLevel}`}
+                  onDelete={() => setHighlightLevel(null)}
+                  size="small"
+                />
+              ) : null}
+            </div>
             <div className="admin-table-wrap">
               <table className="admin-table">
                 <thead>
                   <tr>
                     <th>Subject</th>
+                    <th className="admin-num">Age</th>
                     <th className="admin-num">Most realistic</th>
                     <th className="admin-num">Favorite image</th>
                     <th className="admin-num">Browsed to</th>
@@ -176,18 +332,29 @@ function ImageDetailView({ collectionId, imageId }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {rankings.map((row) => (
-                    <tr key={row.id}>
-                      <td className="admin-email">
-                        {row.email ?? `Participant ${row.participant_id}`}
-                        {row.re_ranked ? <span className="rankings-revised-chip">re-ranked</span> : null}
-                      </td>
-                      <td className="admin-num">{formatLevel(row.most_realistic_level, row.max_level)}</td>
-                      <td className="admin-num">{formatLevel(row.favorite_level, row.max_level)}</td>
-                      <td className="admin-num">{formatLevel(row.furthest_visited_level, row.max_level)}</td>
-                      <td className="admin-num">{formatDuration(row.grading_ms)}</td>
-                    </tr>
-                  ))}
+                  {rankings.map((row) => {
+                    const highlighted =
+                      highlightLevel != null &&
+                      (row.favorite_level === highlightLevel || row.most_realistic_level === highlightLevel)
+                    return (
+                      <tr key={row.id} className={highlighted ? 'analytics-row-highlight' : undefined}>
+                        <td className="admin-email">
+                          <Link className="analytics-image-link" to={`/admin/subjects/${row.participant_id}`}>
+                            {subjectLabel(row)}
+                          </Link>
+                          {subjectEmail(row) ? null : (
+                            <span className="analytics-guest-ip">{row.ip_address ?? 'no IP recorded'}</span>
+                          )}
+                          {row.re_ranked ? <span className="rankings-revised-chip">re-ranked</span> : null}
+                        </td>
+                        <td className="admin-num">{row.age ?? '—'}</td>
+                        <td className="admin-num">{formatLevel(row.most_realistic_level, row.max_level)}</td>
+                        <td className="admin-num">{formatLevel(row.favorite_level, row.max_level)}</td>
+                        <td className="admin-num">{formatLevel(row.furthest_visited_level, row.max_level)}</td>
+                        <td className="admin-num">{formatDuration(row.grading_ms)}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

@@ -1369,3 +1369,97 @@
   gap: 10px;
   flex-shrink: 0;
 }
+
+/* ---- Per-image analytics table (issue #59) ---- */
+.analytics-table-lead {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+}
+
+/* Twelve columns: let the table scroll inside its card on narrow screens
+   instead of stretching the page. */
+.analytics-image-table {
+  min-width: 940px;
+}
+
+.analytics-image-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table .analytics-group-head {
+  text-align: center;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-left: 1px solid rgba(70, 84, 118, 0.2);
+}
+
+/* Sortable heading: a real button for keyboard access, styled as plain text. */
+.analytics-sort-button {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.analytics-sort-button:hover {
+  color: #287271;
+}
+
+.analytics-image-link {
+  font-weight: 600;
+  color: #1d3557;
+  word-break: break-word;
+}
+
+/* ---- Image detail: full-panel level viewer (issue #59) ---- */
+.image-viewer-card {
+  border-radius: 16px;
+  border: 1px solid rgba(70, 84, 118, 0.12);
+  background: rgba(255, 252, 247, 0.84);
+  box-shadow: 0 12px 32px rgba(35, 47, 69, 0.07);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.image-viewer-frame {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  background: #232f45;
+}
+
+.image-viewer-controls {
+  padding: 0 6px;
+}
+
+.image-viewer-caption {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #455168;
+}
+
+.analytics-rankings-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Subjects who chose the level clicked in the histogram. */
+.admin-table tbody tr.analytics-row-highlight {
+  background: rgba(40, 114, 113, 0.13);
+  box-shadow: inset 3px 0 0 #287271;
+}
+
+.analytics-guest-ip {
+  display: block;
+  font-size: 0.74rem;
+  color: #6b7689;
+}

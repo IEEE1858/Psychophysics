@@ -184,12 +184,18 @@ function toIntOrNull(value) {
   return value != null && value !== "" && Number.isFinite(Number(value)) ? Number(value) : null;
 }
 
+// Blank means "no email": participants may skip the field entirely (#49).
+function normalizeEmail(value) {
+  const trimmed = value == null ? "" : String(value).trim();
+  return trimmed === "" ? null : trimmed;
+}
+
 function createParticipant(demographics, userAgent, accountId = null, ipAddress = null) {
   const result = insertParticipantStmt.run({
     accountId: accountId == null ? null : Number(accountId),
     age: demographics.age != null && demographics.age !== "" ? Number(demographics.age) : null,
     gender: demographics.gender ?? null,
-    email: demographics.email ?? null,
+    email: normalizeEmail(demographics.email),
     selfDescription: demographics.selfDescription ?? null,
     visionStatus: demographics.visionStatus ?? null,
     visionDetails: demographics.visionDetails ?? null,
@@ -224,7 +230,7 @@ function updateParticipant(participantId, demographics) {
     id: Number(participantId),
     age: demographics.age != null && demographics.age !== "" ? Number(demographics.age) : null,
     gender: demographics.gender ?? null,
-    email: demographics.email ?? null,
+    email: normalizeEmail(demographics.email),
     selfDescription: demographics.selfDescription ?? null,
     visionStatus: demographics.visionStatus ?? null,
     visionDetails: demographics.visionDetails ?? null,
@@ -614,7 +620,7 @@ function getRankingRowsForStats() {
   return db
     .prepare(
       `SELECT r.collection_id, r.image_id, r.max_level, r.most_realistic_level, r.favorite_level,
-              r.participant_id,
+              r.participant_id, r.grading_ms,
               p.age, p.gender, p.self_description, p.vision_status, p.country_of_origin,
               p.display_type, p.lighting, p.color_blind
        FROM image_rankings r
@@ -640,7 +646,7 @@ function getParticipantCounts() {
 function getImageRankingDetail(collectionId, imageId) {
   return db
     .prepare(
-      `SELECT r.id, r.participant_id, p.email,
+      `SELECT r.id, r.participant_id, p.email, p.age, p.ip_address, p.self_description,
               r.max_level, r.furthest_visited_level,
               r.most_realistic_level, r.favorite_level,
               r.grading_ms, r.idle_ms, r.max_zoom_scale, r.max_zoom_pct, r.re_ranked, r.created_at

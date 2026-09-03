@@ -6,46 +6,14 @@ import Button from '@mui/material/Button'
 import CircularProgress from '@mui/material/CircularProgress'
 import TextField from '@mui/material/TextField'
 import { useLibrary } from '../lib/useLibrary'
-import { thumbnailFor } from '../lib/sample'
 import { authHeader, useAdminAuth } from '../lib/adminAuth'
 import AdminLogin from '../components/AdminLogin'
+import SubmissionDetail from '../components/SubmissionDetail'
+import { formatDateTime, formatDuration } from '../lib/analytics'
 import './pages.css'
-
-function formatDuration(ms) {
-  if (!ms) {
-    return '—'
-  }
-  const totalSeconds = Math.round(ms / 1000)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${seconds}s`
-  }
-  return `${seconds}s`
-}
 
 function formatAvg(value) {
   return value == null ? '—' : Number(value).toFixed(1)
-}
-
-function formatDate(value) {
-  if (!value) {
-    return '—'
-  }
-  // Stored as UTC "YYYY-MM-DD HH:MM:SS"; render in the viewer's local time.
-  const date = new Date(`${value.replace(' ', 'T')}Z`)
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
-}
-
-function formatLevel(level, maxLevel) {
-  if (level == null) {
-    return '—'
-  }
-  return maxLevel != null ? `L${level} / ${maxLevel}` : `L${level}`
 }
 
 function SubmissionsTable({ submissions, onSelect }) {
@@ -85,7 +53,7 @@ function SubmissionsTable({ submissions, onSelect }) {
                   {submission.completed_at ? 'Complete' : 'Partial'}
                 </span>
               </td>
-              <td className="admin-num">{formatDate(submission.started_at)}</td>
+              <td className="admin-num">{formatDateTime(submission.started_at)}</td>
               <td className="admin-num">{formatDuration(submission.total_test_time_ms)}</td>
               <td className="admin-num admin-group-start">{submission.sharpness_count}</td>
               <td className="admin-num">{formatAvg(submission.sharpness_favorite_avg)}</td>
@@ -98,102 +66,6 @@ function SubmissionsTable({ submissions, onSelect }) {
         </tbody>
       </table>
     </div>
-  )
-}
-
-function SubmissionDetail({ participantId, imageLookup, onBack }) {
-  const [detail, setDetail] = useState(null)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    let active = true
-    axios
-      .get(`/api/admin/submissions/${participantId}`, { headers: authHeader() })
-      .then((response) => {
-        if (active) {
-          setDetail(response.data)
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setError('Failed to load submission detail.')
-        }
-      })
-    return () => {
-      active = false
-    }
-  }, [participantId])
-
-  const loading = detail === null && !error
-  const participant = detail?.participant
-  const rankings = detail?.rankings ?? []
-
-  return (
-    <section className="admin-detail">
-      <Button variant="text" onClick={onBack} className="admin-back">
-        ← Back to submissions
-      </Button>
-
-      {loading ? (
-        <div className="home-status">
-          <CircularProgress size={28} />
-          <span>Loading submission…</span>
-        </div>
-      ) : null}
-
-      {error ? <Alert severity="error">{error}</Alert> : null}
-
-      {participant ? (
-        <>
-          <h2 className="admin-detail-title">{participant.email ?? `Participant ${participant.id}`}</h2>
-          <div className="admin-meta-grid">
-            <span><strong>Started:</strong> {formatDate(participant.created_at)}</span>
-            <span><strong>Age:</strong> {participant.age ?? '—'}</span>
-            <span><strong>Gender:</strong> {participant.gender ?? '—'}</span>
-            <span><strong>Describes self:</strong> {participant.self_description ?? '—'}</span>
-            <span><strong>Vision:</strong> {participant.vision_status ?? '—'}</span>
-            <span><strong>Color blind:</strong> {participant.color_blind ?? '—'}</span>
-            <span><strong>Country:</strong> {participant.country_of_origin ?? '—'}</span>
-            <span><strong>Display:</strong> {participant.display_type ?? '—'}</span>
-            <span><strong>Lighting:</strong> {participant.lighting ?? '—'}</span>
-          </div>
-
-          <h3 className="admin-detail-subtitle">Image rankings ({rankings.length})</h3>
-          <div className="admin-rankings">
-            {rankings.map((ranking) => {
-              const image = imageLookup.get(`${ranking.collection_id}:${ranking.image_id}`)
-              return (
-                <div key={`${ranking.collection_id}:${ranking.image_id}`} className="admin-ranking-card">
-                  <div className="admin-ranking-thumb">
-                    {image ? (
-                      <img src={thumbnailFor(image)} alt={image.label} loading="lazy" />
-                    ) : (
-                      <div className="admin-thumb-missing">no thumbnail</div>
-                    )}
-                  </div>
-                  <div className="admin-ranking-body">
-                    <div className="admin-ranking-head">
-                      <span className="admin-collection-chip">{ranking.collection_id}</span>
-                      <span className="admin-image-name">{image?.label ?? ranking.image_id}</span>
-                      {ranking.re_ranked ? <span className="rankings-revised-chip">re-ranked</span> : null}
-                    </div>
-                    <div className="admin-level-row">
-                      <span>Most realistic: <strong>{formatLevel(ranking.most_realistic_level, ranking.max_level)}</strong></span>
-                      <span>Favorite: <strong>{formatLevel(ranking.favorite_level, ranking.max_level)}</strong></span>
-                      <span>Browsed to: <strong>{formatLevel(ranking.furthest_visited_level, ranking.max_level)}</strong></span>
-                      <span>Time: <strong>{formatDuration(ranking.grading_ms)}</strong></span>
-                      <span>Active: <strong>{formatDuration(Math.max(0, (ranking.grading_ms ?? 0) - (ranking.idle_ms ?? 0)))}</strong></span>
-                      <span>Idle: <strong>{formatDuration(ranking.idle_ms)}</strong></span>
-                      <span>Max zoom: <strong>{ranking.max_zoom_scale != null ? `${Number(ranking.max_zoom_scale).toFixed(1)}× (${Math.round(ranking.max_zoom_pct ?? 0)}% width)` : '—'}</strong></span>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </>
-      ) : null}
-    </section>
   )
 }
 
@@ -317,7 +189,7 @@ function ContactListPanel() {
                   <td className="admin-num">{contact.future_studies_opt_in ? '✓' : '—'}</td>
                   <td className="admin-num">{contact.sessions}</td>
                   <td className="admin-num">{contact.completed_sessions}</td>
-                  <td className="admin-num">{formatDate(contact.last_opted_in_at)}</td>
+                  <td className="admin-num">{formatDateTime(contact.last_opted_in_at)}</td>
                 </tr>
               ))}
             </tbody>
@@ -440,7 +312,7 @@ function AdminUsersPanel({ signIn }) {
           {(users ?? []).map((user) => (
             <li key={user.id}>
               <span className="admin-user-name">{user.username}</span>
-              <span className="admin-user-date">added {formatDate(user.created_at)}</span>
+              <span className="admin-user-date">added {formatDateTime(user.created_at)}</span>
             </li>
           ))}
         </ul>
