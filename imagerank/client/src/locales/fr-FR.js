@@ -202,6 +202,13 @@ export default {
     'Indiquez le serveur sur lequel vous avez un compte. Nous le retiendrons pour la prochaine fois.',
   'share.mastodon.cancel': 'Annuler',
   'share.mastodon.confirm': 'Continuer',
+  'share.paste.title': 'Partager sur {platform}',
+  'share.paste.help': '{platform} ne nous permet pas de préremplir le message. Copiez le texte ci-dessous, puis collez-le dans votre publication.',
+  'share.paste.copy': 'Copier le texte',
+  'share.paste.copied': 'Texte copié. Collez-le dans votre publication.',
+  'share.paste.copyManually': 'Sélectionnez le texte ci-dessus et copiez-le, puis collez-le dans votre publication.',
+  'share.paste.continue': 'Copier et ouvrir {platform}',
+  'share.paste.cancel': 'Annuler',
 
   'demo.back': '← Retour à l’accueil',
   'demo.backToStudy': '← Retour à l’étude',

@@ -240,6 +240,13 @@ export default {
     'Nhập máy chủ mà bạn có tài khoản. Chúng tôi sẽ ghi nhớ cho lần sau.',
   'share.mastodon.cancel': 'Hủy',
   'share.mastodon.confirm': 'Tiếp tục',
+  'share.paste.title': 'Chia sẻ trên {platform}',
+  'share.paste.help': '{platform} không cho phép chúng tôi điền sẵn nội dung bài đăng. Hãy sao chép đoạn văn bản bên dưới rồi dán vào bài đăng của bạn.',
+  'share.paste.copy': 'Sao chép văn bản',
+  'share.paste.copied': 'Đã sao chép văn bản. Hãy dán vào bài đăng của bạn.',
+  'share.paste.copyManually': 'Hãy chọn đoạn văn bản ở trên và sao chép, rồi dán vào bài đăng của bạn.',
+  'share.paste.continue': 'Sao chép và mở {platform}',
+  'share.paste.cancel': 'Hủy',
 
   'demo.back': '← Trở về trang chủ',
   'demo.backToStudy': '← Trở lại nghiên cứu',

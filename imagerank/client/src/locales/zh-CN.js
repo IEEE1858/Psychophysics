@@ -195,6 +195,13 @@ export default {
   'share.mastodon.help': '请输入您拥有账户的服务器。我们会记住它，方便下次使用。',
   'share.mastodon.cancel': '取消',
   'share.mastodon.confirm': '继续',
+  'share.paste.title': '分享到{platform}',
+  'share.paste.help': '{platform}不支持为您预先填写帖子内容。请复制下面的文字，然后粘贴到您的帖子中。',
+  'share.paste.copy': '复制文字',
+  'share.paste.copied': '文字已复制。请粘贴到您的帖子中。',
+  'share.paste.copyManually': '请选中上面的文字并复制，然后粘贴到您的帖子中。',
+  'share.paste.continue': '复制并打开{platform}',
+  'share.paste.cancel': '取消',
 
   'demo.back': '← 返回首页',
   'demo.backToStudy': '← 返回研究',

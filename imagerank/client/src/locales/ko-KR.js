@@ -197,6 +197,13 @@ export default {
   'share.mastodon.help': '계정이 있는 서버를 입력하세요. 다음을 위해 기억해 두겠습니다.',
   'share.mastodon.cancel': '취소',
   'share.mastodon.confirm': '계속',
+  'share.paste.title': '{platform}에 공유',
+  'share.paste.help': '{platform}에서는 게시글 내용을 미리 채울 수 없습니다. 아래 문구를 복사한 뒤 게시글에 붙여넣으세요.',
+  'share.paste.copy': '문구 복사',
+  'share.paste.copied': '문구를 복사했습니다. 게시글에 붙여넣으세요.',
+  'share.paste.copyManually': '위 문구를 선택해 복사한 뒤 게시글에 붙여넣으세요.',
+  'share.paste.continue': '복사하고 {platform} 열기',
+  'share.paste.cancel': '취소',
 
   'demo.back': '← 홈으로 돌아가기',
   'demo.backToStudy': '← 연구로 돌아가기',

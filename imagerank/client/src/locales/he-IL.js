@@ -203,6 +203,13 @@ export default {
   'share.mastodon.help': 'הזינו את השרת שבו יש לכם חשבון. נזכור אותו לפעם הבאה.',
   'share.mastodon.cancel': 'ביטול',
   'share.mastodon.confirm': 'המשך',
+  'share.paste.title': 'שיתוף ב-{platform}',
+  'share.paste.help': '{platform} לא מאפשרת לנו למלא עבורכם את תוכן הפוסט. העתיקו את הטקסט שלמטה והדביקו אותו בפוסט שלכם.',
+  'share.paste.copy': 'העתקת הטקסט',
+  'share.paste.copied': 'הטקסט הועתק. הדביקו אותו בפוסט שלכם.',
+  'share.paste.copyManually': 'סמנו את הטקסט שלמעלה, העתיקו אותו והדביקו אותו בפוסט שלכם.',
+  'share.paste.continue': 'העתקה ומעבר ל-{platform}',
+  'share.paste.cancel': 'ביטול',
 
   'demo.back': '← חזרה לדף הבית',
   'demo.backToStudy': '← חזרה למחקר',

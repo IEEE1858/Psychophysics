@@ -199,6 +199,13 @@ export default {
     'Укажите сервер, на котором у вас есть аккаунт. Мы запомним его на следующий раз.',
   'share.mastodon.cancel': 'Отмена',
   'share.mastodon.confirm': 'Продолжить',
+  'share.paste.title': 'Поделиться в {platform}',
+  'share.paste.help': '{platform} не позволяет нам заранее заполнить текст записи. Скопируйте текст ниже и вставьте его в свою публикацию.',
+  'share.paste.copy': 'Скопировать текст',
+  'share.paste.copied': 'Текст скопирован. Вставьте его в свою публикацию.',
+  'share.paste.copyManually': 'Выделите текст выше и скопируйте его, затем вставьте в свою публикацию.',
+  'share.paste.continue': 'Скопировать и открыть {platform}',
+  'share.paste.cancel': 'Отмена',
 
   'demo.back': '← Назад на главную',
   'demo.backToStudy': '← Назад к исследованию',

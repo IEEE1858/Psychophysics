@@ -201,6 +201,13 @@ export default {
     'Укажіть сервер, на якому у вас є обліковий запис. Ми запам’ятаємо його на наступний раз.',
   'share.mastodon.cancel': 'Скасувати',
   'share.mastodon.confirm': 'Продовжити',
+  'share.paste.title': 'Поділитися у {platform}',
+  'share.paste.help': '{platform} не дозволяє нам заздалегідь заповнити текст допису. Скопіюйте текст нижче та вставте його у свій допис.',
+  'share.paste.copy': 'Скопіювати текст',
+  'share.paste.copied': 'Текст скопійовано. Вставте його у свій допис.',
+  'share.paste.copyManually': 'Виділіть текст вище та скопіюйте його, потім вставте у свій допис.',
+  'share.paste.continue': 'Скопіювати та відкрити {platform}',
+  'share.paste.cancel': 'Скасувати',
 
   'demo.back': '← Назад на головну',
   'demo.backToStudy': '← Назад до дослідження',

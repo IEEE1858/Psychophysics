@@ -202,6 +202,13 @@ export default {
     'Geben Sie den Server an, auf dem Sie ein Konto haben. Wir merken ihn uns für das nächste Mal.',
   'share.mastodon.cancel': 'Abbrechen',
   'share.mastodon.confirm': 'Weiter',
+  'share.paste.title': 'Auf {platform} teilen',
+  'share.paste.help': '{platform} lässt uns den Beitragstext nicht vorausfüllen. Kopieren Sie den Text unten und fügen Sie ihn in Ihren Beitrag ein.',
+  'share.paste.copy': 'Text kopieren',
+  'share.paste.copied': 'Text kopiert. Fügen Sie ihn in Ihren Beitrag ein.',
+  'share.paste.copyManually': 'Markieren und kopieren Sie den Text oben, dann fügen Sie ihn in Ihren Beitrag ein.',
+  'share.paste.continue': 'Kopieren und {platform} öffnen',
+  'share.paste.cancel': 'Abbrechen',
 
   'demo.back': '← Zurück zur Startseite',
   'demo.backToStudy': '← Zurück zur Studie',
