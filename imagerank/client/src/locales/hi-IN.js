@@ -199,6 +199,13 @@ export default {
     'वह सर्वर दर्ज करें जिस पर आपका खाता है। हम इसे अगली बार के लिए याद रखेंगे।',
   'share.mastodon.cancel': 'रद्द करें',
   'share.mastodon.confirm': 'जारी रखें',
+  'share.paste.title': '{platform} पर साझा करें',
+  'share.paste.help': '{platform} हमें आपके लिए संदेश भरने नहीं देता। नीचे दिया गया टेक्स्ट कॉपी करें और अपनी पोस्ट में पेस्ट करें।',
+  'share.paste.copy': 'टेक्स्ट कॉपी करें',
+  'share.paste.copied': 'टेक्स्ट कॉपी हो गया। इसे अपनी पोस्ट में पेस्ट करें।',
+  'share.paste.copyManually': 'ऊपर दिया गया टेक्स्ट चुनकर कॉपी करें, फिर अपनी पोस्ट में पेस्ट करें।',
+  'share.paste.continue': 'कॉपी करें और {platform} खोलें',
+  'share.paste.cancel': 'रद्द करें',
 
   'demo.back': '← होम पर वापस',
   'demo.backToStudy': '← अध्ययन पर वापस',

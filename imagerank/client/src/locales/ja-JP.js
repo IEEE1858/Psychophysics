@@ -198,6 +198,13 @@ export default {
     'アカウントをお持ちのサーバーを入力してください。次回のために記憶します。',
   'share.mastodon.cancel': 'キャンセル',
   'share.mastodon.confirm': '続ける',
+  'share.paste.title': '{platform}で共有',
+  'share.paste.help': '{platform}では投稿本文をあらかじめ入力できません。下のテキストをコピーして、投稿に貼り付けてください。',
+  'share.paste.copy': 'テキストをコピー',
+  'share.paste.copied': 'テキストをコピーしました。投稿に貼り付けてください。',
+  'share.paste.copyManually': '上のテキストを選択してコピーし、投稿に貼り付けてください。',
+  'share.paste.continue': 'コピーして{platform}を開く',
+  'share.paste.cancel': 'キャンセル',
 
   'demo.back': '← ホームに戻る',
   'demo.backToStudy': '← 研究に戻る',

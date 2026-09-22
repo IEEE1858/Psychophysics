@@ -199,6 +199,13 @@ export default {
     'Inserisci il server su cui hai un account. Lo ricorderemo per la prossima volta.',
   'share.mastodon.cancel': 'Annulla',
   'share.mastodon.confirm': 'Continua',
+  'share.paste.title': 'Condividi su {platform}',
+  'share.paste.help': '{platform} non ci permette di precompilare il messaggio. Copia il testo qui sotto e incollalo nel tuo post.',
+  'share.paste.copy': 'Copia il testo',
+  'share.paste.copied': 'Testo copiato. Incollalo nel tuo post.',
+  'share.paste.copyManually': 'Seleziona il testo qui sopra e copialo, poi incollalo nel tuo post.',
+  'share.paste.continue': 'Copia e apri {platform}',
+  'share.paste.cancel': 'Annulla',
 
   'demo.back': '← Torna alla home',
   'demo.backToStudy': '← Torna allo studio',

@@ -199,6 +199,13 @@ export default {
     'Introduce el servidor donde tienes tu cuenta. Lo recordaremos para la próxima vez.',
   'share.mastodon.cancel': 'Cancelar',
   'share.mastodon.confirm': 'Continuar',
+  'share.paste.title': 'Compartir en {platform}',
+  'share.paste.help': '{platform} no nos permite rellenar el mensaje por ti. Copia el texto de abajo y pégalo en tu publicación.',
+  'share.paste.copy': 'Copiar texto',
+  'share.paste.copied': 'Texto copiado. Pégalo en tu publicación.',
+  'share.paste.copyManually': 'Selecciona el texto de arriba y cópialo, luego pégalo en tu publicación.',
+  'share.paste.continue': 'Copiar y abrir {platform}',
+  'share.paste.cancel': 'Cancelar',
 
   'demo.back': '← Volver al inicio',
   'demo.backToStudy': '← Volver al estudio',

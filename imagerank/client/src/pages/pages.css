@@ -1266,6 +1266,14 @@
   color: #455168;
 }
 
+/* Feedback under the copy-the-text dialog (issue #63). */
+.share-dialog-status {
+  margin: 12px 0 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #287271;
+}
+
 /* ---- Contact opt-ins (issue #45) ---- */
 .contact-prefs {
   display: flex;

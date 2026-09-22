@@ -219,6 +219,13 @@ export default {
   'share.mastodon.help': 'Enter the server you have an account on. We remember it for next time.',
   'share.mastodon.cancel': 'Cancel',
   'share.mastodon.confirm': 'Continue',
+  'share.paste.title': 'Share to {platform}',
+  'share.paste.help': '{platform} does not let us fill in the message for you. Copy the text below, then paste it into your post.',
+  'share.paste.copy': 'Copy text',
+  'share.paste.copied': 'Text copied. Paste it into your post.',
+  'share.paste.copyManually': 'Select the text above and copy it, then paste it into your post.',
+  'share.paste.continue': 'Copy and open {platform}',
+  'share.paste.cancel': 'Cancel',
 
   // ---- Demographics form ----
   'demo.back': '← Back to home',

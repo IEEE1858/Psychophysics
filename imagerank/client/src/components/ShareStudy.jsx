@@ -151,6 +151,13 @@ function ShareStudy({ title, blurb, className = '' }) {
   const [mastodonOpen, setMastodonOpen] = useState(false)
   const [instance, setInstance] = useState(() => localStorage.getItem(MASTODON_INSTANCE_KEY) ?? '')
   const [status, setStatus] = useState('')
+  // Facebook and LinkedIn both ignore any pre-filled message, so sharing to
+  // them opens a dialog that hands the sharer the text to paste (issue #63).
+  // The target is held until the dialog has finished animating out, so the
+  // platform name does not blank out of the title mid-close.
+  const [pasteTarget, setPasteTarget] = useState(null)
+  const [pasteOpen, setPasteOpen] = useState(false)
+  const [pasteStatus, setPasteStatus] = useState('')
 
   const heading = title ?? t('share.title')
   const description = blurb ?? t('share.blurb')
@@ -163,6 +170,40 @@ function ShareStudy({ title, blurb, className = '' }) {
 
   function openShare(target) {
     window.open(target, '_blank', 'noopener,noreferrer')
+  }
+
+  // Only the message text goes on the clipboard: both share dialogs already
+  // carry the link, so pasting the URL as well would just duplicate it above
+  // the preview card they build from it.
+  async function copyShareText() {
+    try {
+      await navigator.clipboard.writeText(shareText)
+      setPasteStatus(t('share.paste.copied'))
+      return true
+    } catch {
+      // Clipboard access can be blocked (permissions, insecure context). The
+      // text is on screen and selectable, so say so rather than failing quietly.
+      setPasteStatus(t('share.paste.copyManually'))
+      return false
+    }
+  }
+
+  async function continueToPlatform() {
+    const target = pasteTarget
+    if (!target) {
+      return
+    }
+    // Copy before leaving, so the composer opens with the text already on the
+    // clipboard and the sharer only has to paste.
+    await copyShareText()
+    setPasteOpen(false)
+    openShare(target.shareUrl)
+  }
+
+  function openPasteDialog(platform) {
+    setPasteStatus('')
+    setPasteTarget(platform)
+    setPasteOpen(true)
   }
 
   function shareToMastodon() {
@@ -204,7 +245,12 @@ function ShareStudy({ title, blurb, className = '' }) {
           variant="outlined"
           size="small"
           startIcon={<FacebookGlyph />}
-          onClick={() => openShare(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`)}
+          onClick={() =>
+            openPasteDialog({
+              name: t('share.facebook'),
+              shareUrl: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+            })
+          }
         >
           {t('share.facebook')}
         </Button>
@@ -242,7 +288,12 @@ function ShareStudy({ title, blurb, className = '' }) {
           startIcon={<LinkedInGlyph />}
           // LinkedIn takes only the url and builds its own preview from the page's
           // og: tags, so there is no text parameter to localize here.
-          onClick={() => openShare(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`)}
+          onClick={() =>
+            openPasteDialog({
+              name: t('share.linkedin'),
+              shareUrl: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+            })
+          }
         >
           {t('share.linkedin')}
         </Button>
@@ -273,6 +324,46 @@ function ShareStudy({ title, blurb, className = '' }) {
       </div>
 
       {status ? <p className="share-status">{status}</p> : null}
+
+      <Dialog
+        open={pasteOpen}
+        onClose={() => setPasteOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          transition: {
+            onExited: () => {
+              setPasteTarget(null)
+              setPasteStatus('')
+            },
+          },
+        }}
+      >
+        <DialogTitle>{t('share.paste.title', { platform: pasteTarget?.name ?? '' })}</DialogTitle>
+        <DialogContent>
+          <p className="share-dialog-copy">
+            {t('share.paste.help', { platform: pasteTarget?.name ?? '' })}
+          </p>
+          <TextField
+            fullWidth
+            multiline
+            minRows={4}
+            value={shareText}
+            slotProps={{ input: { readOnly: true } }}
+            // Selected on focus so the text can still be copied by hand when the
+            // clipboard API is unavailable.
+            onFocus={(event) => event.target.select()}
+          />
+          {pasteStatus ? <p className="share-dialog-status">{pasteStatus}</p> : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPasteOpen(false)}>{t('share.paste.cancel')}</Button>
+          <Button onClick={copyShareText}>{t('share.paste.copy')}</Button>
+          <Button variant="contained" onClick={continueToPlatform}>
+            {t('share.paste.continue', { platform: pasteTarget?.name ?? '' })}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={mastodonOpen} onClose={() => setMastodonOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>{t('share.mastodon.dialogTitle')}</DialogTitle>
