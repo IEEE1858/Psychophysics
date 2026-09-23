@@ -1054,6 +1054,13 @@
   gap: 16px;
 }
 
+.analytics-plot-title {
+  margin: 0 0 4px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #1d3557;
+}
+
 .analytics-generated {
   margin: 0;
   font-size: 0.76rem;
@@ -1084,6 +1091,28 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+/* Plain bulleted list of links to each demographic breakdown page — no
+   card/button styling, and the link text is the full URL. */
+.analytics-dimension-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.analytics-dimension-link {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.84rem;
+  color: #1d3557;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.analytics-dimension-link:hover {
+  text-decoration: underline;
 }
 
 /* ---- Image detail page ---- */
