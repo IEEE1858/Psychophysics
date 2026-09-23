@@ -120,17 +120,18 @@ function AnalyticsView({ onSignOut }) {
               Favorite/realism stats, distributions, and per-image detail broken down by one demographic
               or condition at a time (including imaging expertise), for the filtered slice above.
             </p>
-            <div className="analytics-dimension-grid">
-              {DEMOGRAPHIC_DIMENSIONS.map((dimension) => (
-                <Link
-                  key={dimension.slug}
-                  className="analytics-dimension-link"
-                  to={`/admin/analytics/${dimension.slug}`}
-                >
-                  {dimension.label}
-                </Link>
-              ))}
-            </div>
+            <ul className="analytics-dimension-list">
+              {DEMOGRAPHIC_DIMENSIONS.map((dimension) => {
+                const path = `/admin/analytics/${dimension.slug}`
+                return (
+                  <li key={dimension.slug}>
+                    <Link className="analytics-dimension-link" to={path}>
+                      {`${window.location.origin}${path}`}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
           </section>
 
           <p className="analytics-generated">
