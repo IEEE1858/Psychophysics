@@ -843,42 +843,87 @@ function buildExpertiseComparison(rows) {
   };
 }
 
-// Aggregate every recorded ranking into the shape the analytics dashboard
-// needs: study-wide counts, per-collection summary stats + raw distributions
-// (for box/whisker plots and histograms), per-image means (for the clickable
-// realism-vs-favorite scatter), and an expert-vs-layperson breakdown. Accepts
-// optional demographic/condition filters (age/gender/country/vision/expertise/
-// displayType/lighting/colorBlind), applied
-// before every aggregate below so all charts reflect the same filtered set.
-function buildAnalytics(filters = {}) {
-  const allRows = getRankingRowsForStats();
-  const participants = getParticipantCounts();
-  const filterOptions = buildFilterOptions(allRows);
-  const rows = filterRows(allRows, filters);
+// --- Demographic breakdown pages ---------------------------------------------
 
-  const collections = COLLECTIONS.map(({ id, label }) => {
-    const collectionRows = rows.filter((row) => row.collection_id === id);
-    const favoriteLevels = collectionRows
-      .map((row) => row.favorite_level)
-      .filter((value) => value != null);
-    const realismLevels = collectionRows
-      .map((row) => row.most_realistic_level)
-      .filter((value) => value != null);
+// Maps each breakdown page's URL slug to the row field it groups by and a
+// display label. Every dimension's groups are the raw values found in the
+// data (sorted alphabetically) and display exactly as stored, matching the
+// filter dropdowns above — except imaging-expert, whose values are derived
+// rather than a raw column, so it gets a fixed order and its own labels.
+const DEMOGRAPHIC_DIMENSIONS = {
+  gender: { label: "Gender", getter: (row) => row.gender },
+  lighting: { label: "Lighting condition", getter: (row) => row.lighting },
+  display: { label: "Display type", getter: (row) => row.display_type },
+  country: { label: "Country", getter: (row) => row.country_of_origin },
+  "imaging-expert": {
+    label: "Imaging expertise",
+    getter: (row) => expertiseGroup(row.self_description),
+    order: ["expert", "layperson"],
+    labels: { expert: "Expert", layperson: "Layperson" },
+  },
+  "color-blindness": { label: "Color blindness", getter: (row) => row.color_blind },
+  "vision-degredation": { label: "Vision degradation", getter: (row) => row.vision_status },
+};
 
+// Favorite/realism stats broken down by every distinct value of one
+// demographic dimension (e.g. gender, country), per collection — the
+// single-variable generalization of buildExpertiseComparison above. Built
+// from already-filtered rows, like that function, so the breakdown reflects
+// whatever other filters are active. Returns null for an unknown dimension.
+//
+// Only one dimension at a time today; cross-tabbing a second dimension is a
+// planned follow-up.
+function buildDimensionBreakdown(rows, dimensionKey) {
+  const dimension = DEMOGRAPHIC_DIMENSIONS[dimensionKey];
+  if (!dimension) {
+    return null;
+  }
+
+  const participantsByValue = new Map();
+  for (const row of rows) {
+    const value = dimension.getter(row);
+    if (!value) continue;
+    if (!participantsByValue.has(value)) {
+      participantsByValue.set(value, new Set());
+    }
+    participantsByValue.get(value).add(row.participant_id);
+  }
+
+  const values = dimension.order
+    ? dimension.order.filter((value) => participantsByValue.has(value))
+    : Array.from(participantsByValue.keys()).sort();
+
+  const groups = values.map((value) => {
+    const groupRows = rows.filter((row) => dimension.getter(row) === value);
+    const collections = COLLECTIONS.map(({ id, label }) => {
+      const collectionRows = groupRows.filter((row) => row.collection_id === id);
+      const favoriteLevels = collectionRows.map((row) => row.favorite_level).filter((v) => v != null);
+      const realismLevels = collectionRows.map((row) => row.most_realistic_level).filter((v) => v != null);
+      return {
+        id,
+        label,
+        favorite: summarize(favoriteLevels),
+        realism: summarize(realismLevels),
+        favoriteLevels,
+        realismLevels,
+      };
+    });
     return {
-      id,
-      label,
-      rankedCount: collectionRows.length,
-      uniqueImages: new Set(collectionRows.map((row) => row.image_id)).size,
-      favorite: summarize(favoriteLevels),
-      realism: summarize(realismLevels),
-      // Raw selected levels — the box/whisker and histogram source data.
-      favoriteLevels,
-      realismLevels,
+      key: value,
+      label: dimension.labels?.[value] ?? value,
+      n: participantsByValue.get(value).size,
+      collections,
+      images: buildImageStats(groupRows),
     };
   });
 
-  // Per-image means, keyed by collection + image.
+  return { dimension: dimensionKey, label: dimension.label, groups };
+}
+
+// Per-image means (for the clickable realism-vs-favorite scatter), keyed by
+// collection + image. Shared by the main dashboard (over all filtered rows)
+// and each demographic breakdown group (over just that group's rows).
+function buildImageStats(rows) {
   const imageMap = new Map();
   for (const row of rows) {
     const key = `${row.collection_id} ${row.image_id}`;
@@ -914,7 +959,7 @@ function buildAnalytics(filters = {}) {
     }
   }
 
-  const images = Array.from(imageMap.values()).map((entry) => {
+  return Array.from(imageMap.values()).map((entry) => {
     const favorite = summarize(entry.favorite);
     const realism = summarize(entry.realism);
     const favoriteFrac = summarize(entry.favoriteFrac);
@@ -938,13 +983,49 @@ function buildAnalytics(filters = {}) {
       gradingMsTotal: gradingMs.n > 0 ? gradingMs.mean * gradingMs.n : null,
     };
   });
+}
+
+// Aggregate every recorded ranking into the shape the analytics dashboard
+// needs: study-wide counts, per-collection summary stats + raw distributions
+// (for box/whisker plots and histograms), per-image means (for the clickable
+// realism-vs-favorite scatter), and an expert-vs-layperson breakdown. Accepts
+// optional demographic/condition filters (age/gender/country/vision/expertise/
+// displayType/lighting/colorBlind), applied
+// before every aggregate below so all charts reflect the same filtered set.
+function buildAnalytics(filters = {}) {
+  const allRows = getRankingRowsForStats();
+  const participants = getParticipantCounts();
+  const filterOptions = buildFilterOptions(allRows);
+  const rows = filterRows(allRows, filters);
+
+  const collections = COLLECTIONS.map(({ id, label }) => {
+    const collectionRows = rows.filter((row) => row.collection_id === id);
+    const favoriteLevels = collectionRows
+      .map((row) => row.favorite_level)
+      .filter((value) => value != null);
+    const realismLevels = collectionRows
+      .map((row) => row.most_realistic_level)
+      .filter((value) => value != null);
+
+    return {
+      id,
+      label,
+      rankedCount: collectionRows.length,
+      uniqueImages: new Set(collectionRows.map((row) => row.image_id)).size,
+      favorite: summarize(favoriteLevels),
+      realism: summarize(realismLevels),
+      // Raw selected levels — the box/whisker and histogram source data.
+      favoriteLevels,
+      realismLevels,
+    };
+  });
 
   return {
     generatedAt: new Date().toISOString(),
     participants: { ...participants, filtered: new Set(rows.map((row) => row.participant_id)).size },
     filterOptions,
     collections,
-    images,
+    images: buildImageStats(rows),
     expertise: buildExpertiseComparison(rows),
   };
 }
@@ -960,6 +1041,33 @@ app.get("/api/admin/analytics", requireAdmin, (req, res) => {
   } catch (error) {
     console.error("Failed to build analytics", error);
     res.status(500).json({ error: "Failed to build analytics." });
+  }
+});
+
+// One demographic/condition dimension (gender, lighting, display, country,
+// imaging-expert, color-blindness, vision-degredation), broken into its
+// distinct values, each with the same per-collection favorite/realism stats
+// as the main dashboard. Accepts the same filter query params as
+// /api/admin/analytics, applied before the breakdown so this page's own
+// filters can further narrow it (e.g. gender breakdown within one country).
+app.get("/api/admin/analytics/breakdown/:dimension", requireAdmin, (req, res) => {
+  try {
+    const allRows = getRankingRowsForStats();
+    const filterOptions = buildFilterOptions(allRows);
+    const rows = filterRows(allRows, parseAnalyticsFilters(req.query));
+    const breakdown = buildDimensionBreakdown(rows, req.params.dimension);
+    if (!breakdown) {
+      return res.status(404).json({ error: "Unknown demographic dimension." });
+    }
+    res.json({
+      generatedAt: new Date().toISOString(),
+      participants: { ...getParticipantCounts(), filtered: new Set(rows.map((row) => row.participant_id)).size },
+      filterOptions,
+      breakdown,
+    });
+  } catch (error) {
+    console.error("Failed to build analytics breakdown", error);
+    res.status(500).json({ error: "Failed to build analytics breakdown." });
   }
 });
 

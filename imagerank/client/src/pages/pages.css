@@ -1054,6 +1054,13 @@
   gap: 16px;
 }
 
+.analytics-plot-title {
+  margin: 0 0 4px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #1d3557;
+}
+
 .analytics-generated {
   margin: 0;
   font-size: 0.76rem;
@@ -1084,6 +1091,34 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.analytics-dimension-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.analytics-dimension-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 252, 247, 0.84);
+  border: 1px solid rgba(70, 84, 118, 0.12);
+  box-shadow: 0 12px 32px rgba(35, 47, 69, 0.07);
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: #1d3557;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.analytics-dimension-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 36px rgba(35, 47, 69, 0.12);
 }
 
 /* ---- Image detail page ---- */
