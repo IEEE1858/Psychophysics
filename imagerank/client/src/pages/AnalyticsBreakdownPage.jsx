@@ -199,49 +199,39 @@ function BreakdownView({ dimensionSlug, dimensionLabel, onSignOut }) {
     [navigate],
   )
 
-  // One histogram card per collection, each with one trace per group value —
-  // split into a Favorite-image grid and a Most-realistic grid, since a
-  // histogram's x-axis is the level itself and can't also carry the
-  // Favorite/Realism split the way the box plot's x categories do.
-  const collectionHistCharts = useMemo(
+  // One histogram card per collection × group combination, each a single
+  // trace — never overlaid or grouped with another group's bars. Group sample
+  // sizes can differ a lot (e.g. 15 Female vs. 2 Non-binary participants), so
+  // stacking their raw counts on shared axes would visually overstate the
+  // smaller group; keeping each its own small-multiple with its own n avoids
+  // that without trying to normalize (which trades one distortion for another).
+  const histCharts = useMemo(
     () =>
-      collectionMeta.map(({ id, label }) => ({
-        id,
-        label,
-        favorite: groups.map((group, index) => {
+      collectionMeta.flatMap(({ id, label }) =>
+        groups.map((group, index) => {
           const collection = group.collections.find((entry) => entry.id === id)
+          const color = groupColor(group.key, index)
+          const favoriteLevels = collection?.favoriteLevels ?? []
+          const realismLevels = collection?.realismLevels ?? []
           return {
-            type: 'histogram',
-            name: group.label,
-            x: collection?.favoriteLevels ?? [],
-            marker: { color: groupColor(group.key, index) },
-            opacity: 0.7,
+            key: `${id}-${group.key}`,
+            title: `${label} · ${group.label} (n=${group.n})`,
+            favorite: [{ type: 'histogram', x: favoriteLevels, marker: { color } }],
+            realism: [{ type: 'histogram', x: realismLevels, marker: { color } }],
           }
         }),
-        realism: groups.map((group, index) => {
-          const collection = group.collections.find((entry) => entry.id === id)
-          return {
-            type: 'histogram',
-            name: group.label,
-            x: collection?.realismLevels ?? [],
-            marker: { color: groupColor(group.key, index) },
-            opacity: 0.7,
-          }
-        }),
-      })),
+      ),
     [collectionMeta, groups],
   )
 
   const histLayout = useMemo(
     () =>
       baseLayout({
-        barmode: 'group',
         bargap: 0.12,
-        showlegend: true,
-        legend: { orientation: 'h', y: 1.16, x: 0 },
+        showlegend: false,
         xaxis: { title: 'Selected level', dtick: 1 },
         yaxis: { title: 'Count' },
-        margin: { l: 48, r: 12, t: 32, b: 44 },
+        margin: { l: 48, r: 12, t: 12, b: 44 },
       }),
     [],
   )
@@ -362,13 +352,18 @@ function BreakdownView({ dimensionSlug, dimensionLabel, onSignOut }) {
 
           <section className="analytics-section">
             <h2 className="admin-detail-subtitle">Histograms by selection, by {dimensionLabel.toLowerCase()}</h2>
+            <p className="home-lead analytics-hint">
+              Each group gets its own histogram, not overlaid with the others — group sample sizes
+              (shown as n) often differ enough that stacking raw counts on shared axes would be
+              misleading.
+            </p>
             <p className="home-lead analytics-hint">Favorite image level.</p>
             <div className="analytics-histogram-grid">
-              {collectionHistCharts.map((chart) => (
-                <div key={`${chart.id}-favorite`} className="analytics-plot-card">
-                  <h3 className="analytics-plot-title">{chart.label}</h3>
-                  {chart.favorite.some((trace) => trace.x.length > 0) ? (
-                    <PlotlyChart data={chart.favorite} layout={histLayout} style={{ height: 300 }} />
+              {histCharts.map((chart) => (
+                <div key={`${chart.key}-favorite`} className="analytics-plot-card">
+                  <h3 className="analytics-plot-title">{chart.title}</h3>
+                  {chart.favorite[0].x.length > 0 ? (
+                    <PlotlyChart data={chart.favorite} layout={histLayout} style={{ height: 260 }} />
                   ) : (
                     <Alert severity="info">No ranking data for this filter.</Alert>
                   )}
@@ -377,11 +372,11 @@ function BreakdownView({ dimensionSlug, dimensionLabel, onSignOut }) {
             </div>
             <p className="home-lead analytics-hint">Most realistic level.</p>
             <div className="analytics-histogram-grid">
-              {collectionHistCharts.map((chart) => (
-                <div key={`${chart.id}-realism`} className="analytics-plot-card">
-                  <h3 className="analytics-plot-title">{chart.label}</h3>
-                  {chart.realism.some((trace) => trace.x.length > 0) ? (
-                    <PlotlyChart data={chart.realism} layout={histLayout} style={{ height: 300 }} />
+              {histCharts.map((chart) => (
+                <div key={`${chart.key}-realism`} className="analytics-plot-card">
+                  <h3 className="analytics-plot-title">{chart.title}</h3>
+                  {chart.realism[0].x.length > 0 ? (
+                    <PlotlyChart data={chart.realism} layout={histLayout} style={{ height: 260 }} />
                   ) : (
                     <Alert severity="info">No ranking data for this filter.</Alert>
                   )}
