@@ -1,0 +1,62 @@
+#!/bin/bash
+# Back up the imagerank database, then restart the API so startup migrations run.
+#
+# Installed at /usr/local/sbin/imagerank-restart, owned root:root, mode 0755.
+# Members of the imagerank-deploy group may run it through sudo; see
+# deploy/sudoers.d-imagerank-deploy.
+#
+# It deliberately takes NO arguments. The whole point of granting this one
+# command instead of `systemctl` or `cp` is that there is nothing for a caller
+# to steer: no path to redirect, no wildcard to abuse. Keep it that way.
+set -euo pipefail
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+DB_DIR=/var/lib/imagerank
+DB="$DB_DIR/psychophysics.db"
+BACKUP_DIR="$DB_DIR/backups"
+UNIT=imagerank-api
+
+if [ "$#" -ne 0 ]; then
+  echo "usage: imagerank-restart   (no arguments)" >&2
+  exit 64
+fi
+
+if [ ! -f "$DB" ]; then
+  echo "imagerank-restart: $DB not found; refusing to restart without a backup" >&2
+  exit 1
+fi
+
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+mkdir -p "$BACKUP_DIR"
+
+echo "==> Stopping $UNIT"
+systemctl stop "$UNIT"
+
+# The -wal and -shm files are part of the database: it runs in WAL mode and is
+# not checkpointed on shutdown, so the main .db alone can be missing recent
+# writes. cp -a keeps them owned by the imagerank user.
+echo "==> Backing up to $BACKUP_DIR/psychophysics-$stamp.db"
+for suffix in "" "-wal" "-shm"; do
+  if [ -e "$DB$suffix" ]; then
+    cp -a "$DB$suffix" "$BACKUP_DIR/psychophysics-$stamp.db$suffix"
+  fi
+done
+
+# Fail loudly rather than restarting on top of a backup that did not happen.
+if [ ! -s "$BACKUP_DIR/psychophysics-$stamp.db" ]; then
+  echo "imagerank-restart: backup is missing or empty; starting the service again and stopping here" >&2
+  systemctl start "$UNIT"
+  exit 1
+fi
+ls -l "$BACKUP_DIR/psychophysics-$stamp.db"*
+
+echo "==> Starting $UNIT"
+systemctl start "$UNIT"
+
+# Give it a moment to bind its port, then report. `systemctl is-active` exits
+# non-zero if it failed to come up, which fails this script under set -e.
+sleep 2
+systemctl is-active "$UNIT"
+echo "==> $UNIT is running. Recent log:"
+journalctl -u "$UNIT" -n 5 --no-pager

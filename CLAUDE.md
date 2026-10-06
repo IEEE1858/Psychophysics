@@ -56,6 +56,11 @@ The API is a systemd unit, **not** a bare `node` process:
 - **DB:** SQLite at `/var/lib/imagerank/psychophysics.db` — the only writable path
   the hardened unit is granted (`ReadWritePaths=/var/lib/imagerank`).
 
+Collaborators who are not root deploy through `imagerank/DEPLOYING.md`, which
+grants file access plus one fixed sudo command (`/usr/local/sbin/imagerank-restart`,
+sources in `imagerank/deploy/`) that backs up the database and restarts the API.
+That wrapper is the preferred way to run step 4 below, whoever is deploying.
+
 Steps:
 
 ```bash
@@ -74,15 +79,12 @@ ssh hkoren@atlas 'cd /vhosts/psychophysics/imagerank/server && \
 # 4. Back up the DB under a timestamped name, then restart so migrations run.
 #    /var/lib/imagerank is mode 700 owned by `imagerank`, so every command that
 #    touches it needs sudo -- tests, globs and listings included.
-ssh hkoren@atlas 'set -euo pipefail
-  STAMP=$(date -u +%Y%m%dT%H%M%SZ)-pre-deploy
-  sudo systemctl stop imagerank-api
-  for suffix in "" "-wal" "-shm"; do
-    sudo cp -a "/var/lib/imagerank/psychophysics.db$suffix" \
-               "/var/lib/imagerank/backups/psychophysics-$STAMP.db$suffix"
-  done
-  sudo ls -l /var/lib/imagerank/backups/ | grep "$STAMP"
-  sudo systemctl start imagerank-api'
+ssh hkoren@atlas 'sudo /usr/local/sbin/imagerank-restart'
+
+# The wrapper does exactly this, and refuses to restart if the copy did not land:
+#   systemctl stop imagerank-api
+#   cp -a psychophysics.db{,-wal,-shm} backups/psychophysics-<UTC stamp>.db{,-wal,-shm}
+#   systemctl start imagerank-api
 
 # 5. Publish the client build
 rsync -av --delete client/dist/ hkoren@atlas:/vhosts/psychophysics/imagerank/client/dist/

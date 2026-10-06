@@ -1,0 +1,17 @@
+# Deploy rights for the imagerank study API.
+# Install as /etc/sudoers.d/imagerank-deploy, owned root:root, mode 0440.
+#
+# Members of imagerank-deploy may back up the database and restart the API, and
+# nothing else. The single allowed command takes no arguments, so there is no
+# wildcard or path for a caller to redirect. Do NOT loosen this into
+# `systemctl *` or a bare `cp`: either one is a route to full root.
+#
+# The script itself must stay root-owned and not group-writable, or membership
+# in this group becomes equivalent to root.
+
+%imagerank-deploy ALL=(root) NOPASSWD: /usr/local/sbin/imagerank-restart
+
+# Read-only status, for checking a deploy landed.
+%imagerank-deploy ALL=(root) NOPASSWD: /usr/bin/systemctl status imagerank-api, \
+                                       /usr/bin/systemctl is-active imagerank-api, \
+                                       /usr/bin/systemctl show imagerank-api
