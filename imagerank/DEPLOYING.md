@@ -196,7 +196,18 @@ the published directories, and one fixed `sudo` command for the restart.
 
 The files referenced here live in `imagerank/deploy/` in this repository, so
 they are reviewable and version-controlled rather than existing only on the
-host.
+host. There is a git checkout at `/vhosts/psychophysics` on atlas, but it is
+stale and permanently dirty because deploys rsync into it. Do not pull there.
+Copy the two files up from a laptop checkout instead:
+
+```bash
+# From the repository root on your machine
+scp imagerank/deploy/imagerank-restart \
+    imagerank/deploy/sudoers.d-imagerank-deploy \
+    hkoren@atlas:/tmp/
+```
+
+The remaining commands run on atlas.
 
 ```bash
 # 1. File access to the published directories
@@ -215,20 +226,20 @@ does not fail on a file the previous person wrote.
 ```bash
 # 2. The privileged restart, as one fixed command
 sudo install -o root -g root -m 0755 \
-  imagerank/deploy/imagerank-restart /usr/local/sbin/imagerank-restart
+  /tmp/imagerank-restart /usr/local/sbin/imagerank-restart
 
 sudo groupadd -f imagerank-deploy
 sudo usermod -aG imagerank-deploy ctran
 sudo usermod -aG imagerank-deploy hkoren
 
-# Validate BEFORE installing: a malformed sudoers file can lock everyone out
-visudo -cf imagerank/deploy/sudoers.d-imagerank-deploy
+# Validate BEFORE installing: a malformed sudoers file can lock everyone out.
+# This replaces the existing imagerank-deploy file, which granted the same
+# systemctl verbs to hkoren by name; the group rule supersedes it.
+visudo -cf /tmp/sudoers.d-imagerank-deploy
 sudo install -o root -g root -m 0440 \
-  imagerank/deploy/sudoers.d-imagerank-deploy /etc/sudoers.d/imagerank-deploy
+  /tmp/sudoers.d-imagerank-deploy /etc/sudoers.d/imagerank-deploy
 
-# The old file granted the same systemctl verbs to hkoren by name; the group
-# rule replaces it
-sudo rm -f /etc/sudoers.d/imagerank-deploy.old
+rm /tmp/imagerank-restart /tmp/sudoers.d-imagerank-deploy
 ```
 
 ```bash
