@@ -54,6 +54,11 @@ export const PLOT_FONT = {
 }
 
 // A transparent-background layout that blends into the page panels.
+//
+// Axis titles must be given in object form -- `xaxis: { title: { text: '...' } }`.
+// Plotly 3 dropped the `title: 'text'` string shorthand and silently ignores it,
+// substituting its own "Click to enter X axis title" placeholder, so a string
+// here means the chart ships with no axis label and no error.
 export function baseLayout(overrides = {}) {
   return {
     font: PLOT_FONT,

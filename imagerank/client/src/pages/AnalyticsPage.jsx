@@ -127,8 +127,8 @@ function AnalyticsView({ onSignOut }) {
     () =>
       baseLayout({
         showlegend: false,
-        yaxis: { title: 'Selected processing level', zeroline: false },
-        xaxis: { automargin: true },
+        yaxis: { title: { text: 'Selected processing level' }, zeroline: false },
+        xaxis: { title: { text: 'Image type and selection' }, automargin: true },
       }),
     [],
   )
@@ -166,8 +166,8 @@ function AnalyticsView({ onSignOut }) {
       baseLayout({
         showlegend: true,
         legend: { orientation: 'h', y: 1.12, x: 0 },
-        xaxis: { title: 'Mean most-realistic level (% of max)', range: [-5, 105], zeroline: false },
-        yaxis: { title: 'Mean favorite level (% of max)', range: [-5, 105], zeroline: false },
+        xaxis: { title: { text: 'Mean most-realistic level (% of max)' }, range: [-5, 105], zeroline: false },
+        yaxis: { title: { text: 'Mean favorite level (% of max)' }, range: [-5, 105], zeroline: false },
         margin: { l: 60, r: 16, t: 32, b: 52 },
       }),
     [],
@@ -331,8 +331,8 @@ function AnalyticsView({ onSignOut }) {
                   bargap: 0.12,
                   showlegend: true,
                   legend: { orientation: 'h', y: 1.15, x: 0 },
-                  xaxis: { title: `${collection.label} — selected level`, dtick: 1 },
-                  yaxis: { title: 'Count' },
+                  xaxis: { title: { text: `${collection.label} — selected level` }, dtick: 1 },
+                  yaxis: { title: { text: 'Count' } },
                   margin: { l: 48, r: 12, t: 32, b: 44 },
                 })
                 return (
