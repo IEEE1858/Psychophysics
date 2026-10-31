@@ -50,7 +50,8 @@ the unprivileged `imagerank` user). Apache terminates TLS for
 
 The API is a systemd unit, **not** a bare `node` process:
 - **Unit:** `imagerank-api.service` (`Restart=always`, so it comes back on its own)
-- **Node:** `/usr/local/lib/nodejs/v26.3.0/bin/node index.js`
+- **Node:** `/usr/local/bin/node index.js` (a symlink into the current
+  `/usr/local/lib/nodejs/v<version>/`, so a Node upgrade only repoints the link)
 - **Env:** `EnvironmentFile=/etc/imagerank/imagerank.env` (AWS creds, `DB_PATH`,
   admin seed, Google OAuth). There is no `.env` in the server directory.
 - **DB:** SQLite at `/var/lib/imagerank/psychophysics.db` — the only writable path
@@ -74,7 +75,7 @@ rsync -av --delete --exclude node_modules --exclude data --exclude .env \
 
 # 3. Refresh server deps on the host (native modules must build there)
 ssh hkoren@atlas 'cd /vhosts/psychophysics/imagerank/server && \
-  PATH=/usr/local/lib/nodejs/v26.3.0/bin:$PATH npm install'
+  PATH=/usr/local/bin:$PATH npm install'
 
 # 4. Back up the DB under a timestamped name, then restart so migrations run.
 #    /var/lib/imagerank is mode 700 owned by `imagerank`, so every command that
@@ -115,7 +116,7 @@ Notes:
   bundled Node build (tables: `participants`, `image_rankings`, `accounts`,
   `admin_users`):
   ```bash
-  ssh hkoren@atlas 'sudo -u imagerank /usr/local/lib/nodejs/v26.3.0/bin/node -e "
+  ssh hkoren@atlas 'sudo -u imagerank /usr/local/bin/node -e "
   const {DatabaseSync} = require(\"node:sqlite\");
   const db = new DatabaseSync(\"/var/lib/imagerank/psychophysics.db\", {readOnly: true});
   console.log(db.prepare(\"PRAGMA integrity_check\").get());

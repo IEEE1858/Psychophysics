@@ -125,7 +125,7 @@ rsync -av --delete --exclude node_modules --exclude data --exclude .env \
 
 # 2. Refresh dependencies on the host, where native modules build correctly
 ssh ctran@atlas 'cd /vhosts/psychophysics/imagerank/server && \
-  PATH=/usr/local/lib/nodejs/v26.3.0/bin:$PATH npm install'
+  PATH=/usr/local/bin:$PATH npm install'
 ```
 
 Use `npm install`, not `npm install --omit=dev`: `sharp` is a devDependency, but
