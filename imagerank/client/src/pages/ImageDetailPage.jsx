@@ -144,6 +144,38 @@ function ImageDetailView({ collectionId, imageId }) {
     [levelDomain, counts, accent],
   )
 
+  // Dashed vertical line + label at each series' mean level, so the average
+  // selection is visible on the chart itself rather than only in the stat
+  // cards above (mirrors the boxmean overlay used on the other box plots).
+  const meanMarkers = useMemo(() => {
+    const series = [
+      { mean: detail?.favorite?.mean, color: accent, label: 'Favorite mean' },
+      { mean: detail?.realism?.mean, color: REALISM_COLOR, label: 'Realism mean' },
+    ].filter((entry) => entry.mean != null)
+
+    return {
+      shapes: series.map((entry) => ({
+        type: 'line',
+        x0: entry.mean,
+        x1: entry.mean,
+        y0: 0,
+        y1: 1,
+        yref: 'paper',
+        line: { color: entry.color, width: 2, dash: 'dash' },
+      })),
+      annotations: series.map((entry, index) => ({
+        x: entry.mean,
+        y: 1,
+        yref: 'paper',
+        yanchor: 'bottom',
+        yshift: index * 16,
+        text: `${entry.label} L${entry.mean.toFixed(1)}`,
+        showarrow: false,
+        font: { color: entry.color, size: 11 },
+      })),
+    }
+  }, [detail, accent])
+
   const histLayout = useMemo(
     () =>
       baseLayout({
@@ -153,9 +185,11 @@ function ImageDetailView({ collectionId, imageId }) {
         legend: { orientation: 'h', y: 1.16, x: 0 },
         xaxis: { title: { text: 'Processing level' }, dtick: 1, range: [-0.6, (levelDomain.at(-1) ?? 0) + 0.6] },
         yaxis: { title: { text: 'Number of subjects' }, dtick: 1, rangemode: 'tozero' },
-        margin: { l: 56, r: 12, t: 36, b: 48 },
+        margin: { l: 56, r: 12, t: 52, b: 48 },
+        shapes: meanMarkers.shapes,
+        annotations: meanMarkers.annotations,
       }),
-    [levelDomain],
+    [levelDomain, meanMarkers],
   )
 
   // Clicking a bar flips the viewer to that level and highlights the subjects
