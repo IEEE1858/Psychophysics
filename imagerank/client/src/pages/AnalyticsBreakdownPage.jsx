@@ -216,24 +216,56 @@ function BreakdownView({ dimensionSlug, dimensionLabel, onSignOut }) {
           return {
             key: `${id}-${group.key}`,
             title: `${label} · ${group.label} (n=${group.n})`,
+            color,
             favorite: [{ type: 'histogram', x: favoriteLevels, marker: { color } }],
+            favoriteMean: collection?.favorite?.mean,
             realism: [{ type: 'histogram', x: realismLevels, marker: { color } }],
+            realismMean: collection?.realism?.mean,
           }
         }),
       ),
     [collectionMeta, groups],
   )
 
-  const histLayout = useMemo(
+  const histBaseLayout = useMemo(
     () =>
       baseLayout({
         bargap: 0.12,
         showlegend: false,
         xaxis: { title: { text: 'Selected level' }, dtick: 1 },
         yaxis: { title: { text: 'Count' } },
-        margin: { l: 48, r: 12, t: 12, b: 44 },
+        margin: { l: 48, r: 12, t: 28, b: 44 },
       }),
     [],
+  )
+
+  // Dashed vertical line + label at the mean, same idea as the box plots'
+  // boxmean overlay, so each small-multiple histogram shows its own average
+  // directly rather than only in the summary table below.
+  const histLayoutFor = useCallback(
+    (mean, color) => {
+      if (mean == null) {
+        return histBaseLayout
+      }
+      return {
+        ...histBaseLayout,
+        shapes: [
+          { type: 'line', x0: mean, x1: mean, y0: 0, y1: 1, yref: 'paper', line: { color, width: 2, dash: 'dash' } },
+        ],
+        annotations: [
+          {
+            x: mean,
+            y: 1,
+            yref: 'paper',
+            yanchor: 'bottom',
+            text: `Mean L${mean.toFixed(1)}`,
+            showarrow: false,
+            font: { color, size: 10 },
+          },
+        ],
+      }
+    },
+    [histBaseLayout],
   )
 
   if (!data && !error) {
@@ -363,7 +395,11 @@ function BreakdownView({ dimensionSlug, dimensionLabel, onSignOut }) {
                 <div key={`${chart.key}-favorite`} className="analytics-plot-card">
                   <h3 className="analytics-plot-title">{chart.title}</h3>
                   {chart.favorite[0].x.length > 0 ? (
-                    <PlotlyChart data={chart.favorite} layout={histLayout} style={{ height: 260 }} />
+                    <PlotlyChart
+                      data={chart.favorite}
+                      layout={histLayoutFor(chart.favoriteMean, chart.color)}
+                      style={{ height: 260 }}
+                    />
                   ) : (
                     <Alert severity="info">No ranking data for this filter.</Alert>
                   )}
@@ -376,7 +412,11 @@ function BreakdownView({ dimensionSlug, dimensionLabel, onSignOut }) {
                 <div key={`${chart.key}-realism`} className="analytics-plot-card">
                   <h3 className="analytics-plot-title">{chart.title}</h3>
                   {chart.realism[0].x.length > 0 ? (
-                    <PlotlyChart data={chart.realism} layout={histLayout} style={{ height: 260 }} />
+                    <PlotlyChart
+                      data={chart.realism}
+                      layout={histLayoutFor(chart.realismMean, chart.color)}
+                      style={{ height: 260 }}
+                    />
                   ) : (
                     <Alert severity="info">No ranking data for this filter.</Alert>
                   )}
